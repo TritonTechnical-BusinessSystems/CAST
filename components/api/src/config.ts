@@ -50,6 +50,12 @@ export const config = {
   cwMmsiFieldCaption: env.CW_MMSI_FIELD_CAPTION ?? "Vessel MMSI",
   /** CW company status that scopes a "tracked" vessel-client (INIT-0012). */
   cwTrackedStatus: env.CW_TRACKED_STATUS ?? "",
+  /**
+   * HARD SAFETY GATE: all ConnectWise *writes* are refused unless this is
+   * explicitly "true". Default off — the user must approve writes (they asked
+   * for no CW writes until they agree). Reads are unaffected.
+   */
+  cwWritesEnabled: (env.CW_WRITES_ENABLED ?? "false").toLowerCase() === "true",
 } as const;
 
 export function adConfigured(): boolean {

@@ -127,3 +127,37 @@ which the host needs for:
       assumption in `../decisions/0004-monorepo-with-artifacts-only-public-surface.md`).
 - [ ] Decide whether the scheduled data-sync services (`INIT-0002`/`INIT-0012`)
       share this VM or get their own.
+
+## 7. TLS / certificates — mirror LogisticsCoordinator (recorded 2026-07-23)
+
+Per user direction, CAST uses the **exact same cert method as LC** — verified by
+inspecting the live LC host. It's the right fit because it needs only *outbound*
+internet (which this VM has), never inbound, so `cast.tritontechnical.com` stays
+private while still getting real Let's Encrypt certs.
+
+**LC's method (source of truth):**
+- **certbot** with the **`dns-acmedns`** authenticator (DNS-01 challenge solved via
+  an acme-dns server), credentials at `/etc/letsencrypt/acmedns.ini`.
+- Renewal is automatic via the **`certbot.timer`** systemd unit
+  (`OnCalendar=*-*-* 00,12:00:00`, `Persistent=true`).
+- nginx bind-mounts `/etc/letsencrypt:ro` and points at
+  `/etc/letsencrypt/live/<domain>/{fullchain,privkey}.pem`.
+
+**Replicate on `trt-cast-01`:**
+1. `apt install certbot python3-certbot-dns-acmedns` (LC has `certbot` +
+   `python3-certbot`; add the acme-dns plugin).
+2. Register a **new** acme-dns account for `cast.tritontechnical.com` against the
+   **same acme-dns server LC uses** (read the server URL from LC's
+   `/etc/letsencrypt/acmedns.ini`); write CAST's own `/etc/letsencrypt/acmedns.ini`.
+3. **Public DNS dependency:** add a CNAME `_acme-challenge.cast.tritontechnical.com`
+   → the acme-dns fulfillment host, in the **public** `tritontechnical.com` zone.
+   (Only this challenge record is public; the app's A record stays internal —
+   the app is never publicly reachable.)
+4. `certbot certonly -a dns-acmedns --dns-acmedns-credentials /etc/letsencrypt/acmedns.ini -d cast.tritontechnical.com`.
+5. `certbot.timer` handles renewal; nginx reloads on renew.
+
+**Interim:** ship a **self-signed** cert so HTTPS works immediately; swap to the
+acme-dns cert once steps 2–3 (acme-dns account + public CNAME) are done.
+
+**Access DNS:** internal A record `cast.tritontechnical.com → 10.20.30.231`
+**created 2026-07-23** (user).

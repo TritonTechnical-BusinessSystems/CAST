@@ -1,0 +1,128 @@
+/*
+ * CAST design tokens — the single source of truth for color, type, and space.
+ * Values adopt Triton's Logistics Coordinator palette; names are CAST's own,
+ * intentional, job-named (never color-named) and theme-invariant so dark mode is
+ * a pure value override. NEVER hardcode a value that belongs here.
+ * See knowledge/architecture/design-system.md.
+ */
+
+:root {
+  /* ---- Brand / accent ---- */
+  --color-brand: #0071bc;          /* Triton primary blue — primary actions, links, active nav */
+  --color-brand-strong: #005a96;   /* hover/pressed */
+  --color-brand-wash: #e8f4fc;     /* tinted background behind brand elements */
+  --color-accent: #29aee3;         /* bright cyan — secondary accent */
+
+  /* ---- Surfaces ---- */
+  --color-surface-page: #f4f6f8;   /* app background */
+  --color-surface: #ffffff;        /* cards, panels, modals */
+  --color-surface-sunken: #eef1f3; /* table headers, row stripes, insets */
+  --color-surface-rail: #303336;   /* dark charcoal nav rail + topbar */
+  --color-surface-hover: #e8f4fc;  /* list/row hover (tinted brand) */
+
+  /* ---- Text ---- */
+  --color-text: #303336;           /* primary */
+  --color-text-soft: #4c585e;      /* secondary */
+  --color-text-muted: #8b999e;     /* meta, captions */
+  --color-text-faint: #a7b4b8;     /* disabled, placeholders */
+  --color-text-inverse: #ffffff;   /* on brand/charcoal */
+  --color-link: #0071bc;
+
+  /* ---- Borders ---- */
+  --color-border: #d4d8dc;
+  --color-border-subtle: #ebe8e8;
+  --color-focus: #0071bc;
+
+  /* ---- Status (each with a -wash tint) ---- */
+  --color-success: #1f8a4c;  --color-success-wash: #d9efdf;
+  --color-warning: #b9770a;  --color-warning-wash: #fdf1d6;
+  --color-danger:  #c0392b;  --color-danger-wash:  #f8dcd8;
+  --color-info:    #0071bc;  --color-info-wash:    #d8ecfa;
+
+  /* ---- Typography ---- */
+  --font-heading: "Open Sans", Arial, sans-serif;  /* nav, titles, table headers, labels */
+  --font-body: "Inter", "Segoe UI", Arial, sans-serif; /* data / content (body default) */
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+
+  --text-xs: 0.6875rem;  /* 11 */
+  --text-sm: 0.75rem;    /* 12 */
+  --text-base: 0.875rem; /* 14 — body default (dense data app) */
+  --text-md: 1rem;       /* 16 */
+  --text-lg: 1.125rem;   /* 18 */
+  --text-xl: 1.25rem;    /* 20 */
+  --text-2xl: 1.5rem;    /* 24 */
+  --text-3xl: 1.875rem;  /* 30 */
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --leading-tight: 1.25;
+  --leading-base: 1.5;
+  --leading-loose: 1.75;
+
+  /* ---- Spacing (4px grid) ---- */
+  --space-1: 0.25rem;  --space-2: 0.5rem;  --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem;  --space-6: 1.5rem;  --space-8: 2rem;    --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ---- Radius ---- */
+  --radius-sm: 3px; --radius-md: 6px; --radius-lg: 10px; --radius-pill: 9999px;
+
+  /* ---- Shadow (charcoal-tinted) ---- */
+  --shadow-sm: 0 1px 3px rgba(48, 51, 54, 0.1);
+  --shadow-md: 0 2px 8px rgba(48, 51, 54, 0.12);
+  --shadow-lg: 0 4px 20px rgba(48, 51, 54, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(0, 113, 188, 0.25);
+
+  /* ---- Layout ---- */
+  --rail-width: 220px;
+  --topbar-height: 56px;
+  --content-max: 1280px;
+
+  /* ---- Motion ---- */
+  --ease-fast: 150ms; --ease-base: 220ms; --ease-slow: 350ms;
+
+  /* ---- Z-index ---- */
+  --z-dropdown: 100; --z-sticky: 200; --z-modal: 300; --z-toast: 400;
+}
+
+/*
+ * Dark theme — a value-only override, activated by data-theme="dark" on <html>.
+ * Populated now (built dark-ready) but light ships as default; a toggle flips it.
+ * Derived from the light palette: surfaces deepened, brand lightened for contrast.
+ */
+:root[data-theme="dark"] {
+  --color-brand: #2b9fe0;
+  --color-brand-strong: #47b0ea;
+  --color-brand-wash: rgba(43, 159, 224, 0.14);
+  --color-accent: #29aee3;
+
+  --color-surface-page: #14181d;
+  --color-surface: #1b2127;
+  --color-surface-sunken: #232a31;
+  --color-surface-rail: #0f1216;
+  --color-surface-hover: #22303c;
+
+  --color-text: #e7ecf1;
+  --color-text-soft: #b3bec9;
+  --color-text-muted: #7d8b98;
+  --color-text-faint: #5f6b77;
+  --color-text-inverse: #14181d;
+  --color-link: #4fc3e8;
+
+  --color-border: #2c353d;
+  --color-border-subtle: #232a31;
+  --color-focus: #2b9fe0;
+
+  --color-success: #3ec488;  --color-success-wash: rgba(62, 196, 136, 0.15);
+  --color-warning: #e3a83d;  --color-warning-wash: rgba(227, 168, 61, 0.15);
+  --color-danger:  #f0776c;  --color-danger-wash:  rgba(240, 119, 108, 0.15);
+  --color-info:    #4fc3e8;  --color-info-wash:    rgba(79, 195, 232, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.55);
+  --shadow-focus: 0 0 0 3px rgba(43, 159, 224, 0.3);
+}

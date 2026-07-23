@@ -8,6 +8,9 @@
  * (knowledge/decisions/0002) — never in the SPA, never in the browser.
  */
 
+import { resolveCwCreds } from "./creds";
+import { ManageCwClient } from "./manageClient";
+
 export interface VesselCompany {
   /** ConnectWise company id. */
   id: string;
@@ -60,13 +63,19 @@ export class StubCwClient implements CwClient {
   }
 }
 
-let singleton: CwClient | null = null;
+let stub: CwClient | null = null;
+let manage: CwClient | null = null;
 
 /**
- * The active CW client. TODO(INIT-0014): return a `ManageCwClient` when
- * `cwConfigured()` is true (API member keys + clientId + site URL present).
+ * The active CW client: the live `ManageCwClient` when credentials resolve (env
+ * or the encrypted store), otherwise the in-memory stub. Writes remain gated by
+ * config.cwWritesEnabled inside ManageCwClient regardless.
  */
 export function getCwClient(): CwClient {
-  if (!singleton) singleton = new StubCwClient();
-  return singleton;
+  if (resolveCwCreds().creds) {
+    if (!manage) manage = new ManageCwClient();
+    return manage;
+  }
+  if (!stub) stub = new StubCwClient();
+  return stub;
 }
