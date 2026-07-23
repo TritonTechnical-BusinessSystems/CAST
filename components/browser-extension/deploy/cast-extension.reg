@@ -1,0 +1,15 @@
+Windows Registry Editor Version 5.00
+
+; CAST browser extension — force-install policy (Chrome + Edge).
+; Double-click to import, or: reg import cast-extension.reg  (run as admin).
+; Requires an enterprise-managed (AD-joined) device. The update URL must be live.
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\cijknnchejganljdmpdmdkajcmknmdpp]
+"installation_mode"="force_installed"
+"update_url"="https://cast-updates.tritontechnical.com/update-manifest.xml"
+"override_update_url"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\cijknnchejganljdmpdmdkajcmknmdpp]
+"installation_mode"="force_installed"
+"update_url"="https://cast-updates.tritontechnical.com/update-manifest.xml"
+"override_update_url"=dword:00000001

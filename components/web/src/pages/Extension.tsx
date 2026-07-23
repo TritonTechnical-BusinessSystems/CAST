@@ -18,7 +18,7 @@ export function Extension() {
   return (
     <div>
       <Tabs tabs={tabs} active={active} onChange={setActive} />
-      {active === "fleet" ? <FleetCatalog /> : <Placeholder label={label} />}
+      {active === "fleet" ? <FleetCatalog /> : active === "deploy" ? <DeploymentPanel /> : <Placeholder label={label} />}
     </div>
   );
 }
@@ -36,6 +36,41 @@ function Placeholder({ label }: { label: string }) {
         </div>
       </CardBody>
     </Card>
+  );
+}
+
+function DeploymentPanel() {
+  return (
+    <div className="col gap-4">
+      <Banner tone="info">
+        Install CAST in your browser: download the installer, run it as administrator, then restart Chrome/Edge — the
+        extension installs automatically.
+      </Banner>
+      <Card>
+        <CardBody>
+          <div className="col gap-3">
+            <h3>Install the CAST extension</h3>
+            <ol className="muted">
+              <li>Download the installer below.</li>
+              <li>Right-click → <strong>Run with PowerShell</strong> as administrator (or double-click the .reg).</li>
+              <li>Restart Chrome/Edge — CAST installs within a couple minutes.</li>
+            </ol>
+            <div className="row gap-2 wrap">
+              <a className="btn btn-primary" href="/api/extension/install.ps1" download>
+                Download installer (.ps1)
+              </a>
+              <a className="btn btn-secondary" href="/api/extension/install.reg" download>
+                Registry file (.reg)
+              </a>
+            </div>
+            <p className="muted text-sm">
+              Requires an enterprise-managed (AD-joined) device, and the extension update host to be live (INIT-0001).
+              Mass deployment (GPO/Intune) is a later step — scripts live in <span className="mono">components/browser-extension/deploy</span>.
+            </p>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   );
 }
 

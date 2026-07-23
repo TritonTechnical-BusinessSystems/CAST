@@ -18,6 +18,8 @@ RUN pnpm install --frozen-lockfile --filter @cast/api...
 # Sources.
 COPY packages/config-schema packages/config-schema
 COPY components/api components/api
+# Extension installer files the web app serves for download (deploy tab).
+COPY components/browser-extension/deploy components/browser-extension/deploy
 
 ENV NODE_ENV=production
 ENV CAST_API_PORT=3001

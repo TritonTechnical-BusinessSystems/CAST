@@ -10,6 +10,7 @@ import integrationRoutes from "./routes/integrations";
 import healthRoutes from "./routes/health";
 import geoAlertRoutes from "./routes/geoAlerts";
 import checkinRoutes from "./routes/checkins";
+import extensionRoutes from "./routes/extension";
 import { startVesselSync } from "./jobs/vesselSync";
 import { seedBreakGlass } from "./auth/local";
 
@@ -28,6 +29,7 @@ app.use("/api/integrations", integrationRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/geo-alerts", geoAlertRoutes);
 app.use("/api/checkins", checkinRoutes);
+app.use("/api/extension", extensionRoutes);
 
 app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);
