@@ -42,6 +42,9 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 - [Backend] Scaffolded the **Vessel Identity reconciliation** backend (`INIT-0014`, `components/api/`): pure IMO check-digit + MMSI validation, app-assisted free-lookup deep-links (IMO→MMSI, ToS-safe), a swappable `CwClient` interface with an in-memory stub (real `ManageCwClient` pending CW keys — modelled on LogisticsCoordinator's live integration), and `GET`/`POST` routes at `/api/vessel-identity` (audit + validated write-back). CAST's first ConnectWise *write* path. Typecheck + smoke verified.
 
+- [Infra] **CAST deployed to `trt-cast-01`** — live at `https://cast.tritontechnical.com` (Docker: nginx-TLS + api), with a real **auto-renewing Let's Encrypt cert** (acme-dns DNS-01, mirroring LC) and the **GA-only unattended auto-update** systemd timer enabled. api healthy, `better-sqlite3` store built in-image, ConnectWise writes gated off.
+- [Changed] A vessel is now **any CW company with Market containing "Yacht"** (295 companies, incl. those missing IMO/MMSI), not identifier-presence — configurable via `CW_VESSEL_MARKET`. Secret/settings store moved to **better-sqlite3** (encrypted secret values at rest).
+
 ### Changed
 - [Infra] `trt-cast-01` moved to its **permanent static IP `10.20.30.231/24`** (gw `10.20.30.1`, DNS `10.20.30.208`/`.209`, search `triton.local`) after the network team fixed the VLAN-egress blocker — egress + `triton.local` DC resolution verified live. Cutover done remotely over Tailscale with a self-healing 5-minute auto-revert backstop. `knowledge/architecture/cast-web-app-vm-provisioning.md` updated (§2 static, §4 blocker resolved, §6 items checked). *(2026-07-22T23:20Z)*
 

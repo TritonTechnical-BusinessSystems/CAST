@@ -156,8 +156,12 @@ private while still getting real Let's Encrypt certs.
 4. `certbot certonly -a dns-acmedns --dns-acmedns-credentials /etc/letsencrypt/acmedns.ini -d cast.tritontechnical.com`.
 5. `certbot.timer` handles renewal; nginx reloads on renew.
 
-**Interim:** ship a **self-signed** cert so HTTPS works immediately; swap to the
-acme-dns cert once steps 2–3 (acme-dns account + public CNAME) are done.
+**DONE 2026-07-23:** real acme-dns cert issued and live (Let's Encrypt, valid to
+2026-10-21, auto-renewing via `certbot.timer` + a deploy-hook that reloads the web
+container's nginx). acme-dns account registered at `auth.acme-dns.io`
+(fulldomain `19de093c-059d-43a0-b2ad-262fa8933e0e.auth.acme-dns.io`); the public
+CNAME `_acme-challenge.cast.tritontechnical.com` → that fulldomain is live. Plugin
+`certbot-dns-acmedns` (pip). Account creds: `/etc/letsencrypt/acmedns.json` on the VM.
 
 **Access DNS:** internal A record `cast.tritontechnical.com → 10.20.30.231`
 **created 2026-07-23** (user).

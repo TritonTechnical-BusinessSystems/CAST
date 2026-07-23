@@ -8,8 +8,9 @@ updated: 2026-07-23
 # CAST web app — deployment
 
 Docker on `trt-cast-01` (internal-only: outbound internet yes, inbound no). Pattern
-mirrors Logistics Coordinator. Not yet executed on the VM — artifacts are ready
-(`docker-compose.yml`, `components/web/nginx.conf`, `scripts/`).
+mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
+`https://cast.tritontechnical.com`** with a real, auto-renewing Let's Encrypt cert
+(acme-dns DNS-01) and the GA auto-update timer enabled. App dir `/opt/cast/app`.
 
 ## Topology (`docker-compose.yml`)
 - **api** (`@cast/api`, Express via tsx) — internal only; encrypted store persisted
