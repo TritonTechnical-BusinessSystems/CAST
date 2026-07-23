@@ -1,0 +1,26 @@
+@echo off
+title CAST Browser Extension - Installer
+
+:: Self-elevate (writing the browser policy needs admin — one UAC click).
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+  echo Requesting administrator permission...
+  powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  exit /b
+)
+
+set "EXTID=cijknnchejganljdmpdmdkajcmknmdpp"
+set "UPDATE=https://cast.tritontechnical.com/api/extension/update.xml"
+
+echo.
+echo   Installing the CAST browser extension...
+for %%B in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Microsoft\Edge") do (
+  reg add "%%~B\ExtensionSettings\%EXTID%" /v installation_mode  /t REG_SZ   /d force_installed /f >nul
+  reg add "%%~B\ExtensionSettings\%EXTID%" /v update_url         /t REG_SZ   /d "%UPDATE%"       /f >nul
+  reg add "%%~B\ExtensionSettings\%EXTID%" /v override_update_url /t REG_DWORD /d 1              /f >nul
+)
+
+echo.
+echo   Done!  Restart Chrome or Edge and CAST installs automatically.
+echo.
+pause

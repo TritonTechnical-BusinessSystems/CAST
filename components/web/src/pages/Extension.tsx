@@ -51,17 +51,16 @@ function DeploymentPanel() {
           <div className="col gap-3">
             <h3>Install the CAST extension</h3>
             <ol className="muted">
-              <li>Download the installer below.</li>
-              <li>Right-click → <strong>Run with PowerShell</strong> as administrator (or double-click the .reg).</li>
-              <li>Restart Chrome/Edge — CAST installs within a couple minutes.</li>
+              <li>Download the installer.</li>
+              <li><strong>Double-click it</strong>, then click <strong>Yes</strong> when Windows asks.</li>
+              <li>Restart Chrome/Edge — CAST installs automatically.</li>
             </ol>
             <div className="row gap-2 wrap">
-              <a className="btn btn-primary" href="/api/extension/install.ps1" download>
-                Download installer (.ps1)
+              <a className="btn btn-primary" href="/api/extension/install.bat" download>
+                Download installer
               </a>
-              <a className="btn btn-secondary" href="/api/extension/install.reg" download>
-                Registry file (.reg)
-              </a>
+              <a className="btn btn-secondary" href="/api/extension/install.ps1" download>.ps1</a>
+              <a className="btn btn-secondary" href="/api/extension/install.reg" download>.reg</a>
             </div>
             <p className="muted text-sm">
               Requires an enterprise-managed (AD-joined) device, and the extension update host to be live (INIT-0001).

@@ -29,6 +29,7 @@ const EXT_VERSION = process.env.CAST_EXT_VERSION ?? "0.0.1";
 // Public (no auth) — the installer + update surface are fetched anonymously by
 // the browser / login page. No secrets, only the public extension ID + URLs.
 const router = Router();
+router.get("/install.bat", (_req, res) => serve(res, "Install-CAST.bat", "Install-CAST.bat"));
 router.get("/install.ps1", (_req, res) => serve(res, "Install-CAST-Extension.ps1", "Install-CAST-Extension.ps1"));
 router.get("/install.reg", (_req, res) => serve(res, "cast-extension.reg", "cast-extension.reg"));
 
