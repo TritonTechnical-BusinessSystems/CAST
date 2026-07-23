@@ -66,23 +66,26 @@ export async function listServiceBoards(): Promise<string[]> {
 }
 
 async function queryCompanies(conditions?: string): Promise<CwCompany[]> {
-  const params = new URLSearchParams({ pageSize: "1000", fields: "id,name,identifier,status,customFields" });
-  if (conditions) params.set("conditions", conditions);
-  return cwFetch<CwCompany[]>(`/company/companies?${params.toString()}`);
+  const out: CwCompany[] = [];
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({ pageSize: "1000", page: String(page), fields: "id,name,identifier,status,customFields" });
+    if (conditions) params.set("conditions", conditions);
+    const batch = await cwFetch<CwCompany[]>(`/company/companies?${params.toString()}`);
+    out.push(...batch);
+    if (batch.length < 1000) break;
+  }
+  return out;
 }
 
 export class ManageCwClient implements CwClient {
   async listTrackedVessels(): Promise<VesselCompany[]> {
-    const cond = config.cwTrackedStatus ? `status/name="${config.cwTrackedStatus}"` : undefined;
-    const companies = await queryCompanies(cond);
-    // A "vessel" company is one that actually carries an IMO or MMSI value.
-    // (Company UDFs exist on every company, so presence-of-field is not enough.)
-    // LIMITATION: a vessel with NEITHER identifier won't appear until a vessel
-    // status/type marker is chosen (INIT-0015 / CW_TRACKED_STATUS).
-    const vessels = companies.filter(
-      (c) => fieldValue(c, config.cwImoFieldCaption) !== null || fieldValue(c, config.cwMmsiFieldCaption) !== null,
-    );
-    return vessels.map(toVessel);
+    // A vessel = any company whose Market contains the configured value (e.g.
+    // "🛳️ Yacht"), regardless of IMO/MMSI — so vessels missing an identifier
+    // still surface for reconciliation. Optional status further scopes it.
+    const parts = [`market/name contains "${config.cwVesselMarket}"`];
+    if (config.cwTrackedStatus) parts.push(`status/name="${config.cwTrackedStatus}"`);
+    const companies = await queryCompanies(parts.join(" AND "));
+    return companies.map(toVessel);
   }
 
   async setVesselIdentifiers(id: string, patch: { imo?: string; mmsi?: string }): Promise<VesselCompany> {

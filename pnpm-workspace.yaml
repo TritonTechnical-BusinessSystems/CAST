@@ -2,4 +2,9 @@ packages:
   - 'packages/*'
   - 'components/*'
 allowBuilds:
+  better-sqlite3: true
   esbuild: true
+# better-sqlite3 is a native module; it builds in the Docker image (which has a
+# C++ toolchain). On dev machines without compilers the post-install build fails
+# but types are present, so don't block script runs on the deps-status check.
+verifyDepsBeforeRun: false

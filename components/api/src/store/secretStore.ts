@@ -1,68 +1,58 @@
 /**
- * Encrypted-at-rest settings + secret store (INIT-0013 core).
+ * Settings + secret store on better-sqlite3 (INIT-0013 / INIT-0008).
  *
- * A JSON file where secret VALUES are AES-256-GCM encrypted. Deliberately NOT
- * better-sqlite3 yet — that native dep is a follow-up (INIT-0008); a file store
- * keeps the unattended build green and still satisfies encryption-at-rest.
+ * Embedded, synchronous, single-file — the right fit for this internal single-node
+ * app (same choice as SOC). Secret VALUES are AES-256-GCM encrypted at rest;
+ * non-secret settings are plain JSON. Public API is unchanged from the prior
+ * file-store so nothing else needed to change.
  *
- * Encryption key: derived from CAST_SECRET_KEY (env) when set; otherwise a random
- * dev keyfile under the data dir. Set CAST_SECRET_KEY in production so the key is
- * not co-located with the ciphertext.
+ * Encryption key: from CAST_SECRET_KEY (env) when set; else a random dev keyfile.
  */
+import Database from "better-sqlite3";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
 
 const DATA_DIR = process.env.CAST_DATA_DIR ?? join(process.cwd(), ".data");
-const STORE_FILE = join(DATA_DIR, "store.json");
+const DB_FILE = join(DATA_DIR, "cast.db");
 const KEY_FILE = join(DATA_DIR, "secret.key");
 
-interface EncBlob { iv: string; tag: string; data: string; }
-interface Store { settings: Record<string, unknown>; secrets: Record<string, EncBlob>; }
-
-function ensureDir() {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
+mkdirSync(DATA_DIR, { recursive: true });
+const db = new Database(DB_FILE);
+db.pragma("journal_mode = WAL");
+db.exec(`
+  CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, iv TEXT NOT NULL, tag TEXT NOT NULL, data TEXT NOT NULL);
+`);
 
 function getKey(): Buffer {
   const env = process.env.CAST_SECRET_KEY;
   if (env && env.length >= 16) return scryptSync(env, "cast.secret.salt.v1", 32);
-  ensureDir();
   if (!existsSync(KEY_FILE)) writeFileSync(KEY_FILE, randomBytes(32).toString("hex"), { mode: 0o600 });
   return Buffer.from(readFileSync(KEY_FILE, "utf8").trim(), "hex");
 }
 
-function load(): Store {
-  if (!existsSync(STORE_FILE)) return { settings: {}, secrets: {} };
-  try {
-    return JSON.parse(readFileSync(STORE_FILE, "utf8")) as Store;
-  } catch {
-    return { settings: {}, secrets: {} };
-  }
-}
-
-function save(s: Store) {
-  ensureDir();
-  writeFileSync(STORE_FILE, JSON.stringify(s, null, 2), { mode: 0o600 });
-}
-
 export function getSetting<T = unknown>(key: string): T | undefined {
-  return load().settings[key] as T | undefined;
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
+  return row ? (JSON.parse(row.value) as T) : undefined;
 }
 
 export function setSetting(key: string, val: unknown) {
-  const s = load();
-  s.settings[key] = val;
-  save(s);
+  db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(
+    key,
+    JSON.stringify(val),
+  );
 }
 
 export function getSecret(name: string): string | undefined {
-  const blob = load().secrets[name];
-  if (!blob) return undefined;
+  const row = db.prepare("SELECT iv, tag, data FROM secrets WHERE name = ?").get(name) as
+    | { iv: string; tag: string; data: string }
+    | undefined;
+  if (!row) return undefined;
   try {
-    const d = createDecipheriv("aes-256-gcm", getKey(), Buffer.from(blob.iv, "hex"));
-    d.setAuthTag(Buffer.from(blob.tag, "hex"));
-    return d.update(blob.data, "hex", "utf8") + d.final("utf8");
+    const d = createDecipheriv("aes-256-gcm", getKey(), Buffer.from(row.iv, "hex"));
+    d.setAuthTag(Buffer.from(row.tag, "hex"));
+    return d.update(row.data, "hex", "utf8") + d.final("utf8");
   } catch {
     return undefined;
   }
@@ -73,7 +63,7 @@ export function setSecret(name: string, plaintext: string) {
   const c = createCipheriv("aes-256-gcm", getKey(), iv);
   const data = c.update(plaintext, "utf8", "hex") + c.final("hex");
   const tag = c.getAuthTag().toString("hex");
-  const s = load();
-  s.secrets[name] = { iv: iv.toString("hex"), tag, data };
-  save(s);
+  db.prepare(
+    "INSERT INTO secrets (name, iv, tag, data) VALUES (?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET iv=excluded.iv, tag=excluded.tag, data=excluded.data",
+  ).run(name, iv.toString("hex"), tag, data);
 }

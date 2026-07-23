@@ -4,6 +4,10 @@ FROM node:24-slim
 WORKDIR /app
 RUN corepack enable
 
+# Native build deps for better-sqlite3 (compiles from source if no prebuilt binary).
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Manifests first for layer caching.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/config-schema/package.json packages/config-schema/package.json

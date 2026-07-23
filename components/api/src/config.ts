@@ -48,8 +48,14 @@ export const config = {
   /** Company custom-field captions holding the vessel IMO / MMSI (INIT-0014). */
   cwImoFieldCaption: env.CW_IMO_FIELD_CAPTION ?? "Vessel IMO",
   cwMmsiFieldCaption: env.CW_MMSI_FIELD_CAPTION ?? "Vessel MMSI",
-  /** CW company status that scopes a "tracked" vessel-client (INIT-0012). */
+  /** CW company status that further scopes tracking (optional; INIT-0015). */
   cwTrackedStatus: env.CW_TRACKED_STATUS ?? "",
+  /**
+   * The CW **Market** that identifies a vessel company — a vessel is ANY company
+   * whose Market contains this, regardless of IMO/MMSI (user rule 2026-07-23).
+   * Matched with `contains` so the "🛳️ Yacht" emoji prefix is handled.
+   */
+  cwVesselMarket: env.CW_VESSEL_MARKET ?? "Yacht",
   /**
    * HARD SAFETY GATE: all ConnectWise *writes* are refused unless this is
    * explicitly "true". Default off — the user must approve writes (they asked
