@@ -7,4 +7,6 @@ coverage/
 .env.*
 !.env.example
 .data/
+*.pem
+.keys/
 .DS_Store
