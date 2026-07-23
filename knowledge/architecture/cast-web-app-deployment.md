@@ -38,6 +38,21 @@ Renewal: `certbot.timer`; a deploy-hook reloads nginx.
   `systemctl enable --now cast-autoupdate.timer`.
 - **Host OS patching:** enable `unattended-upgrades` for security updates.
 
+## Backups
+Strong backup of all non-git runtime state (code already lives in git):
+- **`scripts/backup.sh`** — a **consistent (WAL-safe)** sqlite snapshot
+  (better-sqlite3 online backup) + `secret.key`, `.env`, the extension signing key,
+  and the acme-dns account (`/etc/letsencrypt/acmedns.json`), tarred **root-600** to
+  `/opt/cast/backups`, keeping the newest 14 (`CAST_BACKUP_KEEP`).
+- **Scheduled** daily 02:00 via `scripts/systemd/cast-backup.{service,timer}`.
+- **Restore:** `sudo bash scripts/restore.sh <tarball>` (stops, restores DB +
+  secrets + keys, starts).
+- The DB lives on a **host bind mount `/opt/cast/data`** (not a named volume) so the
+  backup reads it directly.
+- **Off-box (TODO for true DR):** these backups sit on the VM — copy them
+  **encrypted** to a second location (rclone/scp to cloud or another host).
+  Destination TBD.
+
 ## Local development
 `pnpm dev` runs web (Vite HMR) + api (tsx watch) natively — the fast loop; no
 Docker needed locally (deploys build on the VM). One prerequisite: `better-sqlite3`

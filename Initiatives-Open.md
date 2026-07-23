@@ -180,7 +180,8 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - **Next-level:** **fuse with vessel tracking** — parts ship *to a vessel*; combine shipment ETA + live vessel position ("will the part reach M/Y X before it leaves port?"). Capability neither carrier nor CW has.
   - **Placement — DECIDED 2026-07-23: lives in CAST.** (LC stays Triton's logistics app; CAST owns this carrier-status → CW sync.)
   - **Free path:** the carriers' OWN APIs (**UPS / FedEx / USPS / DHL**) are free for account holders — no per-shipment cost; the cost is one adapter per carrier + **polling** (node-cron; no push). Aggregators (AfterShip / EasyPost / 17track) have **free tiers** (low monthly volume) + webhooks but go paid at scale. Freight/ocean (Vizion / project44) are not free. → For a handful of parcel carriers, **direct free APIs + polling = $0** — the recommended start. Carrier creds are server-side secrets (encrypted store, `INIT-0013`).
-  - **Need from user:** which carriers Triton actually ships with (drives direct-vs-aggregator).
+  - **Scope — outbound first (user 2026-07-23).** *Outbound* = Triton's own carrier accounts → you have the tracking # at label creation + an account with the carrier → **direct free carrier API + poll**. Easy phase 1, $0. *Inbound* is messier + higher-value: ships on **vendors' accounts / any carrier** (an aggregator earns its keep — unknown carrier) AND first requires **capturing the tracking #** (parse vendor emails / PO confirmations — a separate problem). The "will the part reach the vessel in time" fusion is mostly an **inbound** story. Get inbound volume + how tracking #s arrive before scoping it.
+  - **Need from user:** which carriers Triton ships *outbound* with (drives the phase-1 adapters); inbound volume (TBD).
 - **Related:** `INIT-0002`, `INIT-0012` (same data-sync pattern), the LogisticsCoordinator project.
 
 ### INIT-0019 — Vessel photos (attach to CW company / show in CAST)

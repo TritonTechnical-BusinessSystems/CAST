@@ -1,0 +1,8 @@
+[Unit]
+Description=CAST backup (WAL-safe sqlite snapshot + runtime state)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cast/app/scripts/backup.sh

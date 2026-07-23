@@ -11,8 +11,9 @@ services:
     restart: unless-stopped
     env_file: components/api/.env
     volumes:
-      # Encrypted secret/settings store + secret key persist across redeploys.
-      - cast_data:/app/components/api/.data
+      # Encrypted store + key on a host bind mount so backups read it directly
+      # (scripts/backup.sh). Persists across redeploys.
+      - /opt/cast/data:/app/components/api/.data
     networks: [internal]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -37,9 +38,6 @@ services:
       api:
         condition: service_healthy
     networks: [internal]
-
-volumes:
-  cast_data:
 
 networks:
   internal:
