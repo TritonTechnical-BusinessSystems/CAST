@@ -38,6 +38,14 @@ Renewal: `certbot.timer`; a deploy-hook reloads nginx.
   `systemctl enable --now cast-autoupdate.timer`.
 - **Host OS patching:** enable `unattended-upgrades` for security updates.
 
+## Local development
+`pnpm dev` runs web (Vite HMR) + api (tsx watch) natively — the fast loop; no
+Docker needed locally (deploys build on the VM). One prerequisite: `better-sqlite3`
+is a native module, so the dev machine needs a C++ toolchain —
+`sudo apt-get install -y build-essential` (a one-time, machine-wide install; the
+Docker image already includes the build deps). Symptom if missing: a `node-gyp`
+failure at `pnpm install`.
+
 ## First-time bring-up (checklist)
 1. `sudo mkdir -p /opt/cast && sudo chown $USER /opt/cast`
 2. clone the repo (deploy key) into `/opt/cast/app`
