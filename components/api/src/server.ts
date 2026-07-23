@@ -8,6 +8,7 @@ import vesselIdentityRoutes from "./routes/vesselIdentity";
 import trackingRoutes from "./routes/tracking";
 import integrationRoutes from "./routes/integrations";
 import healthRoutes from "./routes/health";
+import geoAlertRoutes from "./routes/geoAlerts";
 import { startVesselSync } from "./jobs/vesselSync";
 import { seedBreakGlass } from "./auth/local";
 
@@ -24,6 +25,7 @@ app.use("/api/vessel-identity", vesselIdentityRoutes);
 app.use("/api/tracking", trackingRoutes);
 app.use("/api/integrations", integrationRoutes);
 app.use("/api/health", healthRoutes);
+app.use("/api/geo-alerts", geoAlertRoutes);
 
 app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);

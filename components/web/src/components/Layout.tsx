@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Button } from "../ui";
-import { IconGrid, IconShip, IconSearch, IconRoute, IconPlug, IconActivity, IconLogout, IconMenu } from "../ui/Icons";
+import { IconGrid, IconShip, IconSearch, IconRoute, IconPlug, IconActivity, IconLogout, IconMenu, IconPin } from "../ui/Icons";
 
 const groups = [
   {
@@ -12,6 +12,7 @@ const groups = [
       { href: "/vessel", label: "Vessel Location Updating", icon: IconShip },
       { href: "/vessel-identity", label: "Vessel Identity", icon: IconSearch },
       { href: "/tracking", label: "Vessel Tracking Config", icon: IconRoute },
+      { href: "/geo-alerts", label: "Geo Alerts", icon: IconPin },
     ],
   },
   {

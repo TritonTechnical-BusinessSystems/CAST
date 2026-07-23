@@ -159,3 +159,13 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - Built on the design-system foundation from shared primitives (status cards / dots / badges) — a first-class screen, not ad-hoc.
   - Backend: a `/api/health/*` aggregation (extends the current `/api/health`) that probes each dependency.
 - **Related:** `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0014`, `INIT-0015`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/architecture/extension-telemetry-and-identity.md`.
+
+### INIT-0017 — Geo Alerts (vessel geofencing → CW action)
+- **Status:** In progress (config surface built) · **Source:** User (evolved from the refit-signals idea) · **Added:** 2026-07-23
+- **Serves:** Capability CW doesn't natively provide — flag/act when a **tracked vessel enters a defined geographic area**. Consumes the aisstream monitor's live positions (`INIT-0012`).
+- **Idea:** Define multiple **areas** (circle = center + radius; or bounding box) on a **Geo Alerts** page; when a tracked vessel's position enters an area, fire an **action** (flag in ConnectWise / Teams notification / log). Areas + action persisted; the monitor evaluates point-in-area each position update and triggers on **entry** (edge-triggered).
+- **Fleshing-out notes:**
+  - **Built now:** config surface — `GET/PUT /api/geo-alerts`, the `GeoAlerts` page, and `vessels/geo.ts` (haversine circle + bbox `pointInArea`/`areasContaining`). Persisted to the settings store.
+  - **Runtime (TODO):** the monitor tests each position against areas; on ENTRY (was-outside → now-inside) fire the action. The CW-flag action is a CW write → gated by `CW_WRITES_ENABLED`.
+  - **Enhancements:** map-drawing UI for areas (vs. coordinate entry); polygons; per-area actions; dwell/exit triggers; which vessels a given area applies to.
+- **Related:** `INIT-0002`, `INIT-0012`, `knowledge/architecture/vessel-location-updating-aisstream.md`.

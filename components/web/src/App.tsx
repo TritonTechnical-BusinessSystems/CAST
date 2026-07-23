@@ -6,6 +6,7 @@ import { Extension } from "./pages/Extension";
 import { Vessel } from "./pages/Vessel";
 import { VesselIdentity } from "./pages/VesselIdentity";
 import { TrackingConfig } from "./pages/TrackingConfig";
+import { GeoAlerts } from "./pages/GeoAlerts";
 import { Integrations } from "./pages/Integrations";
 import { SystemHealth } from "./pages/SystemHealth";
 
@@ -30,6 +31,7 @@ export function App() {
         <Route path="/vessel" element={<Vessel />} />
         <Route path="/vessel-identity" element={<VesselIdentity />} />
         <Route path="/tracking" element={<TrackingConfig />} />
+        <Route path="/geo-alerts" element={<GeoAlerts />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/health" element={<SystemHealth />} />
       </Route>

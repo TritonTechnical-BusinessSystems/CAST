@@ -52,3 +52,6 @@ export const IconLock = (p: P) => (
 export const IconMenu = (p: P) => (
   <svg {...svg(p)}><path d="M3 6h18M3 12h18M3 18h18" /></svg>
 );
+export const IconPin = (p: P) => (
+  <svg {...svg(p)}><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z" /><circle cx="12" cy="11" r="2.5" /></svg>
+);

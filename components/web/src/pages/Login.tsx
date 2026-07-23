@@ -41,14 +41,27 @@ export function Login() {
         <h1 className="auth-title">Sign in</h1>
 
         <form onSubmit={submit} className="auth-form">
-          <Field label={mode === "ad" ? "Domain \\ Username" : "Username"}>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={mode === "ad" ? "TRITON\\jsmith" : "username"}
-              autoComplete="username"
-              required
-            />
+          <Field label="Username">
+            {mode === "ad" ? (
+              <div className="input-group">
+                <span className="input-prefix">triton\</span>
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="username"
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            ) : (
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username"
+                autoComplete="username"
+                required
+              />
+            )}
           </Field>
           <Field
             label="Password"

@@ -7,6 +7,8 @@
   "minimum_chrome_version": "110",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoTRBxQw2KKjZKY3LUJ7g0Aixd76eHh4KtBE+sCGY3cBFs980k6qqVACFmmCjZqjyllxwF4ieIWvjH/JX1yowoF22G2eSL/l6cH4EJM5kWs/E1aDKd+AFnj/q4dZpol9BQbW35n4wcdaDWn5X5Q5Qty46abPwlYUzoEtzdzHwJTcCQEqgtYw+alhSUdCFJDTJm9mhH4XDP9+dA8WyEH6vQ0Ob9rkw6tSL9/vG0w6KfXTT2b1vyARhxOrDAdfVSOEYXabpLZiJETANS2bpzhMeZ1+kRlzudYbayWhbL00L1207P1aHEB1ZiaW0OLS64VCaZyrd84eLgTYyFrQ2j+mSLQIDAQAB",
   "update_url": "https://cast-updates.tritontechnical.com/update-manifest.xml",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_title": "CAST", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" } },
   "background": { "service_worker": "src/background.js" },
   "permissions": ["storage", "alarms", "scripting", "debugger"],
   "optional_host_permissions": ["https://*.myconnectwise.net/*"]
