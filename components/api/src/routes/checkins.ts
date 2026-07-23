@@ -22,9 +22,15 @@ interface Row {
 
 const router = Router();
 
+// This endpoint is unauthenticated and its body is attacker-controllable, so cap
+// every stored field (bounds abusive payloads / storage growth) and treat the data
+// as untrusted display/grouping input only — never as authorization.
+const cap = (v: unknown, n: number) => String(v ?? "").slice(0, n);
+
 router.post("/", (req, res) => {
-  const b = (req.body ?? {}) as Record<string, string>;
-  if (!b.deviceId) return res.status(400).json({ error: "deviceId required" });
+  const b = (req.body ?? {}) as Record<string, unknown>;
+  const deviceId = cap(b.deviceId, 128);
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   db.prepare(
     `INSERT INTO checkins (device_id, browser, os_user, cw_member_id, extension_version, rules_version, last_check_in)
      VALUES (@device_id, @browser, @os_user, @cw_member_id, @extension_version, @rules_version, @ts)
@@ -32,12 +38,12 @@ router.post("/", (req, res) => {
        cw_member_id=excluded.cw_member_id, extension_version=excluded.extension_version,
        rules_version=excluded.rules_version, last_check_in=excluded.last_check_in`,
   ).run({
-    device_id: b.deviceId,
-    browser: b.browser ?? "",
-    os_user: b.osUser ?? "",
-    cw_member_id: b.cwMemberId ?? "",
-    extension_version: b.extensionVersion ?? "",
-    rules_version: b.rulesVersion ?? "",
+    device_id: deviceId,
+    browser: cap(b.browser, 64),
+    os_user: cap(b.osUser, 128),
+    cw_member_id: cap(b.cwMemberId, 64),
+    extension_version: cap(b.extensionVersion, 32),
+    rules_version: cap(b.rulesVersion, 32),
     ts: new Date().toISOString(),
   });
   res.json({ ok: true });

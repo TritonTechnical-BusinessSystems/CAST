@@ -195,3 +195,16 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - **The "how" to decide:** capture flow (a CAST upload UI → CW document, vs. attach directly in CW), storage location (CW document vs custom field vs CAST store), and display surfaces (vessel identity/list pages, the live fleet board).
   - Shines on the **live fleet board** (`Ideas.md`) + vessel pages.
 - **Related:** `INIT-0012`, `INIT-0014`, `knowledge/architecture/connectwise-api-integration.md`, `Ideas.md` (live fleet board).
+
+### INIT-0020 — Cross-platform extension delivery (macOS + Linux)
+- **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-23
+- **Serves:** Reach the very few Triton users on **macOS / Linux** (and unmanaged/personal Windows PCs). The current one-click installer is **Windows-only** (a `.bat` writing Chrome/Edge `ExtensionSettings` into the `HKLM` registry).
+- **Key fact:** the **extension + signed CRX + self-update are already cross-platform** — they run identically on Chrome/Edge on any OS. Only the **force-install delivery** (how the managed policy is written) is OS-specific. A delivery problem, not a portability problem.
+- **Per-OS mechanics:**
+  - **Linux — LOW effort, no MDM/domain-join.** Chrome/Edge/Chromium honor a managed-policy JSON in `/etc/opt/chrome/policies/managed/*.json` (+ `/etc/opt/edge/...`, `/etc/chromium/...`). A `.sh` mirror of the `.bat` (served at `/api/extension/install.sh`, run with sudo) writes `ExtensionSettings` force_installed + `update_url` + `override_update_url`.
+  - **macOS — Medium/High.** Force-install effectively wants **MDM** (Jamf/Intune/Kandji) pushing a `.mobileconfig`; a `defaults write` script is best-effort and unreliable without MDM. Not worth bespoke machinery for a handful.
+- **Recommendation (sized to "a very few"):**
+  1. **Build the Linux `.sh`** — cheap, clean, matches the Windows experience.
+  2. **Unlisted Chrome Web Store listing = universal fallback** — one click, any OS/browser, no admin/policy/domain-join. Covers Mac, sudo-averse Linux, AND unmanaged/personal Windows the `.bat` can't reach. Cost: one-time store review + updates via store review (slower than self-host); unlisted = link-only. For MDM-managed Macs, a pushed `.mobileconfig` is the clean alternative.
+- **Net:** Linux `.sh` + Unlisted Web Store covers 100% of users with minimal build; self-hosted force-install stays the default for AD-joined Windows.
+- **Related:** `INIT-0001`, `knowledge/architecture/browser-extension.md` §8.5, `components/browser-extension/deploy`.

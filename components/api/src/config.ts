@@ -6,13 +6,16 @@ import "dotenv/config";
 
 const env = process.env;
 
+/** The dev-only JWT fallback. Refused at startup in production (see below). */
+const DEV_JWT_FALLBACK = "dev-insecure-secret";
+
 export const config = {
   port: Number(env.CAST_API_PORT ?? 3001),
   nodeEnv: env.NODE_ENV ?? "development",
   isProd: (env.NODE_ENV ?? "development") === "production",
 
   /** Secret for signing the JWT session cookie. MUST be set in production. */
-  jwtSecret: env.CAST_JWT_SECRET ?? "dev-insecure-secret",
+  jwtSecret: env.CAST_JWT_SECRET ?? DEV_JWT_FALLBACK,
   jwtExpiresIn: env.CAST_JWT_EXPIRES_IN ?? "8h",
 
   /** Active Directory (LDAPS). Mechanism still open — INIT-0008. */
@@ -63,6 +66,17 @@ export const config = {
    */
   cwWritesEnabled: (env.CW_WRITES_ENABLED ?? "false").toLowerCase() === "true",
 } as const;
+
+// Fail fast rather than silently signing sessions with a public default secret —
+// an unset CAST_JWT_SECRET in production would let anyone forge an admin cookie.
+if (config.isProd) {
+  if (config.jwtSecret === DEV_JWT_FALLBACK) {
+    throw new Error("CAST_JWT_SECRET is required in production — refusing to start with the insecure default.");
+  }
+  if (config.jwtSecret.length < 32) {
+    throw new Error("CAST_JWT_SECRET must be at least 32 characters in production.");
+  }
+}
 
 export function adConfigured(): boolean {
   return Boolean(config.ldapUrl && config.ldapBaseDN && config.ldapAllowedGroupDN);

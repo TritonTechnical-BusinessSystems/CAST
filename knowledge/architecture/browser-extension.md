@@ -217,6 +217,16 @@ Viable paths evaluated:
 
 Design (not yet built):
 
+> **Manifest permission — `debugger` is DEFERRED, re-add here.** This feature is
+> the only consumer of the `debugger` permission. Per least-privilege (security
+> gate, 2026-07-23) it was **removed from `manifest.json`** until this code exists
+> — shipping the most powerful Chrome permission unused in a force-installed CRX is
+> gratuitous surface. **When building step 3, re-add `"debugger"` to the manifest
+> `permissions` array and bump the extension version.** Because CAST is
+> force-installed via policy, Chrome/Edge auto-grant the added permission on update
+> (no user re-consent); only the Web-Store fallback path would prompt.
+
+
 1. On page load / SPA navigation (same `MutationObserver` hook as the rule
    engine), scan currently-docked pods via `pod_*` classes and diff against
    an "expected pods for this role + screen type" list (part of the rules

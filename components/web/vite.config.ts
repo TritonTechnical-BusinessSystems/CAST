@@ -5,7 +5,13 @@ import { fileURLToPath } from "node:url";
 
 // Single source of truth (repo root); baked into the bundle at build time so the
 // rail can show it offline. Bump with scripts/bump-build.sh before each deploy.
-const ver = JSON.parse(readFileSync(fileURLToPath(new URL("../../version.json", import.meta.url)), "utf8"));
+// Degrade gracefully if it isn't in the build context (never fail the build on it).
+let ver: { version: string; build: string } = { version: "0.0.0", build: "0000000" };
+try {
+  ver = JSON.parse(readFileSync(fileURLToPath(new URL("../../version.json", import.meta.url)), "utf8"));
+} catch {
+  console.warn("[vite] version.json not found — using placeholder build stamp");
+}
 
 export default defineConfig({
   define: {
