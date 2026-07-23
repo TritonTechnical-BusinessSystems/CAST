@@ -13,11 +13,14 @@
   background: var(--color-surface-rail); color: var(--color-text-inverse);
   display: flex; flex-direction: column; overflow-y: auto;
 }
-.rail-brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-3); --brand-icon: 26px; }
+.rail-brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-4) 0; --brand-icon: 26px; }
+.rail-tagline { padding: var(--space-2) var(--space-4) var(--space-3); font-size: var(--text-xs); color: var(--color-text-faint); line-height: 1.4; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: none; color: var(--color-text-muted); border-radius: var(--radius-sm); cursor: pointer; }
+.icon-btn:hover { background: var(--color-surface-sunken); color: var(--color-danger); }
 .rail-brand img { width: var(--brand-icon); height: var(--brand-icon); }
-/* Title cap-height ≈ 85% of the icon height, both vertically centered (align-items
-   above). Open Sans cap-height ≈ 0.72em, so font-size = 0.85 × icon ÷ 0.72. */
-.rail-brand-name { font-family: var(--font-heading); font-weight: var(--weight-bold); letter-spacing: 0.02em; line-height: 1; font-size: calc(var(--brand-icon) * 0.85 / 0.72); }
+/* Title height = 85% of the icon height; matching line-height to the icon height
+   centers the text box on the icon (with align-items:center above). */
+.rail-brand-name { font-family: var(--font-heading); font-weight: var(--weight-bold); letter-spacing: 0.02em; font-size: calc(var(--brand-icon) * 0.85); line-height: var(--brand-icon); }
 .rail-nav { display: flex; flex-direction: column; padding: var(--space-2); gap: 2px; }
 .rail-section-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--text-xs); color: var(--color-text-faint); padding: var(--space-4) var(--space-3) var(--space-1); }
 .nav-item {

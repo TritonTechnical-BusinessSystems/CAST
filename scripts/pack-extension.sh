@@ -20,6 +20,7 @@ trap 'rm -rf "$STAGE" "$BUILD"' EXIT
 
 # Stage runtime-only files (never the .keys dir, README, or deploy scripts).
 cp "$EXT/manifest.json" "$STAGE"/
+cp "$EXT/managed-schema.json" "$STAGE"/
 cp -r "$EXT/src" "$STAGE"/
 cp -r "$EXT/icons" "$STAGE"/
 if find "$STAGE" \( -iname '*.pem' -o -iname '*.key*' \) | grep -q .; then

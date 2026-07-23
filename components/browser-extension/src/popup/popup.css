@@ -33,6 +33,11 @@ body {
 .mono { font-family: ui-monospace, Consolas, monospace; }
 .foot { border-top: 1px solid var(--border); }
 #deptSel { font: inherit; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; }
+.sync-v { display: inline-flex; align-items: center; gap: 6px; }
+.refresh { border: none; background: none; color: var(--brand); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+.refresh:hover { color: #005a96; }
+.refresh.spin { animation: cast-pop-spin 0.7s linear infinite; }
+@keyframes cast-pop-spin { to { transform: rotate(360deg); } }
 #report {
   display: inline-block;
   margin-top: 8px;

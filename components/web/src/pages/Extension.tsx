@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Button, Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState, Select } from "../ui";
+import { Button, Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState, Select, Modal, IconX } from "../ui";
 import type { TabDef } from "../ui";
 import { useTabParam } from "../useTabParam";
 
@@ -86,6 +86,7 @@ function InstallPanel() {
 
 interface Device {
   deviceId: string;
+  deviceName: string;
   browser: string;
   osUser: string;
   cwMemberId: string;
@@ -142,12 +143,28 @@ function DeploymentCatalog() {
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<FilterMode>("all");
   const [days, setDays] = useState(30);
+  const [pendingRemove, setPendingRemove] = useState<{ user: string; device: Device } | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const load = () => {
     setErr(null);
     api.get<FleetData>("/checkins").then(setData).catch((e) => setErr(e instanceof Error ? e.message : "Failed to load"));
   };
   useEffect(load, []);
+
+  const confirmRemove = async () => {
+    if (!pendingRemove) return;
+    setRemoving(true);
+    try {
+      await api.del(`/checkins/${encodeURIComponent(pendingRemove.device.deviceId)}`);
+      setPendingRemove(null);
+      load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Remove failed");
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   if (err) return <Banner tone="danger">{err}</Banner>;
   if (!data)
@@ -236,12 +253,19 @@ function DeploymentCatalog() {
                       ) : (
                         <div className="col gap-1">
                           {member.devices.map((d) => (
-                            <div key={d.deviceId} className="row gap-2 text-sm">
-                              <span>
-                                <strong>{d.browser || "Browser"}</strong>{" "}
-                                <span className="mono muted text-xs">{d.deviceId}</span>
+                            <div key={d.deviceId} className="row between gap-2 text-sm">
+                              <span className="row gap-2">
+                                <strong>{d.deviceName || d.deviceId}</strong>
+                                <span className="muted">{d.browser || "Browser"}</span>
                               </span>
-                              <span className="muted">· {ago(d.lastCheckIn)}</span>
+                              <button
+                                className="icon-btn"
+                                title="Remove this device/browser record"
+                                aria-label="Remove this device/browser record"
+                                onClick={() => setPendingRemove({ user: member.name, device: d })}
+                              >
+                                <IconX />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -283,6 +307,34 @@ function DeploymentCatalog() {
             </div>
           </CardBody>
         </Card>
+      )}
+
+      {pendingRemove && (
+        <Modal
+          title="Remove this record?"
+          onClose={() => !removing && setPendingRemove(null)}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setPendingRemove(null)} disabled={removing}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={confirmRemove} disabled={removing}>
+                {removing ? "Removing…" : "Remove record"}
+              </Button>
+            </>
+          }
+        >
+          <p>
+            Remove the check-in record for{" "}
+            <strong>{pendingRemove.device.deviceName || pendingRemove.device.deviceId}</strong>
+            {pendingRemove.device.browser ? ` · ${pendingRemove.device.browser}` : ""} under{" "}
+            <strong>{pendingRemove.user}</strong>?
+          </p>
+          <p className="muted text-sm">
+            This only prunes the record from CAST — it does <strong>not</strong> uninstall the extension. If that browser
+            is still installed and checks in again, the record reappears.
+          </p>
+        </Modal>
       )}
     </div>
   );

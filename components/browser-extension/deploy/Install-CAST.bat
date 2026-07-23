@@ -18,6 +18,9 @@ for %%B in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Micro
   reg add "%%~B\ExtensionSettings\%EXTID%" /v installation_mode  /t REG_SZ   /d force_installed /f >nul
   reg add "%%~B\ExtensionSettings\%EXTID%" /v update_url         /t REG_SZ   /d "%UPDATE%"       /f >nul
   reg add "%%~B\ExtensionSettings\%EXTID%" /v override_update_url /t REG_DWORD /d 1              /f >nul
+  rem Stamp the machine name into the extension's managed storage so it can report
+  rem which device it runs on (a sandboxed extension can't read the hostname itself).
+  reg add "%%~B\3rdparty\extensions\%EXTID%\policy" /v deviceName /t REG_SZ /d "%COMPUTERNAME%" /f >nul
 )
 
 echo.

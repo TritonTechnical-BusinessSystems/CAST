@@ -37,19 +37,46 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 async function deviceIdentity() {
+  // The machine name + OS user come from managed storage, stamped by the installer
+  // (Install-CAST.bat) into the browser's extension policy — a sandboxed extension
+  // can't read the OS hostname/username itself.
+  let deviceName = "";
+  let osUser = "";
   try {
-    const managed = await chrome.storage.managed.get(["deviceId", "osUser"]);
-    if (managed && managed.deviceId) return { deviceId: managed.deviceId, osUser: managed.osUser || "" };
+    const managed = await chrome.storage.managed.get(["deviceName", "osUser"]);
+    if (managed) {
+      deviceName = managed.deviceName || "";
+      osUser = managed.osUser || "";
+    }
   } catch (e) {
-    /* no managed policy (dev) */
+    /* no managed policy (dev / not force-installed) */
   }
+  // Stable per-browser-profile id — the unique key, so multiple browsers on one
+  // machine stay distinct rows that all share the same deviceName.
   const local = await chrome.storage.local.get("deviceId");
-  let id = local.deviceId;
-  if (!id) {
-    id = "dev-" + Math.random().toString(36).slice(2, 10);
-    await chrome.storage.local.set({ deviceId: id });
+  let deviceId = local.deviceId;
+  if (!deviceId) {
+    deviceId = (crypto.randomUUID && crypto.randomUUID()) || "dev-" + Math.random().toString(36).slice(2, 10);
+    await chrome.storage.local.set({ deviceId });
   }
-  return { deviceId: id, osUser: "" };
+  return { deviceId, deviceName, osUser };
+}
+
+// A friendly "Microsoft Edge v150.0.4078.83 (64-bit)" from high-entropy UA data,
+// falling back to the raw UA string on engines without userAgentData.
+async function browserLabel() {
+  try {
+    const uad = navigator.userAgentData;
+    if (uad && uad.getHighEntropyValues) {
+      const hi = await uad.getHighEntropyValues(["fullVersionList", "bitness"]);
+      const list = hi.fullVersionList || uad.brands || [];
+      const brand = list.find((b) => !/Chromium|Not.*Brand/i.test(b.brand)) || list[0];
+      if (brand) return brand.brand + " v" + brand.version + (hi.bitness ? " (" + hi.bitness + "-bit)" : "");
+    }
+  } catch (e) {
+    /* fall through to raw UA */
+  }
+  return navigator.userAgent;
 }
 
 async function poll() {
@@ -65,14 +92,15 @@ async function poll() {
 
 async function checkIn(member) {
   try {
-    const { deviceId, osUser } = await deviceIdentity();
+    const { deviceId, deviceName, osUser } = await deviceIdentity();
     const { config } = await chrome.storage.local.get("config");
     const res = await fetch(CHECKIN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         deviceId,
-        browser: navigator.userAgent,
+        deviceName,
+        browser: await browserLabel(),
         osUser,
         cwMemberId: (member && member.memberID) || "",
         extensionVersion: chrome.runtime.getManifest().version,

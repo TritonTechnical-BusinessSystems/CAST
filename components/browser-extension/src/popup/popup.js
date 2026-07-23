@@ -26,6 +26,19 @@ async function main() {
     window.close();
   });
 
+  // Manual "refresh now" — trigger a poll/check-in and update the shown time.
+  const refreshBtn = document.getElementById("refresh");
+  refreshBtn.addEventListener("click", async () => {
+    refreshBtn.classList.add("spin");
+    try {
+      await chrome.runtime.sendMessage({ type: "cast:poll" });
+      const { lastSync } = await chrome.storage.local.get("lastSync");
+      document.getElementById("sync").textContent = lastSync ? ago(lastSync) : "never";
+    } finally {
+      refreshBtn.classList.remove("spin");
+    }
+  });
+
   if (!member || !member.memberID) {
     document.getElementById("unknown").hidden = false;
     return;

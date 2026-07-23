@@ -12,6 +12,7 @@ import { listMembers } from "../connectwise/manageClient";
 
 interface Row {
   device_id: string;
+  device_name: string;
   browser: string;
   os_user: string;
   cw_member_id: string;
@@ -32,14 +33,15 @@ router.post("/", (req, res) => {
   const deviceId = cap(b.deviceId, 128);
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   db.prepare(
-    `INSERT INTO checkins (device_id, browser, os_user, cw_member_id, extension_version, rules_version, last_check_in)
-     VALUES (@device_id, @browser, @os_user, @cw_member_id, @extension_version, @rules_version, @ts)
-     ON CONFLICT(device_id) DO UPDATE SET browser=excluded.browser, os_user=excluded.os_user,
+    `INSERT INTO checkins (device_id, device_name, browser, os_user, cw_member_id, extension_version, rules_version, last_check_in)
+     VALUES (@device_id, @device_name, @browser, @os_user, @cw_member_id, @extension_version, @rules_version, @ts)
+     ON CONFLICT(device_id) DO UPDATE SET device_name=excluded.device_name, browser=excluded.browser, os_user=excluded.os_user,
        cw_member_id=excluded.cw_member_id, extension_version=excluded.extension_version,
        rules_version=excluded.rules_version, last_check_in=excluded.last_check_in`,
   ).run({
     device_id: deviceId,
-    browser: cap(b.browser, 64),
+    device_name: cap(b.deviceName, 128),
+    browser: cap(b.browser, 96),
     os_user: cap(b.osUser, 128),
     cw_member_id: cap(b.cwMemberId, 64),
     extension_version: cap(b.extensionVersion, 32),
@@ -49,10 +51,18 @@ router.post("/", (req, res) => {
   res.json({ ok: true });
 });
 
+// Manual removal of a stale/departed check-in (auth-gated destructive action).
+// It reappears if that browser checks in again.
+router.delete("/:deviceId", requireAuth, (req, res) => {
+  const info = db.prepare("DELETE FROM checkins WHERE device_id = ?").run(req.params.deviceId);
+  res.json({ ok: true, removed: info.changes });
+});
+
 router.get("/", requireAuth, async (_req, res) => {
   const rows = db.prepare("SELECT * FROM checkins ORDER BY last_check_in DESC").all() as Row[];
   const toInstance = (r: Row) => ({
     deviceId: r.device_id,
+    deviceName: r.device_name,
     browser: r.browser,
     osUser: r.os_user,
     cwMemberId: r.cw_member_id,

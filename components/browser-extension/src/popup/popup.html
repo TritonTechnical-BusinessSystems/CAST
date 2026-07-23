@@ -16,7 +16,7 @@
       <div class="name" id="name"></div>
       <div class="kv"><span class="k">Position</span><span class="v" id="role"></span></div>
       <div class="kv">
-        <span class="k">Department</span>
+        <span class="k">View Applied</span>
         <span class="v">
           <span id="dept"></span>
           <select id="deptSel" hidden></select>
@@ -26,7 +26,13 @@
 
     <div class="foot">
       <div class="kv"><span class="k">Version</span><span class="v mono" id="ver"></span></div>
-      <div class="kv"><span class="k">Last sync</span><span class="v" id="sync"></span></div>
+      <div class="kv">
+        <span class="k">Last sync</span>
+        <span class="v sync-v">
+          <span id="sync"></span>
+          <button id="refresh" class="refresh" type="button" title="Refresh now" aria-label="Refresh now">&#x21bb;</button>
+        </span>
+      </div>
       <a id="report" href="#">Report a problem</a>
     </div>
 

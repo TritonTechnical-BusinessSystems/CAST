@@ -30,8 +30,14 @@ db.exec(`
   );
   CREATE TABLE IF NOT EXISTS checkins (
     device_id TEXT PRIMARY KEY,
-    browser TEXT, os_user TEXT, cw_member_id TEXT,
+    device_name TEXT, browser TEXT, os_user TEXT, cw_member_id TEXT,
     extension_version TEXT, rules_version TEXT,
     last_check_in TEXT NOT NULL
   );
 `);
+
+// Migrate pre-existing checkins tables to add device_name (the human machine name).
+{
+  const cols = (db.prepare("PRAGMA table_info(checkins)").all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("device_name")) db.exec("ALTER TABLE checkins ADD COLUMN device_name TEXT DEFAULT ''");
+}

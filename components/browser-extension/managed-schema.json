@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "deviceName": {
+      "type": "string",
+      "title": "Device name",
+      "description": "Machine hostname (%COMPUTERNAME%), stamped into managed storage by Install-CAST.bat so the extension can report which machine it runs on."
+    },
+    "osUser": {
+      "type": "string",
+      "title": "OS user",
+      "description": "Optional OS username; machine-wide policy, so usually left unset."
+    }
+  }
+}
