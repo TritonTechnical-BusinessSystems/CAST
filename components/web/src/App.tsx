@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
 import { Layout } from "./components/Layout";
+import { Download } from "./pages/Download";
 import { Login } from "./pages/Login";
 import { Extension } from "./pages/Extension";
 import { Vessel } from "./pages/Vessel";
@@ -22,9 +23,18 @@ function RequireAuth() {
   );
 }
 
+/** The bare site root / unknown paths: signed-in users get the app, everyone
+ *  else gets the public download front door. */
+function RootRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return <Navigate to={user ? "/extension" : "/download"} replace />;
+}
+
 export function App() {
   return (
     <Routes>
+      <Route path="/download" element={<Download />} />
       <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth />}>
         <Route path="/extension" element={<Extension />} />
@@ -35,7 +45,7 @@ export function App() {
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/health" element={<SystemHealth />} />
       </Route>
-      <Route path="*" element={<Navigate to="/extension" replace />} />
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 }
