@@ -92,6 +92,7 @@ Full contract: `knowledge/conventions/partnership-contract.md`.
 
 - `CLAUDE.md` — this router.
 - `Initiatives-Open.md` / `Initiatives-Complete.md` — idea backlog & history.
+- `Ideas.md` — the horizon: next-level ideas, lighter than Initiatives (promote to an Initiative when we commit to pursue).
 - `CHANGELOG.md` — every publish, categorized.
 - `knowledge/` — the on-demand canon (conventions, architecture, decisions, templates).
 - `components/` — this repo's own components — real source, not references. See `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`.
