@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Button, Field, Input, Banner } from "../ui";
+import { IconDownload } from "../ui/Icons";
 
 export function Login() {
   const { login, user } = useAuth();
@@ -100,6 +101,7 @@ export function Login() {
         </button>
       </div>
       <a className="auth-download" href="/api/extension/install.ps1" download>
+        <IconDownload width={15} height={15} />
         Download Browser Extension
       </a>
     </div>

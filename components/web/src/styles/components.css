@@ -174,6 +174,7 @@
 .auth-alt:hover { text-decoration: underline; }
 .auth-download {
   position: fixed; right: var(--space-4); bottom: var(--space-4);
+  display: inline-flex; align-items: center; gap: var(--space-1);
   color: #fff; opacity: 0.75; font-size: var(--text-sm); font-weight: var(--weight-semibold); text-decoration: none;
 }
 .auth-download:hover { opacity: 1; text-decoration: underline; }
