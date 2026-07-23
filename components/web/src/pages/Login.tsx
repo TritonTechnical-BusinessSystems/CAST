@@ -99,6 +99,9 @@ export function Login() {
           {mode === "ad" ? "Trouble signing in? Use a local account" : "Back to Active Directory sign-in"}
         </button>
       </div>
+      <a className="auth-download" href="/api/extension/install.ps1" download>
+        Download Browser Extension
+      </a>
     </div>
   );
 }

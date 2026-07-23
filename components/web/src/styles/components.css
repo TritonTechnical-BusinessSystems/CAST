@@ -172,6 +172,11 @@
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .auth-alt { display: block; margin: var(--space-5) auto 0; background: none; border: none; color: var(--color-link); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; }
 .auth-alt:hover { text-decoration: underline; }
+.auth-download {
+  position: fixed; right: var(--space-4); bottom: var(--space-4);
+  color: #fff; opacity: 0.75; font-size: var(--text-sm); font-weight: var(--weight-semibold); text-decoration: none;
+}
+.auth-download:hover { opacity: 1; text-decoration: underline; }
 
 /* ===================== Grids ===================== */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }

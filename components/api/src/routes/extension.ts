@@ -6,7 +6,6 @@
  */
 import { Router } from "express";
 import type { Response } from "express";
-import { requireAuth } from "../middleware/auth";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -23,8 +22,10 @@ function serve(res: Response, file: string, downloadName: string) {
   }
 }
 
+// Public (no auth) — the installer is downloadable from the login page. It
+// contains no secrets, only the public extension ID + update URL.
 const router = Router();
-router.get("/install.ps1", requireAuth, (_req, res) => serve(res, "Install-CAST-Extension.ps1", "Install-CAST-Extension.ps1"));
-router.get("/install.reg", requireAuth, (_req, res) => serve(res, "cast-extension.reg", "cast-extension.reg"));
+router.get("/install.ps1", (_req, res) => serve(res, "Install-CAST-Extension.ps1", "Install-CAST-Extension.ps1"));
+router.get("/install.reg", (_req, res) => serve(res, "cast-extension.reg", "cast-extension.reg"));
 
 export default router;
