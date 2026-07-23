@@ -178,7 +178,9 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - **Data source:** a multi-carrier **aggregator** (AfterShip / EasyPost / ShipEngine / Shippo / 17track) — one API, normalized statuses, **webhooks on change** (push, not poll) = the practical choice. Direct carrier APIs (FedEx/UPS/DHL/USPS) only if few carriers. Freight/ocean (project44 / FourKites / **Vizion** by Bill of Lading) if shipping air/ocean freight.
   - **The value is proactive EXCEPTIONS**, not mirroring: flag delayed / held-at-customs / failed-delivery / bad-address → Teams + CW ticket flag. Plus ETA/delay detection, customs milestones, a shipments-in-flight dashboard, close-the-loop on delivery, proof-of-delivery capture.
   - **Next-level:** **fuse with vessel tracking** — parts ship *to a vessel*; combine shipment ETA + live vessel position ("will the part reach M/Y X before it leaves port?"). Capability neither carrier nor CW has.
-  - **OPEN — placement:** LogisticsCoordinator is already Triton's logistics app (shipments, packing lists, CW procurement). Decide whether this lives in **CAST**, in **LC**, or split (CAST = CW-status/alert layer, LC = shipment lifecycle) *before* building.
+  - **Placement — DECIDED 2026-07-23: lives in CAST.** (LC stays Triton's logistics app; CAST owns this carrier-status → CW sync.)
+  - **Free path:** the carriers' OWN APIs (**UPS / FedEx / USPS / DHL**) are free for account holders — no per-shipment cost; the cost is one adapter per carrier + **polling** (node-cron; no push). Aggregators (AfterShip / EasyPost / 17track) have **free tiers** (low monthly volume) + webhooks but go paid at scale. Freight/ocean (Vizion / project44) are not free. → For a handful of parcel carriers, **direct free APIs + polling = $0** — the recommended start. Carrier creds are server-side secrets (encrypted store, `INIT-0013`).
+  - **Need from user:** which carriers Triton actually ships with (drives direct-vs-aggregator).
 - **Related:** `INIT-0002`, `INIT-0012` (same data-sync pattern), the LogisticsCoordinator project.
 
 ### INIT-0019 — Vessel photos (attach to CW company / show in CAST)
