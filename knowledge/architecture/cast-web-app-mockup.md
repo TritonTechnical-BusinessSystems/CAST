@@ -1,7 +1,7 @@
 ---
 status: active
 read-when: Working on the CAST web app's UI/IA, its login screen, or the Vessel Location Updating page — or evolving the mockup itself.
-related: [browser-extension-view-manager.md, extension-telemetry-and-identity.md, ../decisions/0004-monorepo-with-artifacts-only-public-surface.md]
+related: [browser-extension.md, extension-telemetry-and-identity.md, ../decisions/0004-monorepo-with-artifacts-only-public-surface.md]
 updated: 2026-07-18
 ---
 
@@ -22,9 +22,9 @@ Two functional pages behind a single login gate, not per-feature apps:
 1. **CAST Extension** — one page, tabbed internally. Tabs mirror the
    extension's own design record rather than inventing new concepts:
    - **Role Rules** — hide/show/order/move rules per role/department
-     (`browser-extension-view-manager.md` §5).
+     (`browser-extension.md` §5).
    - **Expected Pods** — per-screen-type expected-pod schema driving the
-     missing-pod banner (`browser-extension-view-manager.md` §6, `INIT-0004`).
+     missing-pod banner (`browser-extension.md` §6, `INIT-0004`).
    - **Fleet** — the check-in catalog: device, OS account, CW user, browser,
      extension version, rules version, last check-in
      (`extension-telemetry-and-identity.md` §3, `INIT-0009`).

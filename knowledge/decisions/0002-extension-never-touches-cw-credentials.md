@@ -1,7 +1,7 @@
 # ADR 0002 — The browser extension never touches ConnectWise credentials or its private wire protocol
 
 **Status:** Accepted · 2026-07-18
-**Related:** `knowledge/architecture/browser-extension-view-manager.md`
+**Related:** `knowledge/architecture/browser-extension.md`
 
 ## Context
 CAST (formerly named `TritonViewManagerForPSA`, then briefly "Triton View Manager for ConnectWise") is a Chrome/Edge extension that needs a publicly-fetchable update/artifacts surface for the browsers' auto-update mechanism — a hard technical requirement, not a choice (see `0004-monorepo-with-artifacts-only-public-surface.md`) — and needs to both read the current user's role/department and, for one specific capability, add pods to a ConnectWise screen on the user's behalf.

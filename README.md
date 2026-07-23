@@ -8,7 +8,7 @@ CAST is an internal Triton Technical toolset that extends and customizes the app
 
 ## Status
 
-Pre-code. Governance & knowledge canon established for CAST (this repo, private, not yet created on GitHub). The browser extension component completed its design/decision phase (see `knowledge/architecture/browser-extension-view-manager.md`); the CAST web app has a hosting target (internal Linux VM, Docker, `cast.tritontechnical.com` — see `INIT-0008`) but no design yet. No application code has landed anywhere.
+Pre-code. Governance & knowledge canon established for CAST (this repo, private, not yet created on GitHub). The browser extension component completed its design/decision phase (see `knowledge/architecture/browser-extension.md`); the CAST web app has a hosting target (internal Linux VM, Docker, `cast.tritontechnical.com` — see `INIT-0008`) but no design yet. No application code has landed anywhere.
 
 ## How this repo is developed
 
@@ -28,6 +28,6 @@ AI-co-developed against a **containerized knowledge base** — a thin router (`C
 
 One private monorepo — see `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md` for why, given the extension and its config app must always be developed together.
 
-- **CAST browser extension** — Chrome + Edge extension standardizing ConnectWise PSA's UI per role/department (Firefox and Shift deferred — `INIT-0010`/`INIT-0011`). Source: `components/view-manager-extension/`. Only CI-generated build artifacts (never source) reach a public, unlisted host, to satisfy the browsers' auto-update mechanism — `INIT-0001`. Design record: `knowledge/architecture/browser-extension-view-manager.md`; telemetry/identity design: `knowledge/architecture/extension-telemetry-and-identity.md`.
+- **CAST browser extension** — Chrome + Edge extension standardizing ConnectWise PSA's UI per role/department (Firefox and Shift deferred — `INIT-0010`/`INIT-0011`). Source: `components/browser-extension/`. Only CI-generated build artifacts (never source) reach a public, unlisted host, to satisfy the browsers' auto-update mechanism — `INIT-0001`. Design record: `knowledge/architecture/browser-extension.md`; telemetry/identity design: `knowledge/architecture/extension-telemetry-and-identity.md`.
 - **CAST web app** — centralized, web-based configuration UI for the extension above, developed in lockstep with it. Hosted internally via Docker on a Linux VM at `cast.tritontechnical.com`. Not yet designed — `INIT-0008`.
 - **Scheduled data-sync services** — not yet designed. Will gather external data on a schedule and push it into the ConnectWise instance via its credentialed API. See `INIT-0002`.

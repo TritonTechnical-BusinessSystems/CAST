@@ -1,7 +1,7 @@
 ---
 status: active
 read-when: Designing or touching the extension's update-freshness banner, its device/user identity reporting, or the CAST web app's check-in catalog.
-related: [browser-extension-view-manager.md, ../decisions/0004-monorepo-with-artifacts-only-public-surface.md]
+related: [browser-extension.md, ../decisions/0004-monorepo-with-artifacts-only-public-surface.md]
 updated: 2026-07-18
 ---
 
@@ -10,7 +10,7 @@ updated: 2026-07-18
 Covers three related but distinct things the extension needs to know about
 itself and report: (1) whether it's still getting fresh updates/config, (2)
 who/what it's running as, and (3) what it tells the CAST web app when it
-checks in. Companion to `browser-extension-view-manager.md`
+checks in. Companion to `browser-extension.md`
 (the extension's UI-manipulation design) — this file is about its
 observability and identity surface.
 
@@ -80,7 +80,7 @@ identity anywhere in this design.
 
 **Report both CW user and OS account name, don't replace one with the
 other.** `member.memberID` (from the existing `localStorage` session read,
-`browser-extension-view-manager.md` §3) still drives the actual
+`browser-extension.md` §3) still drives the actual
 role/department rule engine. The OS account name exists purely so a
 check-in from a machine that's *never logged into ConnectWise* isn't
 identity-less. They usually point at the same person, but serve different

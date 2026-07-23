@@ -12,7 +12,7 @@ role/department — hiding, showing, and reordering elements — so users don't
 individually customize each view and people in similar roles see consistent
 screens.
 
-**Repo:** this one. Source lives at `components/view-manager-extension/` in
+**Repo:** this one. Source lives at `components/browser-extension/` in
 the private CAST monorepo, developed in lockstep with its
 sibling **CAST web app** (`INIT-0008`). Public-facing name: **CAST** — same
 brand as the web app, distinguished only by context ("the CAST browser
@@ -248,7 +248,7 @@ Design (not yet built):
   credentials of any kind live in this repo or the packaged extension.
 - **Layout**:
   ```
-  dist/triton-view-manager.crx
+  dist/cast.crx
   dist/update-manifest.xml
   rules/rules-stable.json
   rules/rules-canary.json   (optional staged rollout; both live on `main`,

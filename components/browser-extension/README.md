@@ -10,7 +10,7 @@ component) in lockstep, in the same history. Why: `../../knowledge/decisions/000
 Public-facing name: **CAST**, same brand as the web app (previously "Triton
 View Manager for ConnectWise" during planning).
 
-- **Full design/decision record:** `../../knowledge/architecture/browser-extension-view-manager.md`
+- **Full design/decision record:** `../../knowledge/architecture/browser-extension.md`
 - **Nothing in this folder is ever published as source.** Releases publish
   only CI-generated build output (`.crx`, `update-manifest.xml`, rules
   JSON) to an unlisted public host — see the architecture doc §7 and

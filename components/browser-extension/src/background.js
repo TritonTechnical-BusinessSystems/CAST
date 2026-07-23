@@ -1,6 +1,6 @@
 /*
  * CAST extension service worker — config poll, check-in phone-home, and the
- * update-staleness timestamp (design: browser-extension-view-manager.md +
+ * update-staleness timestamp (design: browser-extension.md +
  * extension-telemetry-and-identity.md). Classic (non-module) worker.
  */
 const APP_BASE = "https://cast.tritontechnical.com";

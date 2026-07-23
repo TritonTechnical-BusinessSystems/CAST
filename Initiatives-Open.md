@@ -14,10 +14,10 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 
 ### INIT-0001 — Stand up the extension's public artifacts host + rename
 - **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-18 · **Revised:** 2026-07-18
-- **Serves:** The extension's Chrome auto-update mechanism (`update_url` + `.crx` fetch) is the *only* thing requiring anything public at all — per `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`, the extension's source stays in this private monorepo (`components/view-manager-extension/`); only CI-generated build output goes public.
+- **Serves:** The extension's Chrome auto-update mechanism (`update_url` + `.crx` fetch) is the *only* thing requiring anything public at all — per `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`, the extension's source stays in this private monorepo (`components/browser-extension/`); only CI-generated build output goes public.
 - **Idea:** Set up an automated release step that publishes just the packaged `.crx`, `update-manifest.xml`, and the runtime rules JSON to a public host, to an **unlisted** destination (no repo browsing UI, no org listing, no links pointing to it) rather than a public GitHub repo — since there's no external-contribution use case to justify that visibility. Naming is now settled: **CAST**, same brand as the web app (previously "Triton View Manager for ConnectWise" during planning, and `TritonTechnical-BusinessSystems/TritonViewManagerForPSA` before that).
-- **Fleshing-out notes:** Hosting mechanism undecided — candidates: a storage bucket/container (S3, Azure Blob, Cloudflare R2) with directory listing disabled, or GitHub Pages from a repo containing only build output. Whatever is chosen, `manifest.json`'s `update_url` must point at it permanently before the first real package ships (changing it later strands existing installs — see `knowledge/architecture/browser-extension-view-manager.md` §7). A network-restricted (VPN/IP-allowlisted) host was considered as a stronger-privacy upgrade but held back as a future option, not the default — see ADR-0004's consequences. **Now covers both Chrome and Edge** (`knowledge/architecture/browser-extension-view-manager.md` §8.5): separate registry namespaces and `override_update_url` policy needed for each, but likely one shared packaging/artifacts pipeline. Firefox and Shift are explicitly out of this initiative's scope — see `INIT-0010`/`INIT-0011`.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`, `knowledge/decisions/0002-extension-never-touches-cw-credentials.md`, `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`.
+- **Fleshing-out notes:** Hosting mechanism undecided — candidates: a storage bucket/container (S3, Azure Blob, Cloudflare R2) with directory listing disabled, or GitHub Pages from a repo containing only build output. Whatever is chosen, `manifest.json`'s `update_url` must point at it permanently before the first real package ships (changing it later strands existing installs — see `knowledge/architecture/browser-extension.md` §7). A network-restricted (VPN/IP-allowlisted) host was considered as a stronger-privacy upgrade but held back as a future option, not the default — see ADR-0004's consequences. **Now covers both Chrome and Edge** (`knowledge/architecture/browser-extension.md` §8.5): separate registry namespaces and `override_update_url` policy needed for each, but likely one shared packaging/artifacts pipeline. Firefox and Shift are explicitly out of this initiative's scope — see `INIT-0010`/`INIT-0011`.
+- **Related:** `knowledge/architecture/browser-extension.md`, `knowledge/decisions/0002-extension-never-touches-cw-credentials.md`, `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`.
 
 ### INIT-0002 — Scheduled data-sync component
 - **Status:** Captured · **Source:** User · **Added:** 2026-07-18
@@ -28,42 +28,42 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 
 ### INIT-0003 — Snooze duration options for the missing-pods banner
 - **Status:** Captured · **Source:** User (open TBD from the extension's design record) · **Added:** 2026-07-18
-- **Serves:** CAST's missing-pod resolution banner (`knowledge/architecture/browser-extension-view-manager.md` §6).
+- **Serves:** CAST's missing-pod resolution banner (`knowledge/architecture/browser-extension.md` §6).
 - **Idea:** Decide the snooze-duration choices offered on the banner's "Dismiss" control.
 - **Fleshing-out notes:** Not yet designed.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0004 — Per-screen-type expected-pod schema
 - **Status:** Captured · **Source:** User (open TBD from the extension's design record) · **Added:** 2026-07-18
-- **Serves:** The rule engine and missing-pod detection both need this schema (`knowledge/architecture/browser-extension-view-manager.md` §5–6).
+- **Serves:** The rule engine and missing-pod detection both need this schema (`knowledge/architecture/browser-extension.md` §5–6).
 - **Idea:** Finalize the exact schema for "expected pods per role + screen type" in the rules JSON — confirmed pod layout is per-screen-type, not just per-role, so the schema must express that.
 - **Fleshing-out notes:** Not yet finalized.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0005 — Structured breakage logging beyond the Teams webhook
 - **Status:** Captured · **Source:** User (open TBD from the extension's design record) · **Added:** 2026-07-18
-- **Serves:** Operational visibility into rule-engine breakage as ConnectWise changes its UI (`knowledge/architecture/browser-extension-view-manager.md` §8).
+- **Serves:** Operational visibility into rule-engine breakage as ConnectWise changes its UI (`knowledge/architecture/browser-extension.md` §8).
 - **Idea:** Add structured logging (e.g. an Azure Function) beyond the current Teams webhook, if breakage-report volume grows.
 - **Fleshing-out notes:** Not yet needed at current scale; revisit if the Teams channel gets noisy.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0006 — GPO deployment path (fallback)
 - **Status:** Captured · **Source:** User (open TBD from the extension's design record) · **Added:** 2026-07-18
 - **Serves:** Tamper-resistant deployment fallback if the Pulseway-driven registry forcelist proves insufficient.
 - **Idea:** Document/test deploying the extension forcelist via GPO (Chrome ADMX imported into the domain's Central Store) instead of the direct registry-key Pulseway script.
 - **Fleshing-out notes:** Documented as a fallback only; not yet needed or tested. Org is already AD-joined, so this is viable whenever it's needed.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0008 — CAST web app (centralized configuration UI)
 - **Status:** In progress (scaffolded) · **Source:** User · **Added:** 2026-07-18 · **Revised:** 2026-07-19
-- **Serves:** Replaces the extension's planning-phase manual "Design Mode export → commit JSON → host on GitHub raw URL" workflow (`knowledge/architecture/browser-extension-view-manager.md` §5) with a real centralized configuration surface. Always developed in lockstep with the extension — this pairing is why CAST is one monorepo (`knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`), alongside the scheduled data-sync component (`INIT-0002`).
+- **Serves:** Replaces the extension's planning-phase manual "Design Mode export → commit JSON → host on GitHub raw URL" workflow (`knowledge/architecture/browser-extension.md` §5) with a real centralized configuration surface. Always developed in lockstep with the extension — this pairing is why CAST is one monorepo (`knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`), alongside the scheduled data-sync component (`INIT-0002`).
 - **Idea:** A web-based interface for centrally configuring the extension's role/department rules (hide/show/reorder/move, expected-pod lists) instead of hand-editing and committing JSON.
 - **Fleshing-out notes:** **Hosting settled:** internal Linux VM, deployed via Docker, reachable at `cast.tritontechnical.com`. Tech stack itself still undecided (`INIT-0002`'s sibling — likely shares a stack once one is chosen). The real design question is the **config schema** shared between this app (author) and the extension (consumer). Not yet decided: where the schema is defined/versioned, and how this app pushes an updated config out to the extension's public artifacts host (`INIT-0001`) — presumably the same release step that publishes the `.crx`. Also now covers: the reachability/timestamp-based staleness banner design and the `chrome.storage.managed` device/OS-user identity mechanism (explicitly **not** `chrome.identity.getProfileUserInfo()` — unreliable, tied to whatever personal/work account a user signs into the browser profile with) — full design in `knowledge/architecture/extension-telemetry-and-identity.md`. That file also serves the check-in catalog (`INIT-0009`).
   **Auth model settled (direction), mechanism open:** primary login is against Triton's internal/on-prem Active Directory, gated by membership in a specific AD security group (canonical name TBD — placeholder "CAST-Users" used in the mockup) — anyone outside that group is denied even with valid AD credentials. A **local account** login path (credentials stored directly in the app, independent of AD) exists as a fallback for when the AD integration itself is unreachable/broken, not as a general-purpose alternative — should be visually secondary to the AD path, not an equal-weight choice, and likely restricted to a small break-glass admin set rather than provisioned per ordinary user. **Open question, not yet decided:** the actual AD integration mechanism — options include a direct LDAP(S) bind against a domain controller, Windows Integrated Auth (Kerberos/NTLM) if the app sits fully inside the domain network, or federating through Entra ID/ADFS if Triton's on-prem AD is already synced to Entra ID. Since the app is Docker-hosted on an internal Linux VM (not Windows), LDAPS bind is the most likely low-friction fit but this needs infrastructure input before committing. Local-account password storage must follow standard secure practice (hashed + salted, e.g. bcrypt/argon2) regardless of which AD mechanism is chosen.
   **Information architecture settled (mockup):** the extension's config surfaces (role rules, expected-pod schema, fleet/check-in catalog, deployment/publish controls) live as **tabs on one "CAST Extension" page** inside this app, not separate top-level nav items. First mockup pass: `knowledge/architecture/cast-web-app-mockup.md`.
   **Stack chosen + scaffolded (2026-07-19, corrected 2026-07-20):** pnpm + turbo TypeScript monorepo (mirroring Limnode). Web app = **Vite React SPA** (`components/web`) + **Express API** (`components/api`, run via tsx) + shared `@cast/config-schema` (`packages/config-schema/`); JWT-httpOnly-cookie auth (AD LDAPS + CAST-Users gate, local bcrypt fallback), `node-cron` vessel-sync stub; deploy via nginx + docker-compose (SOC-style). Decision: `knowledge/decisions/0006-web-app-stack-vite-react-express.md` (supersedes `0005` — SvelteKit was picked before checking that the org standardizes on Vite+React+Node per SOC/Limnode). Scaffold typechecks/builds/runtime-verified (all protected routes 401 without a session). Deploy host `trt-cast-01` provisioned (`knowledge/architecture/cast-web-app-vm-provisioning.md`).
   **Remaining before this is real:** persistent stores for local break-glass accounts / config+check-in catalog (currently in-memory/stubbed — SOC uses better-sqlite3, a likely fit); build out the four extension tabs + vessel table against the mockup; run the AD bind against live AD and confirm the mechanism; resolve the VM's VLAN-egress blocker; add TLS at the deploy edge.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`, `knowledge/architecture/extension-telemetry-and-identity.md`, `knowledge/architecture/cast-web-app-mockup.md`, `knowledge/architecture/cast-web-app-vm-provisioning.md`, `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`, `knowledge/decisions/0006-web-app-stack-vite-react-express.md`, `INIT-0001`, `INIT-0002`, `INIT-0009`, `INIT-0012`.
+- **Related:** `knowledge/architecture/browser-extension.md`, `knowledge/architecture/extension-telemetry-and-identity.md`, `knowledge/architecture/cast-web-app-mockup.md`, `knowledge/architecture/cast-web-app-vm-provisioning.md`, `knowledge/decisions/0004-monorepo-with-artifacts-only-public-surface.md`, `knowledge/decisions/0006-web-app-stack-vite-react-express.md`, `INIT-0001`, `INIT-0002`, `INIT-0009`, `INIT-0012`.
 
 ### INIT-0009 — Extension check-in catalog
 - **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-18
@@ -75,23 +75,23 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 ### INIT-0010 — Firefox support
 - **Status:** Captured · **Source:** User · **Added:** 2026-07-18
 - **Serves:** Broader browser coverage beyond the committed Chrome+Edge scope, if/when there's demand.
-- **Idea:** Port the extension to Firefox. Explicitly deferred — not part of the current committed scope (`knowledge/architecture/browser-extension-view-manager.md` §8.5).
+- **Idea:** Port the extension to Firefox. Explicitly deferred — not part of the current committed scope (`knowledge/architecture/browser-extension.md` §8.5).
 - **Fleshing-out notes:** Genuinely separate effort, not a recompile: different engine (Gecko vs Chromium), different package format (`.xpi` vs `.crx`), mandatory Mozilla signing unless committing to Firefox ESR + a signature-bypass policy, and a different policy-delivery mechanism (`policies.json`, not a registry namespace). Mozilla's own recommended path — a self-distributed signed AMO listing, installed via a link on an internal webpage — fits the "on-demand" deployment trigger well and avoids needing ESR or registry tricks at all.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0011 — Shift compatibility (opportunistic only)
 - **Status:** Captured · **Source:** User · **Added:** 2026-07-18
 - **Serves:** No dedicated engineering effort — recorded so it isn't silently forgotten, not because it's committed scope.
 - **Idea:** If CAST happens to work in the Shift desktop app (Chromium-based, confirmed to support installing Chrome Web Store extensions) as a side effect of the Chrome/Edge build, that's a welcome bonus. Not to be actively engineered or tested for.
 - **Fleshing-out notes:** No confirmed evidence Shift supports the enterprise force-install/self-hosted-update mechanism this design relies on (it's a small commercial product, not a browser vendor with the same enterprise device-management surface as Google/Microsoft) — would need dedicated verification if it ever becomes a real priority.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0007 — Icon/branding assets
 - **Status:** Captured · **Source:** User (open TBD from the extension's design record) · **Added:** 2026-07-18
 - **Serves:** CAST's shipped presentation (Chrome Web Store-style listing, toolbar icon, popup).
 - **Idea:** Replace the current placeholder-generated icons with real branding assets, ideally consistent with the CAST brand.
 - **Fleshing-out notes:** Not yet started.
-- **Related:** `knowledge/architecture/browser-extension-view-manager.md`.
+- **Related:** `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0012 — Vessel Location Updating
 - **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-18

@@ -6,7 +6,7 @@
  * against this one definition so the contract can't drift — the reason CAST
  * is a monorepo (see knowledge/decisions/0004 and 0005).
  *
- * Design basis: knowledge/architecture/browser-extension-view-manager.md §5-6.
+ * Design basis: knowledge/architecture/browser-extension.md §5-6.
  * Terms follow knowledge/conventions/naming-lexicon.md.
  *
  * NOTE: the expected-pod portion of the schema is not finalized — see
@@ -51,7 +51,7 @@ export const ScreenScopedRules = z.record(ScreenType, RuleSet);
 
 /**
  * Per-screen-type expected-pod lists — drives the missing-pod banner
- * (browser-extension-view-manager.md §6). Shape provisional — INIT-0004.
+ * (browser-extension.md §6). Shape provisional — INIT-0004.
  */
 export const ExpectedPods = z.record(ScreenType, z.array(Selector));
 
