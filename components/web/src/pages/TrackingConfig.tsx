@@ -54,6 +54,7 @@ export function TrackingConfig() {
   return (
     <div className="col gap-4">
       <PageHeader
+        embedded
         title="Vessel Tracking Config"
         subtitle="Choose which vessels CAST follows. Options are read live from ConnectWise."
         actions={

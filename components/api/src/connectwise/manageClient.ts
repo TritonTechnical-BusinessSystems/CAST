@@ -66,9 +66,15 @@ export async function listServiceBoards(): Promise<string[]> {
 }
 
 /** CW members — the source of truth for who the extension check-ins belong to. */
+/**
+ * Active, real CW users. `/system/members` returns regular members only — API
+ * members live at `/system/apiMembers` and are intentionally excluded here — and
+ * `conditions=inactiveFlag=false` drops disabled accounts, so the Fleet page
+ * lists only people who could actually be running the extension.
+ */
 export async function listMembers(): Promise<{ identifier: string; name: string }[]> {
   const rows = await cwFetch<{ id: number; identifier?: string; firstName?: string; lastName?: string }[]>(
-    "/system/members?pageSize=1000&fields=id,identifier,firstName,lastName",
+    "/system/members?pageSize=1000&conditions=inactiveFlag%3Dfalse&fields=id,identifier,firstName,lastName",
   );
   return rows.map((r) => ({
     identifier: r.identifier ?? String(r.id),

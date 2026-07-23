@@ -4,10 +4,7 @@ import { Layout } from "./components/Layout";
 import { Download } from "./pages/Download";
 import { Login } from "./pages/Login";
 import { Extension } from "./pages/Extension";
-import { Vessel } from "./pages/Vessel";
-import { VesselIdentity } from "./pages/VesselIdentity";
-import { TrackingConfig } from "./pages/TrackingConfig";
-import { GeoAlerts } from "./pages/GeoAlerts";
+import { VesselTracking } from "./pages/VesselTracking";
 import { Integrations } from "./pages/Integrations";
 import { SystemHealth } from "./pages/SystemHealth";
 
@@ -38,10 +35,12 @@ export function App() {
       <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth />}>
         <Route path="/extension" element={<Extension />} />
-        <Route path="/vessel" element={<Vessel />} />
-        <Route path="/vessel-identity" element={<VesselIdentity />} />
-        <Route path="/tracking" element={<TrackingConfig />} />
-        <Route path="/geo-alerts" element={<GeoAlerts />} />
+        <Route path="/vessel-tracking" element={<VesselTracking />} />
+        {/* Legacy per-page paths now live as tabs under /vessel-tracking. */}
+        <Route path="/vessel" element={<Navigate to="/vessel-tracking" replace />} />
+        <Route path="/vessel-identity" element={<Navigate to="/vessel-tracking" replace />} />
+        <Route path="/tracking" element={<Navigate to="/vessel-tracking" replace />} />
+        <Route path="/geo-alerts" element={<Navigate to="/vessel-tracking" replace />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/health" element={<SystemHealth />} />
       </Route>

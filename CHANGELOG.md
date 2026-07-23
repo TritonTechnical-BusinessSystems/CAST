@@ -10,9 +10,22 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
-## Unreleased
+## v0.1.0.0 — build 2607001 — 2026-07-23T18:33:45Z
+
+First stamped build — build-number discipline starts here. Bundles the pre-release scaffolding plus this build's work, cut for the first real extension install.
 
 ### Added
+- [Frontend] **Download-first public landing** (`/download`, Chrome & Edge) with a one-click self-elevating installer; **Configuration sign-in** moved to `/login`.
+- [Extension] **MV3 runtime** (role/department rule engine, config-poll + check-in phone-home, popup) packed into a **self-hosted, self-updating signed `cast.crx`**; repack via `scripts/pack-extension.sh`.
+- [Frontend] **Fleet** — per-active-member check-in catalog (real CW users only, not API members) with each member's device/browser pairs and an All / Current / Needs-attention deployment filter over an adjustable freshness threshold.
+- [Infra] **Build-number system** — `version.json` + `scripts/bump-build.sh` (`YYMM###`, resets monthly), baked into the SPA and shown in the rail footer.
+- [UX] **ux-designer review agent** (`.claude/agents/ux-designer.md`) — all UI reviewed for visual quality + design-system compliance before deploy.
+
+### Changed
+- [UX] Nav consolidated to two Workspace sections — **Browser Extension** (renamed from "CAST Extension") and **Vessel Tracking** (Vessel Location / Vessel Identity / Tracking Config / Geo Alerts as tabs).
+- [Design-System] New **CAST trident** branding across the app favicon, rail, and extension icons (16/32/48/128). Extension `0.0.1 → 0.0.2`.
+
+### Added (pre-release scaffolding)
 - [Frontend] **Design-system foundation** (ADR-0007): `styles/tokens.css` (Logistics Coordinator's Triton palette, CAST-named semantic tokens, light + dark-ready), `base.css`, `components.css`, and a `src/ui/` React primitive library (Button, Card, Badge, StatusDot, Field, Table, Modal, Toast, Tabs, Gauge, PageHeader, EmptyState, Banner, Spinner, Icons). Charcoal-rail app shell. Scaffold pages re-tokenized. Governance rules written first: `knowledge/architecture/design-system.md`.
 - [Frontend] Four screens built purely by composition on the system: **Vessel Identity** reconciliation (`INIT-0014`), **Vessel Tracking Config** (`INIT-0015`), **Integrations**/credentials (`INIT-0013`), **System Health** (`INIT-0016`).
 - [Backend] Live **ManageCwClient** (ConnectWise REST, LC pattern) — reads verified against `tritontech` (235 tracked vessels, statuses, boards); an encrypted-at-rest secret store (AES-256-GCM, `INIT-0013`); routes `/api/health/full`, `/api/tracking/*`, `/api/integrations/*`.

@@ -55,6 +55,7 @@ router.get("/", requireAuth, async (_req, res) => {
     lastCheckIn: r.last_check_in,
   });
 
+  // Group each member's check-ins (one row per device/browser pair).
   const byMember = new Map<string, Row[]>();
   for (const r of rows) {
     const key = (r.cw_member_id || "").toLowerCase();
@@ -62,6 +63,15 @@ router.get("/", requireAuth, async (_req, res) => {
     arr.push(r);
     byMember.set(key, arr);
   }
+  const entryFor = (identifier: string, name: string) => {
+    const devices = (byMember.get(identifier.toLowerCase()) ?? []).map(toInstance);
+    // Most recent sync across this member's devices (null if never checked in).
+    const lastCheckIn = devices.reduce<string | null>(
+      (max, d) => (d.lastCheckIn && (!max || d.lastCheckIn > max) ? d.lastCheckIn : max),
+      null,
+    );
+    return { identifier, name, devices, lastCheckIn };
+  };
 
   let members: { identifier: string; name: string }[] = [];
   let membersError: string | null = null;
@@ -71,20 +81,31 @@ router.get("/", requireAuth, async (_req, res) => {
     membersError = e instanceof Error ? e.message : "CW member list unavailable";
   }
 
-  const catalog = members
-    .map((m) => ({ member: m, instances: (byMember.get(m.identifier.toLowerCase()) ?? []).map(toInstance) }))
-    .filter((g) => g.instances.length > 0);
-
-  const known = new Set(members.map((m) => m.identifier.toLowerCase()));
-  const orphans = rows.filter((r) => !known.has((r.cw_member_id || "").toLowerCase())).map(toInstance);
+  let memberEntries: ReturnType<typeof entryFor>[];
+  let orphans: ReturnType<typeof toInstance>[];
+  if (members.length > 0) {
+    // Every active member — including those with zero devices (not installed).
+    memberEntries = members.map((m) => entryFor(m.identifier, m.name));
+    const known = new Set(members.map((m) => m.identifier.toLowerCase()));
+    orphans = rows.filter((r) => !known.has((r.cw_member_id || "").toLowerCase())).map(toInstance);
+  } else {
+    // CW list unavailable: fall back to grouping by reported member id so the
+    // page still works, minus the "not installed" members we can't enumerate.
+    const seen = new Map<string, string>(); // lc id -> original-cased id
+    for (const r of rows) {
+      const id = r.cw_member_id || "(unknown)";
+      if (!seen.has(id.toLowerCase())) seen.set(id.toLowerCase(), id);
+    }
+    memberEntries = [...seen.values()].map((id) => entryFor(id, id));
+    orphans = [];
+  }
 
   res.json({
-    catalog,
+    members: memberEntries,
     orphans,
     membersError,
-    totalInstances: rows.length,
-    membersWithInstances: catalog.length,
-    totalMembers: members.length,
+    totalMembers: memberEntries.length,
+    totalDevices: rows.length,
   });
 });
 

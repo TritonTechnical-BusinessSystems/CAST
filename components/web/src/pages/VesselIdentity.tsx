@@ -28,6 +28,7 @@ export function VesselIdentity() {
   return (
     <div className="col gap-4">
       <PageHeader
+        embedded
         title="Vessel Identity"
         subtitle="Ensure every tracked vessel has a valid IMO and MMSI in ConnectWise."
         actions={<Button variant="secondary" onClick={load}>Refresh</Button>}

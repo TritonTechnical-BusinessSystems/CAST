@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Card, Table, Badge, Banner, Spinner, EmptyState } from "../ui";
+import { PageHeader, Card, Table, Badge, Banner, Spinner, EmptyState } from "../ui";
 
 interface Vessel {
   company: string;
@@ -43,6 +43,11 @@ export function Vessel() {
 
   return (
     <div className="col gap-4">
+      <PageHeader
+        embedded
+        title="Vessel Location"
+        subtitle="Each tracked vessel's navigational status, current position, and target location in ConnectWise."
+      />
       <Banner tone="info">
         Scaffold — data source, eligible CW status, and target-location rules are open (INIT-0012). Vessels below are
         illustrative, served by <span className="mono">GET /api/vessels</span>.

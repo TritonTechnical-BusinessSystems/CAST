@@ -1,6 +1,6 @@
 ---
 status: active
-read-when: Working on the CAST web app's UI/IA, its login screen, or the Vessel Location Updating page — or evolving the mockup itself.
+read-when: Working on the CAST web app's UI/IA, its login screen, or the Vessel Tracking section (which contains Vessel Location Updating) — or evolving the mockup itself.
 related: [browser-extension.md, extension-telemetry-and-identity.md, ../decisions/0004-monorepo-with-artifacts-only-public-surface.md]
 updated: 2026-07-18
 ---
@@ -17,30 +17,36 @@ an implementation plan. Tech stack remains undecided.
 
 ## 1. Information architecture
 
-Two functional pages behind a single login gate, not per-feature apps:
+Two Workspace sections behind a single login gate, not per-feature apps —
+each a single nav item, tabbed internally:
 
-1. **CAST Extension** — one page, tabbed internally. Tabs mirror the
+1. **Browser Extension** (nav label; route `/extension`) — tabs mirror the
    extension's own design record rather than inventing new concepts:
    - **Role Rules** — hide/show/order/move rules per role/department
      (`browser-extension.md` §5).
    - **Expected Pods** — per-screen-type expected-pod schema driving the
      missing-pod banner (`browser-extension.md` §6, `INIT-0004`).
-   - **Fleet** — the check-in catalog: device, OS account, CW user, browser,
-     extension version, rules version, last check-in
-     (`extension-telemetry-and-identity.md` §3, `INIT-0009`).
+   - **Fleet** — the check-in catalog, grouped per active CW member (real
+     users only, not API members), each with their device/browser pairs, and
+     an All / Current / Needs-attention filter over an adjustable freshness
+     threshold (`extension-telemetry-and-identity.md` §3, `INIT-0009`).
    - **Deployment** — published rules version/build, stable vs. canary,
      publish control, stale-banner threshold.
-2. **Vessel Location Updating** (`INIT-0012`) — a client (vessel) list keyed
-   by IMO number, with navigational status, current position, target
-   location, and a manual sync trigger, standing in for the eventual
-   scheduled job.
+2. **Vessel Tracking** (nav label; route `/vessel-tracking`) — tabs:
+   - **Vessel Location** — the **Vessel Location Updating** feature (`INIT-0012`):
+     a client (vessel) list keyed by IMO number, with navigational status,
+     current position, target location, and a manual sync trigger, standing in
+     for the eventual scheduled job.
+   - **Vessel Identity** — IMO/MMSI presence + validity audit with lookup links.
+   - **Tracking Config** — which statuses/boards define the tracked-vessel set.
+   - **Geo Alerts** — define areas and the CW action on vessel entry.
 
-Rationale for one-page-per-component with internal tabs (rather than one nav
-item per concept): the extension's config surfaces are all facets of
-"managing the extension," and department/role rule authoring, pod schema,
-fleet visibility, and deployment control are looked at together during the
-same workflow — splitting them into separate top-level pages would scatter
-a single mental task across navigation.
+Rationale for one-section-per-domain with internal tabs (rather than one nav
+item per concept): the extension's config surfaces are all facets of "managing
+the extension," and — likewise — vessel location, identity, tracking scope, and
+geo alerts are all facets of "tracking the fleet," looked at together during the
+same workflow. Splitting either into separate top-level pages would scatter a
+single mental task across navigation.
 
 ## 2. Authentication
 

@@ -56,6 +56,7 @@ export function GeoAlerts() {
   return (
     <div className="col gap-4">
       <PageHeader
+        embedded
         title="Geo Alerts"
         subtitle="Define areas; when a tracked vessel enters one, fire the action."
         actions={

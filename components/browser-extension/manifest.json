@@ -3,7 +3,7 @@
   "name": "CAST",
   "short_name": "CAST",
   "description": "ConnectWise Augmentation Suite for Triton — standardizes the ConnectWise PSA UI per role/department.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "minimum_chrome_version": "110",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoTRBxQw2KKjZKY3LUJ7g0Aixd76eHh4KtBE+sCGY3cBFs980k6qqVACFmmCjZqjyllxwF4ieIWvjH/JX1yowoF22G2eSL/l6cH4EJM5kWs/E1aDKd+AFnj/q4dZpol9BQbW35n4wcdaDWn5X5Q5Qty46abPwlYUzoEtzdzHwJTcCQEqgtYw+alhSUdCFJDTJm9mhH4XDP9+dA8WyEH6vQ0Ob9rkw6tSL9/vG0w6KfXTT2b1vyARhxOrDAdfVSOEYXabpLZiJETANS2bpzhMeZ1+kRlzudYbayWhbL00L1207P1aHEB1ZiaW0OLS64VCaZyrd84eLgTYyFrQ2j+mSLQIDAQAB",
   "update_url": "https://cast.tritontechnical.com/api/extension/update.xml",

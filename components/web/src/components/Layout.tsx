@@ -2,17 +2,14 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Button } from "../ui";
-import { IconGrid, IconShip, IconSearch, IconRoute, IconPlug, IconActivity, IconLogout, IconMenu, IconPin } from "../ui/Icons";
+import { IconGrid, IconShip, IconPlug, IconActivity, IconLogout, IconMenu } from "../ui/Icons";
 
 const groups = [
   {
     label: "Workspace",
     items: [
-      { href: "/extension", label: "CAST Extension", icon: IconGrid },
-      { href: "/vessel", label: "Vessel Location Updating", icon: IconShip },
-      { href: "/vessel-identity", label: "Vessel Identity", icon: IconSearch },
-      { href: "/tracking", label: "Vessel Tracking Config", icon: IconRoute },
-      { href: "/geo-alerts", label: "Geo Alerts", icon: IconPin },
+      { href: "/extension", label: "Browser Extension", icon: IconGrid },
+      { href: "/vessel-tracking", label: "Vessel Tracking", icon: IconShip },
     ],
   },
   {
@@ -71,7 +68,12 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="rail-footer">CAST · ConnectWise Augmentation Suite for Triton</div>
+        <div className="rail-footer">
+          <div>CAST · ConnectWise Augmentation Suite for Triton</div>
+          <div className="rail-build">
+            v{__APP_VERSION__} · build {__APP_BUILD__}
+          </div>
+        </div>
       </aside>
 
       <div className={`rail-backdrop${drawerOpen ? " show" : ""}`} onClick={() => setDrawerOpen(false)} />

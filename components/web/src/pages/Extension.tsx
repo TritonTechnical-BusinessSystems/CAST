@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState } from "../ui";
+import { Button, Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState, Select } from "../ui";
 import type { TabDef } from "../ui";
 
 // Tabs mirror the extension's design record (mockup §1).
@@ -73,7 +73,7 @@ function DeploymentPanel() {
   );
 }
 
-interface Instance {
+interface Device {
   deviceId: string;
   browser: string;
   osUser: string;
@@ -82,16 +82,24 @@ interface Instance {
   rulesVersion: string;
   lastCheckIn: string;
 }
-interface Catalog {
-  catalog: { member: { identifier: string; name: string }; instances: Instance[] }[];
-  orphans: Instance[];
+interface FleetMember {
+  identifier: string;
+  name: string;
+  devices: Device[];
+  lastCheckIn: string | null;
+}
+interface FleetData {
+  members: FleetMember[];
+  orphans: Device[];
   membersError: string | null;
-  totalInstances: number;
-  membersWithInstances: number;
   totalMembers: number;
+  totalDevices: number;
 }
 
-function ago(iso: string): string {
+type FilterMode = "all" | "current" | "attention";
+type Status = "current" | "stale" | "missing";
+
+function ago(iso: string | null): string {
   if (!iso) return "—";
   const d = Date.now() - new Date(iso).getTime();
   const m = Math.floor(d / 60000);
@@ -102,13 +110,31 @@ function ago(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+// A member is "current" if any device synced within the threshold; "missing" if
+// no device has ever checked in; otherwise "stale" (installed but out of date).
+function statusOf(m: FleetMember, days: number): Status {
+  if (!m.lastCheckIn || m.devices.length === 0) return "missing";
+  const ageDays = (Date.now() - new Date(m.lastCheckIn).getTime()) / 86_400_000;
+  return ageDays <= days ? "current" : "stale";
+}
+
+const STATUS_BADGE: Record<Status, { tone: "success" | "warning" | "neutral"; label: string }> = {
+  current: { tone: "success", label: "Current" },
+  stale: { tone: "warning", label: "Out of date" },
+  missing: { tone: "neutral", label: "Not installed" },
+};
+
+const THRESHOLDS = [7, 14, 30, 60, 90];
+
 function FleetCatalog() {
-  const [data, setData] = useState<Catalog | null>(null);
+  const [data, setData] = useState<FleetData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [mode, setMode] = useState<FilterMode>("all");
+  const [days, setDays] = useState(30);
 
   const load = () => {
     setErr(null);
-    api.get<Catalog>("/checkins").then(setData).catch((e) => setErr(e instanceof Error ? e.message : "Failed to load"));
+    api.get<FleetData>("/checkins").then(setData).catch((e) => setErr(e instanceof Error ? e.message : "Failed to load"));
   };
   useEffect(load, []);
 
@@ -120,60 +146,133 @@ function FleetCatalog() {
       </div>
     );
 
-  const rows = [
-    ...data.catalog.flatMap((g) => g.instances.map((i) => ({ user: g.member.name, memberId: g.member.identifier, ...i }))),
-    ...data.orphans.map((i) => ({ user: i.cwMemberId || "(unknown)", memberId: i.cwMemberId, ...i })),
+  const withStatus = data.members.map((m) => ({ member: m, status: statusOf(m, days) }));
+  const counts = {
+    all: withStatus.length,
+    current: withStatus.filter((r) => r.status === "current").length,
+    attention: withStatus.filter((r) => r.status !== "current").length,
+  };
+  const visible = withStatus.filter((r) =>
+    mode === "all" ? true : mode === "current" ? r.status === "current" : r.status !== "current",
+  );
+
+  const FILTERS: { id: FilterMode; label: string }[] = [
+    { id: "all", label: `All users (${counts.all})` },
+    { id: "current", label: `Current (${counts.current})` },
+    { id: "attention", label: `Needs attention (${counts.attention})` },
   ];
 
   return (
     <div className="col gap-4">
-      <div className="row gap-2 wrap">
-        <Badge tone="neutral">{data.totalInstances} instances</Badge>
-        {data.totalMembers > 0 && (
-          <Badge tone="brand">
-            {data.membersWithInstances}/{data.totalMembers} members checked in
-          </Badge>
-        )}
+      <div className="row between wrap gap-3">
+        <div className="row gap-2 wrap">
+          {FILTERS.map((f) => (
+            <Button key={f.id} variant={mode === f.id ? "primary" : "secondary"} onClick={() => setMode(f.id)}>
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <label className="row gap-2 text-sm soft">
+          Out of date after
+          <Select className="w-auto" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+            {THRESHOLDS.map((d) => (
+              <option key={d} value={d}>
+                {d} days
+              </option>
+            ))}
+          </Select>
+        </label>
       </div>
+
       {data.membersError && (
         <Banner tone="warning">
-          CW member list unavailable ({data.membersError}) — showing check-ins by reported member id. The app_CAST role
-          may need System → Members read.
+          CW member list unavailable ({data.membersError}) — showing only members that have checked in, grouped by
+          reported id. Members with no install can't be listed until the app_CAST role has System → Members read.
         </Banner>
       )}
+
       <Card>
-        {rows.length === 0 ? (
-          <EmptyState>No extension check-ins yet. Instances appear here as the extension phones home.</EmptyState>
+        {visible.length === 0 ? (
+          <EmptyState>
+            {mode === "all"
+              ? "No active CW members found yet."
+              : mode === "current"
+                ? "No members have a current deployment in this window."
+                : "Every member's deployment is current — nothing needs attention."}
+          </EmptyState>
         ) : (
-          <Table>
+          <Table className="align-top">
             <thead>
               <tr>
                 <th>User</th>
-                <th>Device</th>
-                <th>Browser</th>
-                <th>Ext version</th>
-                <th>Rules version</th>
-                <th>Last sync</th>
+                <th>Devices &amp; browsers</th>
+                <th>Status</th>
+                <th>Latest sync</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
-                <tr key={r.deviceId + i}>
-                  <td data-label="User">
-                    <strong>{r.user}</strong>
-                    {r.memberId && <span className="muted text-sm"> ({r.memberId})</span>}
-                  </td>
-                  <td data-label="Device" className="mono">{r.deviceId}</td>
-                  <td data-label="Browser" className="muted">{r.browser || "—"}</td>
-                  <td data-label="Ext version" className="mono">{r.extensionVersion || "—"}</td>
-                  <td data-label="Rules version" className="mono">{r.rulesVersion || "—"}</td>
-                  <td data-label="Last sync" className="muted">{ago(r.lastCheckIn)}</td>
-                </tr>
-              ))}
+              {visible.map(({ member, status }) => {
+                const badge = STATUS_BADGE[status];
+                return (
+                  <tr key={member.identifier}>
+                    <td data-label="User">
+                      <strong>{member.name}</strong>
+                      <span className="muted text-sm"> ({member.identifier})</span>
+                    </td>
+                    <td data-label="Devices &amp; browsers" className="td-stack">
+                      {member.devices.length === 0 ? (
+                        <span className="muted">Not installed</span>
+                      ) : (
+                        <div className="col gap-1">
+                          {member.devices.map((d) => (
+                            <div key={d.deviceId} className="row gap-2 text-sm">
+                              <span>
+                                <strong>{d.browser || "Browser"}</strong>{" "}
+                                <span className="mono muted text-xs">{d.deviceId}</span>
+                              </span>
+                              <span className="muted">· {ago(d.lastCheckIn)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td data-label="Status">
+                      <Badge tone={badge.tone}>{badge.label}</Badge>
+                    </td>
+                    <td data-label="Last sync" className="muted">
+                      {ago(member.lastCheckIn)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
         )}
       </Card>
+
+      {data.orphans.length > 0 && (
+        <Card>
+          <CardBody>
+            <div className="col gap-2">
+              <h3>Unrecognized check-ins ({data.orphans.length})</h3>
+              <p className="muted text-sm">
+                These devices reported a CW member id that doesn't match any active member — a departed user, a typo, or
+                a stale device. Review and clear as needed.
+              </p>
+              <div className="col gap-1">
+                {data.orphans.map((d) => (
+                  <div key={d.deviceId} className="row gap-2 text-sm wrap">
+                    <strong>{d.cwMemberId || "(unknown)"}</strong>
+                    <span>{d.browser || "Browser"}</span>
+                    <span className="mono muted">{d.deviceId}</span>
+                    <span className="muted">· {ago(d.lastCheckIn)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

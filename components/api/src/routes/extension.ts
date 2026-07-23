@@ -24,7 +24,7 @@ function serve(res: Response, file: string, downloadName: string) {
 
 const EXT_ID = "cijknnchejganljdmpdmdkajcmknmdpp";
 const CRX_URL = "https://cast.tritontechnical.com/api/extension/cast.crx";
-const EXT_VERSION = process.env.CAST_EXT_VERSION ?? "0.0.1";
+const EXT_VERSION = process.env.CAST_EXT_VERSION ?? "0.0.2";
 
 // Public (no auth) — the installer + update surface are fetched anonymously by
 // the browser / login page. No secrets, only the public extension ID + URLs.
