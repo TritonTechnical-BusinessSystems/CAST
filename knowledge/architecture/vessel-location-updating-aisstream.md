@@ -130,6 +130,18 @@ the design consequences that follow — read before building the pipeline.
      to group 2, …, build the snapshot, then write. One connection/key, unlimited
      vessels. Keep last-known position + timestamp and carry it over for vessels
      that didn't transmit in their window (moored/anchored transmit slowly).
+   - **PREFERRED for >50 — a 2-tier priority model (user, 2026-07-23).** Rather
+     than making *all* vessels equally stale under flat rotation, split by
+     business importance: **Tier 1 = the priority ≤50** on their own dedicated,
+     always-on subscription (global box + those MMSIs) → *continuous/real-time*;
+     **Tier 2 = the rest** on a second socket via rotation → periodic/best-effort.
+     "Priority" is derived, not just manual: auto-promote **vessels with open
+     tickets/projects** (the Tracking-Config board criterion) + manual **pins**,
+     with "underway" as a tiebreaker (moving vessels benefit most from real-time),
+     capped at 50, re-evaluated on a schedule (swap the Tier-1 filter when it
+     changes — cheap). 50 is exactly the subscription cap, so Tier 1 is one clean
+     subscription. Two sockets total (trivial); Tier 2 only spins up when the set
+     exceeds 50.
    - **Throttling is per-API-key AND per-user/account** — so **more API keys is
      NOT a clean capacity multiplier**; the account-level throttle is the real
      (unpublished) ceiling. Don't assume keys stack linearly. Prefer rotation /
