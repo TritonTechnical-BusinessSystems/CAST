@@ -169,3 +169,26 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - **Runtime (TODO):** the monitor tests each position against areas; on ENTRY (was-outside → now-inside) fire the action. The CW-flag action is a CW write → gated by `CW_WRITES_ENABLED`.
   - **Enhancements:** map-drawing UI for areas (vs. coordinate entry); polygons; per-area actions; dwell/exit triggers; which vessels a given area applies to.
 - **Related:** `INIT-0002`, `INIT-0012`, `knowledge/architecture/vessel-location-updating-aisstream.md`.
+
+### INIT-0018 — Shipment / logistics tracking (carrier status → CW)
+- **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-23
+- **Serves:** Auto-update delivery status/updates for the logistics team from tracking/waybill numbers — another instance of the scheduled data-sync (`INIT-0002`), same shape as Vessel Location Updating.
+- **Idea:** Store tracking/waybill numbers on CW records; pull carrier status (multi-carrier aggregator, webhook-driven) and write delivery status + ETA back into CW, with **proactive exception alerts** to the logistics team.
+- **Fleshing-out notes:**
+  - **Data source:** a multi-carrier **aggregator** (AfterShip / EasyPost / ShipEngine / Shippo / 17track) — one API, normalized statuses, **webhooks on change** (push, not poll) = the practical choice. Direct carrier APIs (FedEx/UPS/DHL/USPS) only if few carriers. Freight/ocean (project44 / FourKites / **Vizion** by Bill of Lading) if shipping air/ocean freight.
+  - **The value is proactive EXCEPTIONS**, not mirroring: flag delayed / held-at-customs / failed-delivery / bad-address → Teams + CW ticket flag. Plus ETA/delay detection, customs milestones, a shipments-in-flight dashboard, close-the-loop on delivery, proof-of-delivery capture.
+  - **Next-level:** **fuse with vessel tracking** — parts ship *to a vessel*; combine shipment ETA + live vessel position ("will the part reach M/Y X before it leaves port?"). Capability neither carrier nor CW has.
+  - **OPEN — placement:** LogisticsCoordinator is already Triton's logistics app (shipments, packing lists, CW procurement). Decide whether this lives in **CAST**, in **LC**, or split (CAST = CW-status/alert layer, LC = shipment lifecycle) *before* building.
+- **Related:** `INIT-0002`, `INIT-0012` (same data-sync pattern), the LogisticsCoordinator project.
+
+### INIT-0019 — Vessel photos (attach to CW company / show in CAST)
+- **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-23
+- **Serves:** Show each client vessel's photo in CW + CAST (vessel pages, the future live fleet board). Makes the fleet visual. A matter of *how*, not *if*.
+- **Idea:** Store a vessel photo on the CW company record and surface it in CAST.
+- **Fleshing-out notes:**
+  - **Source — preferred: the client / management-company's own official photo** (owned, high quality, zero copyright issue). Attach to the CW company as a document (CW `/system/documents` upload) or a custom-field image.
+  - **Do NOT scrape** MarineTraffic / VesselFinder / ShipSpotting — contributor-copyrighted + ToS-restricted (the same trap avoided with MarineTraffic scraping). A "view photos" **link-out** is ToS-safe if wanted.
+  - A **licensed vessel-data API** photo field (Datalastic / MarineTraffic) is an option *if* automation is worth the cost and the license permits store/display.
+  - **The "how" to decide:** capture flow (a CAST upload UI → CW document, vs. attach directly in CW), storage location (CW document vs custom field vs CAST store), and display surfaces (vessel identity/list pages, the live fleet board).
+  - Shines on the **live fleet board** (`Ideas.md`) + vessel pages.
+- **Related:** `INIT-0012`, `INIT-0014`, `knowledge/architecture/connectwise-api-integration.md`, `Ideas.md` (live fleet board).
