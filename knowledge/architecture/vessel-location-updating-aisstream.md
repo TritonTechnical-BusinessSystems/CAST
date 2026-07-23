@@ -156,6 +156,17 @@ the design consequences that follow — read before building the pipeline.
 
 ## 4. Still open (decide before building for real)
 
+- **Position-history volume & storage (decide with the monitor).** The current
+  features need only the **latest position per vessel** (a small upserted cache) —
+  no history — so the app's sqlite is fine at any vessel count. IF we later want
+  full position **history** (analytics / track replay), that's high-volume
+  time-series: keep it in a **separate store** from the operational DB (a dedicated
+  sqlite DB file to start; graduate to a real time-series DB — TimescaleDB /
+  ClickHouse — only if volume + queries demand it), with **retention maintenance**
+  (prune raw beyond N days; roll up older to hourly) via a `node-cron` job.
+  Architect the boundary now so the engine is swappable. NB: vessel *count* affects
+  monitoring (§3.6); data *volume* only bites if we persist history.
+
 - Where the IMO↔MMSI mapping lives and how it's seeded (add an MMSI custom field
   in CW? build from `ShipStaticData`?).
 - The world-ports dataset choice (World Port Index vs UN-LOCODE vs other) and how

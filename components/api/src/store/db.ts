@@ -28,4 +28,10 @@ db.exec(`
     disabled INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS checkins (
+    device_id TEXT PRIMARY KEY,
+    browser TEXT, os_user TEXT, cw_member_id TEXT,
+    extension_version TEXT, rules_version TEXT,
+    last_check_in TEXT NOT NULL
+  );
 `);
