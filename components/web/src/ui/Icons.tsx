@@ -49,3 +49,6 @@ export const IconLogout = (p: P) => (
 export const IconLock = (p: P) => (
   <svg {...svg(p)}><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
 );
+export const IconMenu = (p: P) => (
+  <svg {...svg(p)}><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+);

@@ -73,17 +73,17 @@ export function Vessel() {
             <tbody>
               {vessels.map((v) => (
                 <tr key={v.imo}>
-                  <td>
+                  <td data-label="Company">
                     <strong>{v.company}</strong>
                   </td>
-                  <td className="mono">{v.imo}</td>
-                  <td>{v.vessel}</td>
-                  <td>
+                  <td data-label="IMO number" className="mono">{v.imo}</td>
+                  <td data-label="Vessel">{v.vessel}</td>
+                  <td data-label="Status">
                     <Badge tone={statusTone[v.status]}>{statusLabel[v.status]}</Badge>
                   </td>
-                  <td className="muted">{v.position}</td>
-                  <td>{v.target}</td>
-                  <td className="muted mono">{v.lastSynced}</td>
+                  <td data-label="Position" className="muted">{v.position}</td>
+                  <td data-label="Target">{v.target}</td>
+                  <td data-label="Last synced" className="muted mono">{v.lastSynced}</td>
                 </tr>
               ))}
             </tbody>

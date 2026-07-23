@@ -63,13 +63,13 @@ export function VesselIdentity() {
             <tbody>
               {data.vessels.map((v) => (
                 <tr key={v.id}>
-                  <td>
+                  <td data-label="Vessel">
                     <strong>{v.vesselName}</strong>
                   </td>
-                  <td className="muted">{v.companyName}</td>
-                  <td>{idBadge(v.imo)}</td>
-                  <td>{idBadge(v.mmsi)}</td>
-                  <td>
+                  <td data-label="Company" className="muted">{v.companyName}</td>
+                  <td data-label="IMO">{idBadge(v.imo)}</td>
+                  <td data-label="MMSI">{idBadge(v.mmsi)}</td>
+                  <td data-label="Lookup">
                     <div className="row gap-2 wrap">
                       {v.lookupLinks.map((l) => (
                         <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="row gap-1 text-sm">

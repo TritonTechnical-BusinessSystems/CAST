@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Button } from "../ui";
-import { IconGrid, IconShip, IconSearch, IconRoute, IconPlug, IconActivity, IconLogout } from "../ui/Icons";
+import { IconGrid, IconShip, IconSearch, IconRoute, IconPlug, IconActivity, IconLogout, IconMenu } from "../ui/Icons";
 
 const groups = [
   {
@@ -32,6 +32,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, logout, can } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const current = allItems.find((n) => pathname.startsWith(n.href));
 
   const onSignOut = async () => {
@@ -41,7 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
-      <aside className="rail">
+      <aside className={`rail${drawerOpen ? " open" : ""}`}>
         <div className="rail-brand">
           <img src="/favicon.png" alt="" />
           <span className="rail-brand-name">CAST</span>
@@ -53,23 +54,35 @@ export function Layout({ children }: { children: ReactNode }) {
               {g.items
                 .filter((item) => !REQUIRES[item.href] || can(REQUIRES[item.href]))
                 .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink key={item.href} to={item.href} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-                    <Icon />
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+                      onClick={() => setDrawerOpen(false)}
+                    >
+                      <Icon />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
             </div>
           ))}
         </nav>
         <div className="rail-footer">CAST · ConnectWise Augmentation Suite</div>
       </aside>
 
+      <div className={`rail-backdrop${drawerOpen ? " show" : ""}`} onClick={() => setDrawerOpen(false)} />
+
       <div className="main">
         <header className="topbar">
-          <h1>{current?.label ?? "CAST"}</h1>
+          <div className="row gap-2">
+            <button className="rail-toggle" aria-label="Menu" onClick={() => setDrawerOpen((o) => !o)}>
+              <IconMenu />
+            </button>
+            <h1>{current?.label ?? "CAST"}</h1>
+          </div>
           <div className="row gap-3">
             <div className="topbar-user">
               <div className="topbar-user-name">{user?.displayName}</div>
@@ -78,7 +91,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onSignOut}>
-              <IconLogout /> Sign out
+              <IconLogout /> <span className="hide-xs">Sign out</span>
             </Button>
           </div>
         </header>
