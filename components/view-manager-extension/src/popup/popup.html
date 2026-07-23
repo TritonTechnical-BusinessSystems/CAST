@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="hdr">
+      <img src="../../icons/icon32.png" alt="" width="22" height="22" />
+      <span class="brand">CAST</span>
+    </div>
+
+    <div id="unknown" class="empty" hidden>Open ConnectWise to detect your profile.</div>
+
+    <div id="profile" hidden>
+      <div class="name" id="name"></div>
+      <div class="kv"><span class="k">Position</span><span class="v" id="role"></span></div>
+      <div class="kv">
+        <span class="k">Department</span>
+        <span class="v">
+          <span id="dept"></span>
+          <select id="deptSel" hidden></select>
+        </span>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="kv"><span class="k">Version</span><span class="v mono" id="ver"></span></div>
+      <div class="kv"><span class="k">Last sync</span><span class="v" id="sync"></span></div>
+      <a id="report" href="#">Report a problem</a>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -18,6 +18,12 @@ router.get("/", requireAuth, (_req, res) => {
   res.json(current);
 });
 
+// Public (unauthenticated) config the extension polls. Low-sensitivity rules
+// only (CSS selectors, role names) — never secrets (design §7).
+router.get("/public", (_req, res) => {
+  res.json(current);
+});
+
 router.put("/", requireAuth, (req, res) => {
   try {
     current = parseCastConfig(req.body);

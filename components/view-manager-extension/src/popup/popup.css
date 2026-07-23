@@ -1,0 +1,43 @@
+:root {
+  --brand: #0071bc;
+  --rail: #303336;
+  --ink: #303336;
+  --muted: #8b999e;
+  --border: #d4d8dc;
+}
+* { box-sizing: border-box; }
+body {
+  width: 280px;
+  margin: 0;
+  font: 13px/1.45 "Segoe UI", Inter, Arial, sans-serif;
+  color: var(--ink);
+  background: #fff;
+}
+.hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--rail);
+  color: #fff;
+}
+.brand { font-weight: 700; letter-spacing: 0.02em; }
+#profile,
+.foot,
+.empty { padding: 12px 14px; }
+.empty { color: var(--muted); }
+.name { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.k { color: var(--muted); }
+.v { text-align: right; }
+.mono { font-family: ui-monospace, Consolas, monospace; }
+.foot { border-top: 1px solid var(--border); }
+#deptSel { font: inherit; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; }
+#report {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+#report:hover { text-decoration: underline; }
