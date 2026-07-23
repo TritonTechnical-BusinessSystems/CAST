@@ -1,6 +1,6 @@
 # CAST web app — deploy target: Docker on trt-cast-01
-# (knowledge/architecture/cast-web-app-vm-provisioning.md).
-# Run from the repo root:  docker compose up -d --build
+# (knowledge/architecture/cast-web-app-vm-provisioning.md + cast-web-app-deployment.md).
+# Deploy from the repo root:  docker compose up -d --build
 services:
   api:
     build:
@@ -10,6 +10,9 @@ services:
     container_name: cast-api
     restart: unless-stopped
     env_file: components/api/.env
+    volumes:
+      # Encrypted secret/settings store + secret key persist across redeploys.
+      - cast_data:/app/components/api/.data
     networks: [internal]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -25,11 +28,18 @@ services:
     container_name: cast-web
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certs from the host (acme-dns DNS-01 / self-signed interim), read-only.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       api:
         condition: service_healthy
     networks: [internal]
+
+volumes:
+  cast_data:
 
 networks:
   internal:

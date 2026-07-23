@@ -1,0 +1,47 @@
+---
+status: active
+read-when: Deploying CAST to trt-cast-01, or changing container topology, nginx, TLS, or the auto-update mechanism.
+related: [cast-web-app-vm-provisioning.md, connectwise-api-integration.md, ../decisions/0006-web-app-stack-vite-react-express.md]
+updated: 2026-07-23
+---
+
+# CAST web app — deployment
+
+Docker on `trt-cast-01` (internal-only: outbound internet yes, inbound no). Pattern
+mirrors Logistics Coordinator. Not yet executed on the VM — artifacts are ready
+(`docker-compose.yml`, `components/web/nginx.conf`, `scripts/`).
+
+## Topology (`docker-compose.yml`)
+- **api** (`@cast/api`, Express via tsx) — internal only; encrypted store persisted
+  in the `cast_data` volume (`/app/components/api/.data`).
+- **web** (`nginx:alpine`) — serves the SPA + proxies `/api` → `api:3001`, terminates
+  TLS, publishes 80+443, bind-mounts `/etc/letsencrypt:ro`.
+Both `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
+
+## nginx (`components/web/nginx.conf`)
+`80 → 301 https`. `443 ssl` serves the SPA (try_files fallback, immutable asset
+cache, no-store `index.html`) + proxies `/api` with a runtime `resolver` so nginx
+starts even if `api` is briefly down.
+
+## TLS — acme-dns DNS-01 (LC's exact method)
+Real certs need only **outbound** (available here). Interim: **self-signed** via
+`scripts/setup-tls.sh`; real-cert steps are in that script and `vm-provisioning §7`.
+Renewal: `certbot.timer`; a deploy-hook reloads nginx.
+
+## Deploy
+- App dir on VM: `/opt/cast/app` (git clone via the read-only deploy key).
+- **Manual:** `scripts/deploy.sh` (pull `main` + `docker compose up -d --build`).
+- **Unattended GA-only:** `scripts/cast-autoupdate.sh` + `scripts/systemd/cast-autoupdate.{service,timer}`
+  — daily; checks out the latest **GA** tag (`vX.Y.Z.C`, no pre-release suffix) and
+  redeploys. Pull-based (outbound only). Install: copy units to `/etc/systemd/system`,
+  `systemctl enable --now cast-autoupdate.timer`.
+- **Host OS patching:** enable `unattended-upgrades` for security updates.
+
+## First-time bring-up (checklist)
+1. `sudo mkdir -p /opt/cast && sudo chown $USER /opt/cast`
+2. clone the repo (deploy key) into `/opt/cast/app`
+3. create `components/api/.env` (CW + aisstream keys, `CAST_SECRET_KEY`, `CW_WRITES_ENABLED=false`)
+4. `bash scripts/setup-tls.sh` (self-signed now)
+5. `docker compose up -d --build`
+6. install the systemd auto-update timer + `unattended-upgrades`
+7. later: real acme-dns cert once the public `_acme-challenge` CNAME + acme-dns account exist

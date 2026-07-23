@@ -1,0 +1,9 @@
+[Unit]
+Description=CAST GA-only auto-update (pull latest release tag + redeploy)
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cast/app/scripts/cast-autoupdate.sh

@@ -110,7 +110,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0002`, `INIT-0008`, `INIT-0013`, `knowledge/architecture/cast-web-app-mockup.md`, `knowledge/architecture/vessel-location-updating-aisstream.md`.
 
 ### INIT-0013 — In-app secret management (secure API-key entry/update)
-- **Status:** Captured · **Source:** User · **Added:** 2026-07-22
+- **Status:** In progress (Integrations screen + AES-256-GCM store built; sqlite migration + full store-precedence pending) · **Source:** User · **Added:** 2026-07-22
 - **Serves:** Operating CAST without editing files on the box — a secure place in the CAST web app to enter/update integration secrets (starting with the aisstream.io key, later the CW API credentials and the AD service-bind password) instead of hand-editing `components/api/.env` and redeploying.
 - **Idea:** An admin-only settings surface in the web app to view (masked) and update API keys/secrets. Values are stored **encrypted at rest** server-side and injected into the services that need them — never returned to the browser in plaintext, never exposed to the SPA.
 - **Fleshing-out notes:** **Interim state (now):** secrets live in `components/api/.env`, git-ignored, server-side only — the correct bar for env secrets, but requires a file edit + redeploy to change. This initiative replaces that manual step for the secrets that ops will rotate.
@@ -121,7 +121,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0008`, `INIT-0012`, `knowledge/architecture/vessel-location-updating-aisstream.md`, `knowledge/decisions/0002-extension-never-touches-cw-credentials.md`.
 
 ### INIT-0014 — Vessel identity reconciliation & enrichment (backend interface)
-- **Status:** In progress (backend scaffolded) · **Source:** User · **Added:** 2026-07-23
+- **Status:** In progress (frontend page + live ManageCwClient reads working; CW writes GATED pending user approval) · **Source:** User · **Added:** 2026-07-23
 - **Serves:** Data quality for Vessel Location Updating (`INIT-0012`) — ensure every tracked vessel-client has **both IMO and MMSI** in ConnectWise so the aisstream monitor can subscribe by MMSI. The "front door" that seeds the monitored set. Also CAST's **first ConnectWise *write* path** (`INIT-0002`).
 - **Idea:** An admin/ops interface in the CAST web app that (1) pulls the vessel-clients we track from CW (the `INIT-0012` status scope), (2) **audits** which have IMO / MMSI / both / neither, (3) for gaps, **looks the vessel up** against a vessel-registry source and, on **operator confirmation**, writes the missing identifier(s) back to the CW custom fields.
 - **Fleshing-out notes:**
@@ -136,7 +136,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0002`, `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0015`, `knowledge/architecture/vessel-location-updating-aisstream.md`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/decisions/0002-extension-never-touches-cw-credentials.md`.
 
 ### INIT-0015 — Vessel Tracking Configuration (dynamic followed-set selection)
-- **Status:** Fleshing-out · **Source:** User · **Added:** 2026-07-23
+- **Status:** In progress (screen + live-CW statuses/boards options + preview built; board/open-ticket criterion + persistence-to-sqlite TODO) · **Source:** User · **Added:** 2026-07-23
 - **Serves:** The control surface for *which* vessels CAST follows/syncs — replaces the static single-status env scoping (`CW_TRACKED_STATUS`) with a configurable, CW-queried rule. Defines the working set the aisstream monitor subscribes to (`INIT-0012`) and the reconciliation audits (`INIT-0014`). A config surface inside the CAST web app (`INIT-0008`).
 - **Idea:** A **Vessel Tracking Configuration** page presenting CW-queryable criteria as selection checkboxes whose combination defines the tracked (followed/synced) vessel set: (1) **Company Status**; (2) **Has IMO / Has MMSI** recorded; (3) **Has open projects/tickets on specific boards**. The checkbox *options themselves are queried live from CW* (statuses, boards) — nothing hardcoded. A **live preview** shows matching vessels + count as criteria toggle. The saved rule is persisted (`INIT-0008`/`0013` store) and drives the monitor + reconciliation.
 - **Fleshing-out notes:**
@@ -150,7 +150,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0002`, `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0014`, `INIT-0016`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/architecture/vessel-location-updating-aisstream.md`.
 
 ### INIT-0016 — System Health page (like LogisticsCoordinator)
-- **Status:** Captured · **Source:** User · **Added:** 2026-07-23
+- **Status:** In progress (page + `/api/health/full` integration probes built; host CPU/mem/disk gauges TODO) · **Source:** User · **Added:** 2026-07-23
 - **Serves:** Operational visibility — one page showing the health of CAST's dependencies/integrations so problems surface before someone reports them. Models LC's "System Health" page (System nav section).
 - **Idea:** A **System Health** page surfacing live green/amber/red status for: the **CW API** connection (reachable / auth / permission warnings — e.g. the statuses/boards Security gaps found 2026-07-23); the **aisstream** monitor (connected, last-message age); **AD/LDAPS** bind; the **vessel-sync** job (last/next run); the datastore; and build/version + uptime.
 - **Fleshing-out notes:**
