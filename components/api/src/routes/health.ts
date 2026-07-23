@@ -7,8 +7,18 @@ import { requireAuth } from "../middleware/auth";
 import { config, adConfigured, aisstreamConfigured } from "../config";
 import { resolveCwCreds } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
+import { getPackageManifest } from "../health/packages";
 
 const router = Router();
+
+/** Package manifest + OSV.dev vulnerability check (cached 24h). */
+router.get("/packages", requireAuth, async (_req, res) => {
+  try {
+    res.json({ packages: await getPackageManifest() });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Package scan failed" });
+  }
+});
 const BUILD = process.env.CAST_BUILD ?? "dev";
 const VERSION = process.env.CAST_VERSION ?? "0.1.0.0";
 

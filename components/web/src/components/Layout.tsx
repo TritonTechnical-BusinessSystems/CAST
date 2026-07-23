@@ -71,7 +71,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="rail-footer">CAST · ConnectWise Augmentation Suite</div>
+        <div className="rail-footer">CAST · ConnectWise Augmentation Suite for Triton</div>
       </aside>
 
       <div className={`rail-backdrop${drawerOpen ? " show" : ""}`} onClick={() => setDrawerOpen(false)} />

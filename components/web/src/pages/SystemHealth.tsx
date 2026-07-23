@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { PageHeader, Card, CardHeader, CardBody, StatusDot, Badge, Banner, Button, Spinner } from "../ui";
+import { PageHeader, Card, CardHeader, CardBody, StatusDot, Badge, Banner, Button, Spinner, Table, EmptyState } from "../ui";
 
 type Health = "ok" | "warn" | "down" | "idle";
 interface Probe { state: Health; detail: string; }
@@ -24,6 +24,92 @@ function ProbeCard({ title, probe }: { title: string; probe: Probe }) {
       <CardBody>
         <span className="muted text-sm">{probe.detail}</span>
       </CardBody>
+    </Card>
+  );
+}
+
+interface PkgResult { name: string; version: string; layer: string; vulnCount: number; severity: string; osvUrl: string; }
+
+function sevTone(sev: string, count: number): "success" | "warning" | "danger" {
+  if (count === 0) return "success";
+  const s = sev.toUpperCase();
+  return s === "CRITICAL" || s === "HIGH" ? "danger" : "warning";
+}
+
+function PackagesCard() {
+  const [pkgs, setPkgs] = useState<PkgResult[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    setErr(null);
+    api
+      .get<{ packages: PkgResult[] }>("/health/packages")
+      .then((r) => setPkgs(r.packages))
+      .catch((e) => setErr(e instanceof Error ? e.message : "Scan failed"))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const flagged = pkgs?.filter((p) => p.vulnCount > 0).length ?? 0;
+
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <span className="row gap-2">
+            Package Manifest
+            {pkgs &&
+              (flagged ? <Badge tone="danger">{flagged} with advisories</Badge> : <Badge tone="success">no known advisories</Badge>)}
+          </span>
+        }
+        action={
+          <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
+            {loading ? "Checking…" : "Re-check"}
+          </Button>
+        }
+      />
+      {loading && !pkgs ? (
+        <div className="card-body row gap-2">
+          <Spinner /> <span className="muted">Scanning OSV.dev…</span>
+        </div>
+      ) : err ? (
+        <EmptyState>{err}</EmptyState>
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Version</th>
+              <th>Layer</th>
+              <th>Advisories (OSV.dev)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pkgs!.map((p) => (
+              <tr key={p.name}>
+                <td data-label="Package">
+                  <a href={p.osvUrl} target="_blank" rel="noreferrer">{p.name}</a>
+                </td>
+                <td data-label="Version" className="mono">{p.version}</td>
+                <td data-label="Layer">
+                  <Badge tone="neutral">{p.layer}</Badge>
+                </td>
+                <td data-label="Advisories">
+                  {p.vulnCount > 0 ? (
+                    <Badge tone={sevTone(p.severity, p.vulnCount)}>
+                      {p.vulnCount} · {p.severity || "?"}
+                    </Badge>
+                  ) : (
+                    <Badge tone="success">clean</Badge>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
     </Card>
   );
 }
@@ -75,6 +161,7 @@ export function SystemHealth() {
               </div>
             </CardBody>
           </Card>
+          <PackagesCard />
         </>
       )}
     </div>

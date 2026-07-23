@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/config-schema/package.json packages/config-schema/package.json
 COPY components/api/package.json components/api/package.json
+COPY components/web/package.json components/web/package.json
 RUN pnpm install --frozen-lockfile --filter @cast/api...
 
 # Sources.
