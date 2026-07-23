@@ -36,11 +36,11 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route path="/extension" element={<Extension />} />
         <Route path="/vessel-tracking" element={<VesselTracking />} />
-        {/* Legacy per-page paths now live as tabs under /vessel-tracking. */}
-        <Route path="/vessel" element={<Navigate to="/vessel-tracking" replace />} />
-        <Route path="/vessel-identity" element={<Navigate to="/vessel-tracking" replace />} />
-        <Route path="/tracking" element={<Navigate to="/vessel-tracking" replace />} />
-        <Route path="/geo-alerts" element={<Navigate to="/vessel-tracking" replace />} />
+        {/* Legacy per-page paths now live as tabs under /vessel-tracking (keep the tab). */}
+        <Route path="/vessel" element={<Navigate to="/vessel-tracking?tab=location" replace />} />
+        <Route path="/vessel-identity" element={<Navigate to="/vessel-tracking?tab=identity" replace />} />
+        <Route path="/tracking" element={<Navigate to="/vessel-tracking?tab=config" replace />} />
+        <Route path="/geo-alerts" element={<Navigate to="/vessel-tracking?tab=geo" replace />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/health" element={<SystemHealth />} />
       </Route>

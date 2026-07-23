@@ -2,23 +2,34 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Button, Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState, Select } from "../ui";
 import type { TabDef } from "../ui";
+import { useTabParam } from "../useTabParam";
 
-// Tabs mirror the extension's design record (mockup §1).
+// Tabs mirror the extension's design record (mockup §1). "Deployment" is the
+// per-member deployment catalog; "Install" is the installer download.
 const tabs: TabDef[] = [
   { id: "roles", label: "Role Rules" },
   { id: "pods", label: "Expected Pods" },
-  { id: "fleet", label: "Fleet" },
-  { id: "deploy", label: "Deployment" },
+  { id: "deployment", label: "Deployment" },
+  { id: "install", label: "Install" },
 ];
 
 export function Extension() {
-  const [active, setActive] = useState("roles");
+  const [active, setActive] = useTabParam(
+    tabs.map((t) => t.id),
+    "roles",
+  );
   const label = tabs.find((t) => t.id === active)?.label ?? "";
 
   return (
     <div>
       <Tabs tabs={tabs} active={active} onChange={setActive} />
-      {active === "fleet" ? <FleetCatalog /> : active === "deploy" ? <DeploymentPanel /> : <Placeholder label={label} />}
+      {active === "deployment" ? (
+        <DeploymentCatalog />
+      ) : active === "install" ? (
+        <InstallPanel />
+      ) : (
+        <Placeholder label={label} />
+      )}
     </div>
   );
 }
@@ -39,7 +50,7 @@ function Placeholder({ label }: { label: string }) {
   );
 }
 
-function DeploymentPanel() {
+function InstallPanel() {
   return (
     <div className="col gap-4">
       <Banner tone="info">
@@ -126,7 +137,7 @@ const STATUS_BADGE: Record<Status, { tone: "success" | "warning" | "neutral"; la
 
 const THRESHOLDS = [7, 14, 30, 60, 90];
 
-function FleetCatalog() {
+function DeploymentCatalog() {
   const [data, setData] = useState<FleetData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<FilterMode>("all");
@@ -152,9 +163,9 @@ function FleetCatalog() {
     current: withStatus.filter((r) => r.status === "current").length,
     attention: withStatus.filter((r) => r.status !== "current").length,
   };
-  const visible = withStatus.filter((r) =>
-    mode === "all" ? true : mode === "current" ? r.status === "current" : r.status !== "current",
-  );
+  const visible = withStatus
+    .filter((r) => (mode === "all" ? true : mode === "current" ? r.status === "current" : r.status !== "current"))
+    .sort((a, b) => a.member.name.localeCompare(b.member.name));
 
   const FILTERS: { id: FilterMode; label: string }[] = [
     { id: "all", label: `All users (${counts.all})` },
@@ -221,7 +232,7 @@ function FleetCatalog() {
                     </td>
                     <td data-label="Devices &amp; browsers" className="td-stack">
                       {member.devices.length === 0 ? (
-                        <span className="muted">Not installed</span>
+                        <span className="muted">Not registered</span>
                       ) : (
                         <div className="col gap-1">
                           {member.devices.map((d) => (

@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { Tabs } from "../ui";
 import type { TabDef } from "../ui";
+import { useTabParam } from "../useTabParam";
 import { Vessel } from "./Vessel";
 import { VesselIdentity } from "./VesselIdentity";
 import { TrackingConfig } from "./TrackingConfig";
@@ -17,7 +17,10 @@ const tabs: TabDef[] = [
 ];
 
 export function VesselTracking() {
-  const [active, setActive] = useState("location");
+  const [active, setActive] = useTabParam(
+    tabs.map((t) => t.id),
+    "location",
+  );
   return (
     <div>
       <Tabs tabs={tabs} active={active} onChange={setActive} />

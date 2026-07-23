@@ -67,14 +67,17 @@ export async function listServiceBoards(): Promise<string[]> {
 
 /** CW members — the source of truth for who the extension check-ins belong to. */
 /**
- * Active, real CW users. `/system/members` returns regular members only — API
- * members live at `/system/apiMembers` and are intentionally excluded here — and
- * `conditions=inactiveFlag=false` drops disabled accounts, so the Fleet page
- * lists only people who could actually be running the extension.
+ * Active, real member USERS only — the people who could run the extension.
+ * `/system/members` returns both people and integration/API accounts (CPQ, RMM,
+ * BrightGauge, app_CAST, …); the CW-native separator is `licenseClass`: "F" (Full)
+ * = real members, "A" (API) = integration accounts. So we filter
+ * `licenseClass="F"` (verified live: 99 F people vs 15 A API accounts) plus
+ * `inactiveFlag=false` to drop disabled accounts.
  */
 export async function listMembers(): Promise<{ identifier: string; name: string }[]> {
   const rows = await cwFetch<{ id: number; identifier?: string; firstName?: string; lastName?: string }[]>(
-    "/system/members?pageSize=1000&conditions=inactiveFlag%3Dfalse&fields=id,identifier,firstName,lastName",
+    // conditions=inactiveFlag=false AND licenseClass="F" (URL-encoded; cwFetch sends the path raw)
+    '/system/members?pageSize=1000&conditions=inactiveFlag%3Dfalse%20AND%20licenseClass%3D%22F%22&fields=id,identifier,firstName,lastName',
   );
   return rows.map((r) => ({
     identifier: r.identifier ?? String(r.id),
