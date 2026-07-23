@@ -172,12 +172,24 @@
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .auth-alt { display: block; margin: var(--space-5) auto 0; background: none; border: none; color: var(--color-link); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; }
 .auth-alt:hover { text-decoration: underline; }
-.auth-download {
-  position: fixed; right: var(--space-4); bottom: var(--space-4);
-  display: inline-flex; align-items: center; gap: var(--space-1);
-  color: #fff; opacity: 0.75; font-size: var(--text-sm); font-weight: var(--weight-semibold); text-decoration: none;
+.auth-back { display: block; margin: var(--space-3) auto 0; background: none; border: none; color: var(--color-text-muted); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; }
+.auth-back:hover { color: var(--color-text); }
+
+/* ===================== Download-first landing ===================== */
+.landing {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: var(--space-6); background: var(--color-surface-rail); color: #fff; text-align: center;
 }
-.auth-download:hover { opacity: 1; text-decoration: underline; }
+.landing-inner { max-width: 440px; }
+.landing-logo { width: 72px; height: 72px; }
+.landing-title { font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: 2.75rem; letter-spacing: 0.02em; margin-top: var(--space-3); }
+.landing-tagline { color: rgba(255, 255, 255, 0.55); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-2); }
+.landing-desc { color: rgba(255, 255, 255, 0.85); font-size: var(--text-md); line-height: 1.6; margin: var(--space-6) 0; }
+.landing-download { height: 52px; padding: 0 var(--space-8); font-size: var(--text-md); }
+.landing-hint { color: rgba(255, 255, 255, 0.5); font-size: var(--text-sm); margin-top: var(--space-3); }
+.landing-steps { display: inline-block; text-align: left; margin-top: var(--space-6); padding-left: var(--space-5); color: rgba(255, 255, 255, 0.75); font-size: var(--text-sm); line-height: 1.9; }
+.landing-signin { display: inline-block; margin-top: var(--space-8); background: none; border: none; color: rgba(255, 255, 255, 0.6); font: inherit; font-weight: var(--weight-semibold); font-size: var(--text-sm); cursor: pointer; }
+.landing-signin:hover { color: #fff; text-decoration: underline; }
 
 /* ===================== Grids ===================== */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }

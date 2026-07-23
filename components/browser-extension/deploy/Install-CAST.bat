@@ -13,7 +13,7 @@ set "EXTID=cijknnchejganljdmpdmdkajcmknmdpp"
 set "UPDATE=https://cast.tritontechnical.com/api/extension/update.xml"
 
 echo.
-echo   Installing the CAST browser extension...
+echo   Installing the CAST browser extension for Chrome and Edge...
 for %%B in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Microsoft\Edge") do (
   reg add "%%~B\ExtensionSettings\%EXTID%" /v installation_mode  /t REG_SZ   /d force_installed /f >nul
   reg add "%%~B\ExtensionSettings\%EXTID%" /v update_url         /t REG_SZ   /d "%UPDATE%"       /f >nul
@@ -21,6 +21,7 @@ for %%B in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Micro
 )
 
 echo.
-echo   Done!  Restart Chrome or Edge and CAST installs automatically.
+echo   Done!  Last step: restart your browser (Chrome or Edge) and
+echo   CAST installs automatically.
 echo.
 pause
