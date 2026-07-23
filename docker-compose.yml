@@ -1,0 +1,36 @@
+# CAST web app — deploy target: Docker on trt-cast-01
+# (knowledge/architecture/cast-web-app-vm-provisioning.md).
+# Run from the repo root:  docker compose up -d --build
+services:
+  api:
+    build:
+      context: .
+      dockerfile: components/api/Dockerfile
+    image: cast-api:latest
+    container_name: cast-api
+    restart: unless-stopped
+    env_file: components/api/.env
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: components/web/Dockerfile
+    image: cast-web:latest
+    container_name: cast-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge

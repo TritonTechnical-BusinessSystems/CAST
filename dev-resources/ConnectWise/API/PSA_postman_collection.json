@@ -1,0 +1,5629 @@
+{
+	"info": {
+		"_postman_id": "62229e2e-195f-4c3f-9680-81d3e503ca84",
+		"name": "PSA",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1582598",
+		"_collection_link": "https://crimson-station-211670.postman.co/workspace/SOLM~4d602a6b-8e8e-4516-85cd-97890c72e433/collection/1582598-62229e2e-195f-4c3f-9680-81d3e503ca84?action=share&source=collection_link&creator=1582598"
+	},
+	"item": [
+		{
+			"name": "Companies",
+			"item": [
+				{
+					"name": "companies",
+					"item": [
+						{
+							"name": "companyfinances-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/finance/companyfinance/132",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"finance",
+										"companyfinance",
+										"132"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companyfinances-patch",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"company/identifier\",\r\n        \"value\": \"0newtestcompany23\"\r\n    }\r\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/finance/companyfinance/132",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"finance",
+										"companyfinance",
+										"132"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-get Copy",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"id\": 0,\r\n  \"identifier\": \"newtestcompany4446698\",\r\n  \"name\": \"New Test Company 444\",\r\n  \"status\": {\r\n    \"id\": 9\r\n  },\r\n  \"addressLine1\": \"1234 street st\",\r\n  \"addressLine2\": \"\",\r\n  \"city\": \"Tampa\",\r\n  \"state\": \"FL\",\r\n  \"zip\": \"12345\",\r\n  \"country\": {\r\n    \"id\": 3\r\n  },\r\n  \"site\": {\r\n      \"id\": 0,\r\n      \"name\": \"primary site\"\r\n  },\r\n  \"phoneNumber\": \"8123654789\",\r\n  \"faxNumber\": \"\",\r\n  \"website\": \"\",\r\n  \"territory\": {\r\n    \"id\": 40\r\n  },\r\n  \"market\": {\r\n    \"id\": 3\r\n  },\r\n  \"accountNumber\": \"112112\",\r\n  \"defaultContact\": {\r\n    \"id\": 0,\r\n    \"name\": \"Joe Smith\"\r\n  },\r\n  \"dateAcquired\": \"2021-02-18T13:35:49Z\",\r\n  \"annualRevenue\": 1000000000,\r\n  \"numberOfEmployees\": 40,\r\n  \"yearEstablished\": 1962,\r\n  \"leadSource\": \"SAP\",\r\n  \"leadFlag\": false,\r\n  \"taxCode\": {\r\n    \"id\": 11\r\n  },\r\n  \"billingTerms\": {\r\n    \"id\": 1\r\n  },\r\n  \"invoiceDeliveryMethod\": {\r\n    \"id\": 2\r\n  },\r\n  \"invoiceToEmailAddress\": \"mark@mark.com\",\r\n  \"invoiceCCEmailAddress\": \"jack@jack.com\",\r\n  \"types\": [\r\n    {\r\n      \"id\": 26\r\n    },\r\n    {\r\n      \"id\": 33\r\n    },\r\n    {\r\n      \"id\": 34\r\n    }\r\n  ],\r\n  \"integratorTags\": [\r\n    \"test\",\r\n    \"anothertest\"\r\n  ],\r\n  \"customFields\": [\r\n    {\r\n      \"id\": 1,\r\n      \"value\": \"testxref\"\r\n    },\r\n    {\r\n        \"id\": 2,\r\n        \"value\": \"2021-02-18T13:35:49Z\"\r\n    }\r\n  ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-delete",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/158",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"158"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-statuses-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/statuses",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"statuses"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-types-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/types?conditions=vendorFlag=true",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"types"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "vendorFlag=true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-teams-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/146/teams?conditions=accountManagerFlag=true",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"146",
+										"teams"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "accountManagerFlag=true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-ownership-types-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/ownershiptypes",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"ownershiptypes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-sites-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/14/sites/146",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"14",
+										"sites",
+										"146"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "countries-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/countries",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"countries"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-markets-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/marketdescriptions",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"marketdescriptions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-entity-types-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/entitytypes",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"entitytypes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-patch",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"identifier\",\r\n        \"value\": \"0newtestcompany23\"\r\n    }\r\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies/138",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"138"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-patch Copy",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"invoiceToEmailAddress\",\r\n        \"value\": \"test@test.com\"\r\n    }\r\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies/138",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"138"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "companies-put",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"id\": 0,\r\n  \"identifier\": \"newtestcompany23\",\r\n  \"name\": \"New Test Company 23\",\r\n  \"status\": {\r\n    \"id\": 6\r\n  },\r\n  \"addressLine1\": \"1234 street st\",\r\n  \"addressLine2\": \"\",\r\n  \"city\": \"Tampa\",\r\n  \"state\": \"FL\",\r\n  \"zip\": \"12345\",\r\n  \"country\": {\r\n    \"id\": 3\r\n  },\r\n  \"site\": {\r\n      \"id\": 0,\r\n      \"name\": \"primary site\"\r\n  },\r\n  \"phoneNumber\": \"8123654789\",\r\n  \"faxNumber\": \"\",\r\n  \"website\": \"\",\r\n  \"territory\": {\r\n    \"id\": 40\r\n  },\r\n  \"market\": {\r\n    \"id\": 3\r\n  },\r\n  \"accountNumber\": \"112112\",\r\n  \"defaultContact\": {\r\n    \"id\": 0,\r\n    \"name\": \"Joe Smith\"\r\n  },\r\n  \"dateAcquired\": \"2021-02-18T13:35:49Z\",\r\n  \"annualRevenue\": 1000000000,\r\n  \"numberOfEmployees\": 40,\r\n  \"yearEstablished\": 1962,\r\n  \"leadSource\": \"SAP\",\r\n  \"leadFlag\": false,\r\n  \"taxCode\": {\r\n    \"id\": 11\r\n  },\r\n  \"billingTerms\": {\r\n    \"id\": 1\r\n  },\r\n  \"invoiceDeliveryMethod\": {\r\n    \"id\": 2\r\n  },\r\n  \"invoiceToEmailAddress\": \"mark@mark.com\",\r\n  \"invoiceCCEmailAddress\": \"jack@jack.com\",\r\n  \"types\": [\r\n    {\r\n      \"id\": 26\r\n    },\r\n    {\r\n      \"id\": 33\r\n    },\r\n    {\r\n      \"id\": 34\r\n    }\r\n  ],\r\n  \"integratorTags\": [\r\n    \"test\",\r\n    \"anothertest\"\r\n  ],\r\n  \"customFields\": [\r\n    {\r\n      \"id\": 1,\r\n      \"value\": \"testxref\"\r\n    },\r\n    {\r\n        \"id\": 2,\r\n        \"value\": \"2021-02-18T13:35:49Z\"\r\n    }\r\n  ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-teams-put",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"teamRole\": {\r\n        \"id\": 1\r\n    },\r\n    \"contact\": {\r\n        \"id\": 10\r\n    },\r\n    \"accountManagerFlag\": true,\r\n    \"techFlag\": false,\r\n    \"salesFlag\": false\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies/146/teams/9",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"146",
+										"teams",
+										"9"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-sites-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n        \"id\": 136,\r\n        \"name\": \"office\",\r\n        \"addressLine1\": \"9922 street st\",\r\n        \"city\": \"Tampa\",\r\n        \"stateReference\": {\r\n            \"id\": 10\r\n        },\r\n        \"zip\": \"12345\",\r\n        \"country\": {\r\n            \"id\": 3\r\n        },\r\n        \"phoneNumber\": \"8123654789\",\r\n        \"faxNumber\": \"\",\r\n        \"primaryAddressFlag\": false,\r\n        \"defaultShippingFlag\": false,\r\n        \"defaultBillingFlag\": false,\r\n        \"defaultMailingFlag\": false,\r\n        \"inactiveFlag\": false,\r\n        \"billSeparateFlag\": false\r\n    }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/companies/132/sites",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"132",
+										"sites"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-noteTypes-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/noteTypes",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"noteTypes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "company-notes-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/companies/151/notes",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"companies",
+										"151",
+										"notes"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "contacts",
+					"item": [
+						{
+							"name": "contacts-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"id\": 0,\r\n  \"firstName\": \"Mark\",\r\n  \"lastName\": \"Jones\",\r\n  \"company\": {\r\n    \"id\": 132\r\n  },\r\n  \"site\": {\r\n    \"id\": 0,\r\n    \"name\": \"primary contact address\"\r\n  },\r\n  \"addressLine1\": \"9876 brick road\",\r\n  \"addressLine2\": \"\",\r\n  \"city\": \"Dawson\",\r\n  \"state\": \"MN\",\r\n  \"zip\": \"33625\",\r\n  \"country\": {\r\n    \"id\": 1\r\n  },\r\n  \"relationship\": {\r\n    \"id\": 7\r\n  },\r\n  \"department\": {\r\n    \"id\": 5\r\n  },\r\n  \"title\": \"Main Contact\",\r\n  \"defaultPhoneType\": \"Cell\",\r\n  \"defaultPhoneNbr\": \"3258794562\",\r\n  \"defaultPhoneExtension\": \"\",\r\n  \"defaultBillingFlag\": true,\r\n  \"defaultFlag\": true,\r\n  \"companyLocation\": {\r\n    \"id\": 0,\r\n    \"name\": \"string\",\r\n    \"_info\": {\r\n      \"additionalProp1\": \"string\",\r\n      \"additionalProp2\": \"string\",\r\n      \"additionalProp3\": \"string\"\r\n    }\r\n  },\r\n  \"communicationItems\": [\r\n    {\r\n      \"id\": 0,\r\n      \"type\": {\r\n        \"id\": 1\r\n      },\r\n      \"value\": \"mark@test.com\",\r\n      \"extension\": \"\",\r\n      \"defaultFlag\": true,\r\n      \"communicationType\": \"Email\"\r\n    },\r\n    {\r\n      \"id\": 0,\r\n      \"type\": {\r\n        \"id\": 2\r\n      },\r\n      \"value\": \"8135698745\",\r\n      \"extension\": \"123\",\r\n      \"defaultFlag\": false\r\n    }\r\n  ],\r\n  \"types\": [\r\n    {\r\n      \"id\": 2\r\n    },\r\n     {\r\n      \"id\": 5\r\n    }\r\n  ],\r\n  \"integratorTags\": [\r\n    \"testtag1\",\r\n    \"testtag2\"\r\n  ],\r\n   \"customFields\": [\r\n    {\r\n      \"id\": 3,\r\n      \"value\": \"testContactxref\"\r\n    },\r\n    {\r\n        \"id\": 4,\r\n        \"value\": \"2021-02-17T13:35:49Z\"\r\n    }\r\n  ],\r\n  \"ignoreDuplicates\": true\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/contacts",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contact-relationships-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/contacts/relationships",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts",
+										"relationships"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contact-departments-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/contacts/departments",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts",
+										"departments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contact-communication-types-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/communicationtypes",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"communicationtypes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contact-types-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/contacts/types",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts",
+										"types"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contact-communications-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/contacts/192/communications",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts",
+										"192",
+										"communications"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contacts-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/contacts",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"contacts"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "configurations",
+					"item": [
+						{
+							"name": "configurations-get-with-conditions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/configurations?conditions=type/name=\"Server\"",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"configurations"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "type/name=\"Server\""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "configurations-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/company/configurations/8",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"configurations",
+										"8"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "configurations-put",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"John's Server\",\r\n    \"type\": {\r\n        \"id\": 11,\r\n        \"name\": \"Renewal - SonicWall Services\",\r\n        \"_info\": {\r\n            \"type_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//company/configurations/types/15\"\r\n        }\r\n    },\r\n    \"status\": {\r\n        \"id\": 1,\r\n        \"name\": \"Active\",\r\n        \"_info\": {\r\n            \"status_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//company/configurations/statuses/1\"\r\n        }\r\n    },\r\n    \"company\": {\r\n        \"id\": 15,\r\n        \"identifier\": \"HighDesignCo\",\r\n        \"name\": \"High Design, Co.\",\r\n        \"_info\": {\r\n            \"company_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//company/companies/15\"\r\n        }\r\n    },\r\n    \"contact\": {\r\n        \"id\": 42,\r\n        \"name\": \"Latoya Bostick\",\r\n        \"_info\": {\r\n            \"contact_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//company/contacts/42\"\r\n        }\r\n    },\r\n    \"site\": {\r\n        \"id\": 18,\r\n        \"name\": \"Main\",\r\n        \"_info\": {\r\n            \"site_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//company/companies/15/sites/18\"\r\n        }\r\n    },\r\n    \"locationId\": 2,\r\n    \"businessUnitId\": 14,\r\n    \"deviceIdentifier\": \"\",\r\n    \"serialNumber\": \"\",\r\n    \"modelNumber\": \"\",\r\n    \"tagNumber\": \"\",\r\n    \"vendorNotes\": \"\",\r\n    \"notes\": \"\",\r\n    \"macAddress\": \"\",\r\n    \"lastLoginName\": \"\",\r\n    \"billFlag\": true,\r\n    \"ipAddress\": \"\",\r\n    \"defaultGateway\": \"\",\r\n    \"osType\": \"\",\r\n    \"osInfo\": \"\",\r\n    \"cpuSpeed\": \"\",\r\n    \"ram\": \"\",\r\n    \"localHardDrives\": \"\",\r\n    \"activeFlag\": true,\r\n    \"mobileGuid\": \"28a60d43-e061-4901-a002-cd0045c79358\",\r\n    \"_info\": {\r\n        \"lastUpdated\": \"2023-01-18T19:25:30Z\",\r\n        \"updatedBy\": \"mlaplante\",\r\n        \"dateEntered\": \"2022-01-11T14:36:39Z\",\r\n        \"enteredBy\": \"mlaplante\"\r\n    },\r\n    \"companyLocationId\": 38,\r\n    \"showRemoteFlag\": false,\r\n    \"showAutomateFlag\": false,\r\n    \"needsRenewalFlag\": false\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/configurations/8",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"configurations",
+										"8"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "configurations-patch",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"questions/14/answer\",\r\n        \"value\": \"Warn\"\r\n    }\r\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/company/configurations/4",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"company",
+										"configurations",
+										"4"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Core",
+			"item": [
+				{
+					"name": "company-info-get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "api-na.myconnectwise.net/login/companyinfo/pandionisland_f",
+							"host": [
+								"api-na",
+								"myconnectwise",
+								"net"
+							],
+							"path": [
+								"login",
+								"companyinfo",
+								"pandionisland_f"
+							]
+						},
+						"description": "https://developer.connectwise.com/Best_Practices/Manage_Cloud_URL_Formatting?mt-learningpath=manage"
+					},
+					"response": []
+				},
+				{
+					"name": "system-info-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/locations?conditions=locationFlag=true",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"locations"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "locationFlag=true"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "setup",
+					"item": [
+						{
+							"name": "integrator-tags-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/integratortags",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"integratortags"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "sso-configurations-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/ssoconfigurations",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"ssoconfigurations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "sso-configurations-delete",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/ssoconfigurations/1",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"ssoconfigurations",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "api-members-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/apiMembers",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"apiMembers"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "api-keys-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/internal/system/members/169/apikeys",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"internal",
+										"system",
+										"members",
+										"169",
+										"apikeys"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "members-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/Members?conditions=identifier<>'mlaplante'",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"Members"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "identifier<>'mlaplante'"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "members-screenlayouts-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/internal/system/Members/169/screenlayouts",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"internal",
+										"system",
+										"Members",
+										"169",
+										"screenlayouts"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "user-defined-fields-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/userDefinedFields",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"userDefinedFields"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "user-defined-fields-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n        \"podId\": 12,\r\n        \"caption\": \"New SAP Xref\",\r\n        \"sequenceNumber\": 5,\r\n        \"helpText\": \"New Crossreference to SAP\",\r\n        \"fieldTypeIdentifier\": \"Text\",\r\n        \"numberDecimals\": 0,\r\n        \"entryTypeIdentifier\": \"EntryField\",\r\n        \"requiredFlag\": false,\r\n        \"displayOnScreenFlag\": true,\r\n        \"readOnlyFlag\": true,\r\n        \"listViewFlag\": false,\r\n        \"businessUnitIds\": [],\r\n        \"locationIds\": [],\r\n        \"dateCreated\": \"2021-02-27T16:34:14Z\"\r\n    }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/system/userDefinedFields",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"userDefinedFields"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "mycompany",
+					"item": [
+						{
+							"name": "territories-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/locations?conditions=locationFlag=true",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"locations"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "locationFlag=true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "locations-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/locations",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"locations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "departments-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/departments",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"departments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "department-locations-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/departments/17/locations",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"departments",
+										"17",
+										"locations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "locations-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n        \"structureLevel\": {\r\n            \"id\": 2\r\n        },\r\n        \"name\": \"New Tampa Office\",\r\n        \"reportsTo\": {\r\n            \"id\": 38\r\n        },\r\n        \"calendar\": {\r\n            \"id\": 1\r\n        },\r\n        \"locationFlag\": true,\r\n        \"clientFlag\": false,\r\n        \"workRoleIds\": [\r\n            6,\r\n            11,\r\n            18,\r\n            21\r\n        ],\r\n        \"departmentIds\": [\r\n            10,\r\n            13,\r\n            16\r\n        ]\r\n    }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/system/locations",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"locations"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "departments-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n        \"identifier\": \"NTServices\",\r\n        \"name\": \"New Tampa Services\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/system/departments",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"departments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "department-locations-post",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n        \"location\": {\r\n            \"id\": 2\r\n        },\r\n        \"department\": {\r\n            \"id\": 17\r\n        }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{apiurl}}/system/departments/17/locations",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"departments",
+										"17",
+										"locations"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "documents",
+					"item": [
+						{
+							"name": "documents-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/documents?recordType=Agreement&recordId=13",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"documents"
+									],
+									"query": [
+										{
+											"key": "recordType",
+											"value": "Agreement"
+										},
+										{
+											"key": "recordId",
+											"value": "13"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "documents-upload-sample-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/documents/uploadsample",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"documents",
+										"uploadsample"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "documents-post",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/C:/Users/mlapl/OneDrive/Documents/ConnectWise/samplepdf.pdf",
+											"disabled": true
+										},
+										{
+											"key": "recordId",
+											"value": "13",
+											"type": "text"
+										},
+										{
+											"key": "recordType",
+											"value": "Agreement",
+											"type": "text"
+										},
+										{
+											"key": "title",
+											"value": "test",
+											"type": "text"
+										},
+										{
+											"key": "url",
+											"value": "https://example.com/mqcD1kQpJ0WDY8eiLpAG0BSuDnYmdv8dRrJYY7AtEjtvSpiVzNHN9fkCeTLHa4DwOdh4XwprsmVW4FJCViRfE3v4kTEM9gx39njYFMoAYZ64Sr5yCeNJlEH407bjMtHhZB2s9BQxigY112T5veAHAYpw7ubqg9oNBSMrKQhV4vQ59U98Q6HCtHPAbniY8KVsazbMk9",
+											"type": "text"
+										},
+										{
+											"key": "privateFlag",
+											"value": "true",
+											"type": "text"
+										},
+										{
+											"key": "readOnlyFlag",
+											"value": "false",
+											"type": "text"
+										},
+										{
+											"key": "isAvatar",
+											"value": "false",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{apiurl}}/system/documents",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"documents"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "documents-uploadsample-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/documents/uploadsample",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"documents",
+										"uploadsample"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "documents-delete",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/documents/281",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"documents",
+										"281"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "reporting-api",
+					"item": [
+						{
+							"name": "time-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/time?conditions=AgrAmtCovered>0",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"time"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "AgrAmtCovered>0"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "invoicepayments-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/invoicetime?conditions=invoice_number=52",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"invoicetime"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "invoice_number=52"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "reporting-apis-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "timeaudit-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/timeaudit",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"timeaudit"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "documents-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/document?conditions=SR_Service_RecID!=null+and+Filename+like+'*.eml'",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"document"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "SR_Service_RecID!=null+and+Filename+like+'*.eml'"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "invoicetime-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/invoicetime?conditions=invoice_number=52",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"invoicetime"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "invoice_number=52"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "timestatus-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/timestatus",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"timestatus"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "timesheetaudit-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/timesheetaudit?conditions=Audit_Text%20like%20\"%New Status - 'Approved'%\"%20and%20Date_Audit_UTC<=\"2021-03-21T20:20:42Z\"%20and%20Date_Audit_UTC>=\"2021-03-15T20:20:42Z\"",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"timesheetaudit"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "Audit_Text%20like%20\"%New Status - 'Approved'%\"%20and%20Date_Audit_UTC<=\"2021-03-21T20:20:42Z\"%20and%20Date_Audit_UTC>=\"2021-03-15T20:20:42Z\""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "unpostedinvoice-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/unpostedinvoice",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"unpostedinvoice"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "invoices-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/invoices",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"invoices"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "pod-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/pod?conditions=PodID=\"service_ticket_ticket\"",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"pod"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "PodID=\"service_ticket_ticket\""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "agreementadditions-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/invoicepayments?conditions=date_applied>'2022-01-01'%20and%20date_applied<'2022-02-01'",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"invoicepayments"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "date_applied>'2022-01-01'%20and%20date_applied<'2022-02-01'"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "servicestatus-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/servicestatus?conditions=board_flag=true+and+Owner_level_recid=1+and+billing_unit_recid=2",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"servicestatus"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "board_flag=true+and+Owner_level_recid=1+and+billing_unit_recid=2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "contacts-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/contact",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"contact"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ticketaudit-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/ticketaudit?conditions=sr_service_recid=2740+and+audit_text+like+'Status%'+and+Date_Entered_UTC+>+'2022-12-14T18:39:263Z'",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"ticketaudit"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "sr_service_recid=2740+and+audit_text+like+'Status%'+and+Date_Entered_UTC+>+'2022-12-14T18:39:263Z'"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "servicesummary-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/service_summary?conditions=sr_service_recid=2740",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"service_summary"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "sr_service_recid=2740"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PurchaseOrderWithLineItems-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/PurchaseOrderWithLineItems?conditions=iv_product_recid%20in%20(137,138)",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"PurchaseOrderWithLineItems"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "iv_product_recid%20in%20(137,138)"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "PurchaseOrder",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/PurchaseOrderWithLineItems?conditions=iv_product_recid%20in%20(137,138)",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"PurchaseOrderWithLineItems"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "iv_product_recid%20in%20(137,138)"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "service-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/service?conditions=sr_service_recid=2971",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"service"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "sr_service_recid=2971"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "service_open-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/service?conditions=sr_service_recid=2971",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"service"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "sr_service_recid=2971"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "servicecustomfields-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/servicecustomfields?conditions=SR_Service_RecID > 283 and SR_Service_RecID < 1000",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"servicecustomfields"
+									],
+									"query": [
+										{
+											"key": "conditions",
+											"value": "SR_Service_RecID > 283 and SR_Service_RecID < 1000"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "servicelocations-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/servicelocation",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"servicelocation"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ownerlevel-get",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "clientId",
+										"value": "{{clientid}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{apiurl}}/system/reports/ownerlevel",
+									"host": [
+										"{{apiurl}}"
+									],
+									"path": [
+										"system",
+										"reports",
+										"ownerlevel"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "audit-trail-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/audittrail?type=ticket&id=12345",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"audittrail"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "ticket"
+								},
+								{
+									"key": "id",
+									"value": "12345"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-get-by-id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks/1",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"url\": \"http://autoresults.connectwisedev.com:5003/cw_callback_listener/t4_training_mlaplante_new\",\r\n        \"objectId\": 16,\r\n        \"type\": \"ticket\",\r\n        \"level\": \"status\",\r\n        \"memberId\": 204,\r\n        \"inactiveFlag\": false,\r\n        \"isSoapCallbackFlag\": false,\r\n        \"isSelfSuppressedFlag\": false\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks/4",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks",
+								"4"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-post",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"description\": \"PO Callback Test\",\r\n    \"url\": \"https://webhook.site/c65520f7-ec53-4767-a30c-1120d75c5687\",\r\n    \"objectId\": 1,\r\n    \"type\": \"purchaseorder\",\r\n    \"level\": \"status\",\r\n    \"memberId\": 204,\r\n    \"inactiveFlag\": false,\r\n    \"isSoapCallbackFlag\": false,\r\n    \"isSelfSuppressedFlag\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks/",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "bundles-request-post",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.connectwise.com+json; version=2019.1",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"requests\": [\r\n    {\r\n      \"Version\": \"2019.3\",\r\n      \"SequenceNumber\": 1,\r\n      \"ResourceType\": \"ticket\",\r\n      \"ApiRequest\": {\r\n        \"Filters\": {\r\n          \"conditions\": \"summary like '%a%' and status/name like '%new%'and board/name='Help Desk'\"\r\n        },\r\n        \"Page\": {\r\n          \"page\": 1,\r\n          \"pageSize\": 1000\r\n        }\r\n      }\r\n    },\r\n    {\r\n      \"Version\": \"2019.2\",\r\n      \"SequenceNumber\": 2,\r\n      \"ResourceType\": \"Company\",\r\n      \"ApiRequest\": {\r\n        \"Filters\": {\r\n          \"conditions\": \"companyName = 'Connectwise'\",\r\n          \"childConditions\": \"\",\r\n          \"customFieldConditions\": \"\"\r\n        },\r\n        \"Page\": {          \r\n          \"pageSize\": 25,\r\n          \"pageId\": 2\r\n        },\r\n        \"Id\": 1,\r\n        \"ParentId\": 2,\r\n        \"GrandParentId\": 3\r\n      }\r\n    },\r\n    {\r\n      \"Version\": \"2019.2\",\r\n      \"SequenceNumber\": 2,\r\n      \"ResourceType\": \"Member\",\r\n      \"ApiRequest\": {\r\n        \"Id\": 150,\r\n        \"ParentId\": 2,\r\n        \"GrandParentId\": 3,\r\n        \"Filters\": {\r\n          \"conditions\": \"memberName = 'John Smith'\",\r\n          \"childConditions\": \"\",\r\n          \"customFieldConditions\": \"\"\r\n        },\r\n        \"Page\": {\r\n          \"page\": 1,\r\n          \"pageSize\": 25\r\n        }\r\n      }\r\n    }\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/system/bundles",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"bundles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "outbound-callback-test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"Action\":\"updated\",\r\n   \"CallbackObjectRecId\":5,\r\n   \"CompanyId\":\"pandionisland_f\",\r\n   \"Entity\":{\r\n      \"_info\":{\r\n         \"activities_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/sales/activities?conditions=ticket/id=1130\",\r\n         \"configurations_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/tickets/1130/configurations\",\r\n         \"dateEntered\":\"2022-06-04T04:21:27Z\",\r\n         \"documents_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/system/documents?recordType=Ticket&recordId=1130\",\r\n         \"enteredBy\":\"template3\",\r\n         \"expenseEntries_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/expense/entries?conditions=(chargeToType='ServiceTicket' OR chargeToType='ProjectTicket') AND chargeToId=1130\",\r\n         \"lastUpdated\":\"2022-10-05T20:38:55Z\",\r\n         \"notes_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/tickets/1130/notes\",\r\n         \"products_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/procurement/products?conditions=chargeToType='Ticket' AND chargeToId=1130\",\r\n         \"scheduleentries_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/schedule/entries?conditions=type/id=4 AND objectId=1130\",\r\n         \"tasks_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/tickets/1130/tasks\",\r\n         \"timeentries_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/time/entries?conditions=(chargeToType='ServiceTicket' OR chargeToType='ProjectTicket') AND chargeToId=1130\",\r\n         \"updatedBy\":\"mlaplante\"\r\n      },\r\n      \"addressLine1\":\"2106 SHADYHILL TER\",\r\n      \"allowAllClientsPortalView\":false,\r\n      \"approved\":true,\r\n      \"automaticEmailCcFlag\":false,\r\n      \"automaticEmailContactFlag\":false,\r\n      \"automaticEmailResourceFlag\":false,\r\n      \"billExpenses\":\"NoDefault\",\r\n      \"billProducts\":\"Billable\",\r\n      \"billTime\":\"NoDefault\",\r\n      \"billingMethod\":\"ActualRates\",\r\n      \"board\":{\r\n         \"_info\":{\r\n            \"board_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/boards/1\"\r\n         },\r\n         \"id\":1,\r\n         \"name\":\"Professional Services\"\r\n      },\r\n      \"city\":\"Harrells\",\r\n      \"closedFlag\":false,\r\n      \"company\":{\r\n         \"_info\":{\r\n            \"company_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/company/companies/16\",\r\n            \"mobileGuid\":\"102830a1-479e-4a5f-bec1-fbc532e43c30\"\r\n         },\r\n         \"id\":16,\r\n         \"identifier\":\"IndigoStrawberryCo\",\r\n         \"name\":\"IndigoStrawberry, Co.\"\r\n      },\r\n      \"contact\":{\r\n         \"_info\":{\r\n            \"contact_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/company/contacts/48\",\r\n            \"mobileGuid\":\"57a19455-a9d7-4587-ac45-0f80f5387c31\"\r\n         },\r\n         \"id\":48,\r\n         \"name\":\"Ramon Stawiarz\"\r\n      },\r\n      \"contactEmailAddress\":\"ramon.stawiarz@indigostrawberry.com\",\r\n      \"contactName\":\"Ramon Stawiarz\",\r\n      \"contactPhoneNumber\":\"8133936413\",\r\n      \"currency\":{\r\n         \"_info\":{\r\n            \"currency_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/finance/currencies/7\"\r\n         },\r\n         \"currencyCode\":\"USD\",\r\n         \"currencyIdentifier\":\"Z-US$\",\r\n         \"decimalSeparator\":\".\",\r\n         \"displayIdFlag\":false,\r\n         \"displaySymbolFlag\":false,\r\n         \"id\":7,\r\n         \"name\":\"US Dollars\",\r\n         \"negativeParenthesesFlag\":false,\r\n         \"numberOfDecimals\":2,\r\n         \"rightAlign\":false,\r\n         \"symbol\":\"$\",\r\n         \"thousandsSeparator\":\",\"\r\n      },\r\n      \"customerUpdatedFlag\":false,\r\n      \"dateResponded\":\"2022-10-05T20:27:41Z\",\r\n      \"department\":{\r\n         \"_info\":{\r\n            \"department_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/system/departments/10\"\r\n         },\r\n         \"id\":10,\r\n         \"identifier\":\"Services\",\r\n         \"name\":\"Professional Services\"\r\n      },\r\n      \"escalationLevel\":0,\r\n      \"escalationStartDateUTC\":\"2022-10-05T20:38:55Z\",\r\n      \"estimatedExpenseCost\":0.0,\r\n      \"estimatedExpenseRevenue\":0.0,\r\n      \"estimatedProductCost\":0.0,\r\n      \"estimatedProductRevenue\":0.0,\r\n      \"estimatedTimeCost\":0.0,\r\n      \"estimatedTimeRevenue\":0.0,\r\n      \"hasChildTicket\":false,\r\n      \"hasMergedChildTicketFlag\":false,\r\n      \"id\":1130,\r\n      \"impact\":\"Medium\",\r\n      \"isInSla\":false,\r\n      \"location\":{\r\n         \"_info\":{\r\n            \"location_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/system/locations/2\"\r\n         },\r\n         \"id\":2,\r\n         \"name\":\"Tampa Office\"\r\n      },\r\n      \"minutesBeforeWaiting\":11,\r\n      \"mobileGuid\":\"5ee8a1a7-040b-4c8f-ba97-0bc876843fcc\",\r\n      \"priority\":{\r\n         \"_info\":{\r\n            \"image_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/priorities/4/image?lm=2005-05-27T14:58:21Z\",\r\n            \"priority_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/priorities/4\"\r\n         },\r\n         \"id\":4,\r\n         \"name\":\"Priority 3 - Normal Response\",\r\n         \"sort\":6\r\n      },\r\n      \"recordType\":\"ServiceTicket\",\r\n      \"requestForChangeFlag\":false,\r\n      \"resPlanMinutes\":0,\r\n      \"resolveMinutes\":0,\r\n      \"resplanSkippedMinutes\":0,\r\n      \"respondMinutes\":47427,\r\n      \"respondedSkippedMinutes\":0,\r\n      \"serviceLocation\":{\r\n         \"_info\":{\r\n            \"location_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/locations/2\"\r\n         },\r\n         \"id\":2,\r\n         \"name\":\"In-house\"\r\n      },\r\n      \"severity\":\"Medium\",\r\n      \"site\":{\r\n         \"_info\":{\r\n            \"mobileGuid\":\"caf531b0-1e63-4159-b429-642b6057a242\",\r\n            \"site_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/company/companies/16/sites/20\"\r\n         },\r\n         \"id\":20,\r\n         \"name\":\"Main\"\r\n      },\r\n      \"siteName\":\"Main\",\r\n      \"sla\":{\r\n         \"_info\":{\r\n            \"sla_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/SLAs/1\"\r\n         },\r\n         \"id\":1,\r\n         \"name\":\"Standard SLA 24hours\"\r\n      },\r\n      \"slaStatus\":\"Plan by Wed 06/08 3:00 PM UTC-04\",\r\n      \"source\":{\r\n         \"_info\":{\r\n            \"source_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/sources/2\"\r\n         },\r\n         \"id\":2,\r\n         \"name\":\"Phone\"\r\n      },\r\n      \"stateIdentifier\":\"FL\",\r\n      \"status\":{\r\n         \"_info\":{\r\n            \"status_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/boards/1/statuses/16\"\r\n         },\r\n         \"id\":16,\r\n         \"name\":\"New (not responded)\"\r\n      },\r\n      \"subBillingMethod\":\"ActualRates\",\r\n      \"summary\":\"Check Remote Backup\",\r\n      \"team\":{\r\n         \"_info\":{\r\n            \"team_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/boards/1/teams/25\"\r\n         },\r\n         \"id\":25,\r\n         \"name\":\"Service Team\"\r\n      },\r\n      \"type\":{\r\n         \"_info\":{\r\n            \"type_href\":\"https://staging.connectwisedev.com/v2022_2//apis/3.0/service/boards/1/types/14\"\r\n         },\r\n         \"id\":14,\r\n         \"name\":\"Proactive\"\r\n      },\r\n      \"zip\":\"34667\"\r\n   },\r\n   \"FromUrl\":\"staging.connectwisedev.com\",\r\n   \"ID\":1130,\r\n   \"MemberId\":\"mlaplante\",\r\n   \"Metadata\":{\r\n      \"key_url\":\"https://staging.connectwisedev.com/v2022_2//system/callbackkey/index.rails?companyName=pandionisland_f&id=7106bbaf-b33a-4f1e-946b-8600fc4e96c6\"\r\n   },\r\n   \"Type\":\"ticket\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://autoresults.connectwisedev.com:5003/cw_callback_listener/t4_training_mlaplante_2",
+							"protocol": "http",
+							"host": [
+								"autoresults",
+								"connectwisedev",
+								"com"
+							],
+							"port": "5003",
+							"path": [
+								"cw_callback_listener",
+								"t4_training_mlaplante_2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"inactiveFlag\",\r\n        \"value\": true\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks/4",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks",
+								"4"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "system-info-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/info",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callback-entries-delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/callbacks/49",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"callbacks",
+								"49"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "inline-images-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://staging.connectwisedev.com/v4_6_release/api/inlineimages/pandionisland_f",
+							"protocol": "https",
+							"host": [
+								"staging",
+								"connectwisedev",
+								"com"
+							],
+							"path": [
+								"v4_6_release",
+								"api",
+								"inlineimages",
+								"pandionisland_f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "hosted-setups-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/connectwisehostedsetups",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"connectwisehostedsetups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user-defined-fields-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/userdefinedfields",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"userdefinedfields"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "labs-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/internal/system/labs",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"internal",
+								"system",
+								"labs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "labs-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"adminLock\",\r\n        \"value\": \"true\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/internal/system/labs/4",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"internal",
+								"system",
+								"labs",
+								"4"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Finance",
+			"item": [
+				{
+					"name": "tax-codes-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/taxcodes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"taxcodes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "tax-integrations-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/taxintegrations",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"taxintegrations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "billing-terms-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/billingterms",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"billingterms"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "billing-setups-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/billingsetups",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"billingsetups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "invoice-templates-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/invoicetemplates",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"invoicetemplates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delivery-methods-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/deliverymethods",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"deliverymethods"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreements-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/23",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"23"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreements-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"name\":\"NOT-8000518459-marktest\",\r\n   \"type\":{\r\n      \"id\":34\r\n   },\r\n   \"company\":{\r\n      \"id\":22768\r\n   },\r\n   \"site\":{\r\n      \"id\":8633\r\n   },\r\n   \"location\":{\r\n      \"id\":40\r\n   },\r\n   \"department\":{\r\n      \"id\":43\r\n   },\r\n   \"startDate\":\"2021-02-01T05:00:00Z\",\r\n   \"endDate\":\"2026-02-01T05:00:00Z\",\r\n   \"applicationUnits\":\"Hours\",\r\n   \"applicationLimit\":\"1.0E0\",\r\n   \"oneTimeFlag\":true,\r\n   \"coverAgreementTime\":true,\r\n   \"billingCycle\":{\r\n      \"id\":12\r\n   },\r\n   \"billStartDate\":\"2021-02-01T05:00:00Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-types-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/types/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"types",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-additions-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"product\": {\r\n    \"id\": 742\r\n  },\r\n  \"quantity\": 20,\r\n  \"description\": \"Test Agreement\",\r\n  \"billCustomer\": \"DoNotBill\",\r\n  \"effectiveDate\": \"2024-01-01T12:00:00Z\",\r\n  \"cancelledDate\": \"2024-01-31T12:00:00Z\",\r\n  \"sequenceNumber\": \"1702578463\",\r\n   \"agreementId\": 1555\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/23/additions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"23",
+								"additions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "invoices-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/invoices?conditions=invoicenumber=\"48\"",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"invoices"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "invoicenumber=\"48\""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "companyfinance-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/companyfinance/24",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"companyfinance",
+								"24"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "accounting-batches-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/batches?conditions=batchIdentifier=\"1113\"",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"batches"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "batchIdentifier=\"1113\""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "accounting-batches-delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/batches/{{id}}",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"batches",
+								"{{id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "accounting-batches-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"batchIdentifier\": \"testbatchmark\",\r\n    \"exportInvoicesFlag\": true,\r\n    \"exportExpensesFlag\": false,\r\n    \"exportProductsFlag\": false,\r\n    \"summarizeExpenses\": false,\r\n    \"processedRecordIds\": []\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/batches",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"batches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "accounting-batches-export-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"batchIdentifier\":\"2222.09.16.02.02\",\r\n   \"summarizeInvoices\":\"Default\",\r\n   \"exportInvoicesFlag\":true,\r\n   \"exportExpensesFlag\":false,\r\n   \"exportProductsFlag\":false,\r\n   \"thruDate\": \"2024-06-08T23:00:00Z\",\r\n   \"includedInvoiceIds\": [\r\n        27381\r\n   ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/export",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"export"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreements-post-2",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"8000004836test\",\r\n    \"type\":{\"id\":50},\r\n    \"company\":{\"id\":23222},\r\n    \"contact\":{\"id\":10673},\r\n    \"site\":{\"id\":23222},\r\n    \"location\":{\"id\":40},\r\n    \"startDate\":\"2020-01-01T05:00:00Z\",\r\n    \"endDate\":\"2025-01-01T04:59:59Z\"\r\n }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "invoices-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"status/id\",\r\n        \"value\": \"1\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/invoices/53",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"invoices",
+								"53"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "invoices-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"53\",\r\n    \"invoiceNumber\": \"48\",\r\n    \"type\": \"Standard\",\r\n    \"status\": {\r\n        \"id\": 1\r\n    },\r\n    \"company\": {\r\n        \"id\": 24\r\n    },\r\n    \"billToCompany\": {\r\n        \"id\": 24\r\n    },\r\n    \"shipToCompany\": {\r\n        \"id\": 24\r\n    },\r\n    \"accountNumber\": \"Wild Eagle Inc\",\r\n    \"applyToType\": \"Ticket\",\r\n    \"applyToId\": 4,\r\n    \"billingSite\": {\r\n        \"id\": 28\r\n    },\r\n    \"billingSiteAddressLine1\": \"140 S. Village Ave.\",\r\n    \"billingSiteAddressLine2\": \"8th Floor\",\r\n    \"billingSiteCity\": \"Tampa\",\r\n    \"billingSiteState\": \"FL\",\r\n    \"billingSiteZip\": \"33880\",\r\n    \"shippingSite\": {\r\n        \"id\": 28\r\n    },\r\n    \"shippingSiteAddressLine1\": \"140 S. Village Ave.\",\r\n    \"shippingSiteAddressLine2\": \"8th Floor\",\r\n    \"shippingSiteCity\": \"Tampa\",\r\n    \"shippingSiteState\": \"FL\",\r\n    \"shippingSiteZip\": \"33880\",\r\n    \"billingTerms\": {\r\n        \"id\": 2\r\n    },\r\n    \"templateSetupId\": 1,\r\n    \"invoiceTemplate\": {\r\n        \"id\": 1\r\n    },\r\n    \"emailTemplateId\": 1,\r\n    \"addToBatchEmailList\": false,\r\n    \"date\": \"2021-04-15T00:00:00Z\",\r\n    \"restrictDownpaymentFlag\": false,\r\n    \"locationId\": 2,\r\n    \"departmentId\": 10,\r\n    \"territoryId\": 38,\r\n    \"topComment\": \"\",\r\n    \"bottomComment\": \"\",\r\n    \"taxableFlag\": false,\r\n    \"taxCode\": {\r\n        \"id\": 11\r\n    },\r\n    \"internalNotes\": \"test\",\r\n    \"downpaymentPreviouslyTaxedFlag\": false,\r\n    \"serviceTotal\": 0.00,\r\n    \"overrideDownPaymentAmountFlag\": false,\r\n    \"currency\": {\r\n        \"id\": 7,\r\n        \"symbol\": \"$\",\r\n        \"currencyCode\": \"USD\",\r\n        \"decimalSeparator\": \".\",\r\n        \"numberOfDecimals\": 2,\r\n        \"thousandsSeparator\": \",\",\r\n        \"negativeParenthesesFlag\": false,\r\n        \"displaySymbolFlag\": false,\r\n        \"currencyIdentifier\": \"Z-US$\",\r\n        \"displayIdFlag\": false,\r\n        \"rightAlign\": false,\r\n        \"name\": \"US Dollars\",\r\n        \"_info\": {\r\n            \"currency_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/finance/currencies/7\"\r\n        }\r\n    },\r\n    \"dueDate\": \"2021-04-25T00:00:00Z\",\r\n    \"expenseTotal\": 0.00,\r\n    \"productTotal\": 1015.00,\r\n    \"previousProgressApplied\": 0.00,\r\n    \"serviceAdjustmentAmount\": 0.00,\r\n    \"agreementAmount\": 0.00,\r\n    \"downpaymentApplied\": 0.00,\r\n    \"subtotal\": 1015.00,\r\n    \"total\": 1015.00,\r\n    \"remainingDownpayment\": 0.00,\r\n    \"salesTax\": 0.00,\r\n    \"payments\": 0.00,\r\n    \"credits\": 0.00,\r\n    \"balance\": 1015.00,\r\n    \"specialInvoiceFlag\": false,\r\n    \"billingSetupReference\": {\r\n        \"id\": 39,\r\n        \"name\": \"Your Company\",\r\n        \"_info\": {\r\n            \"billingSetup_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/finance/billingsetups/39\"\r\n        }\r\n    },\r\n    \"ticket\": {\r\n        \"id\": 4,\r\n        \"summary\": \"Set up new Workstation for Gregg\",\r\n        \"_info\": {\r\n            \"ticket_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/service/tickets/4\",\r\n            \"billingMethod\": \"A\"\r\n        }\r\n    },\r\n    \"_info\": {\r\n        \"lastUpdated\": \"2021-07-13T13:24:38Z\",\r\n        \"updatedBy\": \"mlaplante\",\r\n        \"dateEntered\": \"2021-04-15T22:04:58Z\",\r\n        \"enteredBy\": \"mlaplante\",\r\n        \"products_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/procurement/products?conditions=invoice/id=53\",\r\n        \"timeEntries_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/time/entries?conditions=invoice/id=53\",\r\n        \"expenseEntries_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0/expense/entries?conditions=invoice/id=53\"\r\n    },\r\n    \"customFields\": [\r\n        {\r\n            \"id\": 7,\r\n            \"caption\": \"SAP Xref\",\r\n            \"type\": \"Text\",\r\n            \"entryMethod\": \"EntryField\",\r\n            \"numberOfDecimals\": 0,\r\n            \"value\": \"test 123-99\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/invoices",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"invoices"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-additions-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"name\":\"NOT-8000518459-marktest\",\r\n   \"type\":{\r\n      \"id\":34\r\n   },\r\n   \"company\":{\r\n      \"id\":22768\r\n   },\r\n   \"site\":{\r\n      \"id\":8633\r\n   },\r\n   \"location\":{\r\n      \"id\":40\r\n   },\r\n   \"department\":{\r\n      \"id\":43\r\n   },\r\n   \"startDate\":\"2021-02-01T05:00:00Z\",\r\n   \"endDate\":\"2026-02-01T05:00:00Z\",\r\n   \"applicationUnits\":\"Hours\",\r\n   \"applicationLimit\":\"1.0E0\",\r\n   \"oneTimeFlag\":true,\r\n   \"coverAgreementTime\":true,\r\n   \"billingCycle\":{\r\n      \"id\":12\r\n   },\r\n   \"billStartDate\":\"2021-02-01T05:00:00Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements//additions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"",
+								"additions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-additions-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/23/additions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"23",
+								"additions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-additions-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"invoiceDescription\",\r\n        \"value\": \"test description update\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/23/additions/26",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"23",
+								"additions",
+								"26"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "agreement-additions-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": 26,\r\n    \"product\": {\r\n        \"id\": 742,\r\n        \"identifier\": \"Miscellaneous\",\r\n        \"_info\": {\r\n            \"catalog_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//procurement/catalog/742\"\r\n        }\r\n    },\r\n    \"quantity\": 20.00,\r\n    \"lessIncluded\": 0.00,\r\n    \"unitPrice\": 0.000000,\r\n    \"unitCost\": 0.000000,\r\n    \"billCustomer\": \"DoNotBill\",\r\n    \"effectiveDate\": \"2022-10-02T00:00:00Z\",\r\n    \"taxableFlag\": false,\r\n    \"invoiceDescription\": \"\",\r\n    \"purchaseItemFlag\": false,\r\n    \"specialOrderFlag\": false,\r\n    \"agreementId\": 23,\r\n    \"description\": \"Test description put\",\r\n    \"billedQuantity\": 20.00,\r\n    \"uom\": \"Each\",\r\n    \"extPrice\": 0.000000,\r\n    \"extCost\": 0.000000,\r\n    \"sequenceNumber\": 3.00,\r\n    \"margin\": 0.000000,\r\n    \"prorateCost\": 0.000000,\r\n    \"proratePrice\": 0.000000,\r\n    \"extendedProrateCost\": 0.000000,\r\n    \"extendedProratePrice\": 0.000000,\r\n    \"prorateCurrentPeriodFlag\": false,\r\n    \"agreementStatus\": \"Inactive\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/finance/agreements/23/additions",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"agreements",
+								"23",
+								"additions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unposted-procurement-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/unpostedprocurement",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"unpostedprocurement"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unposted-invoices-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/unpostedinvoices?conditions=invoiceDate<=[2024-06-08T23:00:00Z]",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"unpostedinvoices"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "invoiceDate<=[2024-06-08T23:00:00Z]"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unposted-expenses-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/finance/accounting/unpostedexpenses",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"finance",
+								"accounting",
+								"unpostedexpenses"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Procurement",
+			"item": [
+				{
+					"name": "catalog-items-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/catalog/751",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"catalog",
+								"751"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "catalog-items-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"category/id\",\r\n        \"value\": \"15\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/catalog/751",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"catalog",
+								"751"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "categories-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/categories",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subcategories-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/subcategories",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"subcategories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorders-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorders-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"businessUnit\": {\r\n        \"id\": 14\r\n    },\r\n    \"closedFlag\": false,\r\n    \"dropShipCustomerFlag\": false,\r\n    \"enteredBy\": \"mlaplante\",\r\n    \"freightTaxTotal\": 0.00,\r\n    \"location\": {\r\n        \"id\": 2\r\n    },\r\n    \"poDate\": \"2023-09-19T00:00:00Z\",\r\n    \"poNumber\": \"VF-3\",\r\n    \"status\": {\r\n        \"id\": 1\r\n    },\r\n    \"taxCode\": {\r\n        \"id\": 11\r\n    },\r\n    \"taxFreightFlag\": false,\r\n    \"taxPoFlag\": false,\r\n    \"terms\": {\r\n        \"id\": 2\r\n    },\r\n    \"vendorCompany\": {\r\n        \"id\": 26\r\n    },\r\n    \"vendorContact\": {\r\n        \"id\": 82\r\n    },\r\n    \"vendorSite\": {\r\n        \"id\": 35\r\n    },\r\n    \"warehouse\": {\r\n        \"id\": 1\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorders-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"businessUnit\": {\r\n        \"id\": 14\r\n    },\r\n    \"closedFlag\": false,\r\n    \"dropShipCustomerFlag\": false,\r\n    \"freightTaxTotal\": 0.00,\r\n    \"location\": {\r\n        \"id\": 2\r\n    },\r\n    \"poDate\": \"2023-09-19T00:00:00Z\",\r\n    \"poNumber\": \"VF-3-updated\",\r\n    \"status\": {\r\n        \"id\": 1\r\n    },\r\n    \"taxCode\": {\r\n        \"id\": 11\r\n    },\r\n    \"taxFreightFlag\": false,\r\n    \"taxPoFlag\": false,\r\n    \"terms\": {\r\n        \"id\": 2\r\n    },\r\n    \"vendorCompany\": {\r\n        \"id\": 26\r\n    },\r\n    \"vendorContact\": {\r\n        \"id\": 82\r\n    },\r\n    \"vendorSite\": {\r\n        \"id\": 35\r\n    },\r\n    \"warehouse\": {\r\n        \"id\": 1\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/5",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorders-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"taxPoFlag\",\r\n        \"value\": true\r\n    },\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"taxFreightFlag\",\r\n        \"value\": true\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/5",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorder-lineitems-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/2/lineitems/2",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"2",
+								"lineitems",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorder-lineitems-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"backorderedFlag\": false,\r\n    \"canceledFlag\": false,\r\n    \"closedFlag\": false,\r\n    \"displayInternalNotesFlag\": false,\r\n    \"lineNumber\": 5,\r\n    \"product\": {\r\n        \"id\": 755\r\n    },\r\n    \"description\": \"22 inch monitor\",\r\n    \"quantity\": 6.00,\r\n    \"receivedQuantity\": 0,\r\n    \"tax\": 0.00,\r\n    \"unitCost\": 60.000000,\r\n    \"unitOfMeasure\": {\r\n        \"id\": 13\r\n    },\r\n    \"vendorSku\": \"\",\r\n    \"warehouse\": {\r\n        \"id\": 1\r\n    },\r\n    \"warehouseBin\": {\r\n        \"id\": 1\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/2/lineitems",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"2",
+								"lineitems"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorder-lineitems-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"backorderedFlag\": false,\r\n    \"canceledFlag\": false,\r\n    \"closedFlag\": false,\r\n    \"displayInternalNotesFlag\": false,\r\n    \"lineNumber\": 5,\r\n    \"product\": {\r\n        \"id\": 755\r\n    },\r\n    \"description\": \"22 inch monitor\",\r\n    \"quantity\": 6.00,\r\n    \"receivedQuantity\": 0,\r\n    \"tax\": 0.00,\r\n    \"unitCost\": 60.000000,\r\n    \"unitOfMeasure\": {\r\n        \"id\": 13\r\n    },\r\n    \"vendorSku\": \"\",\r\n    \"warehouse\": {\r\n        \"id\": 1\r\n    },\r\n    \"warehouseBin\": {\r\n        \"id\": 1\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/2/lineitems/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"2",
+								"lineitems",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "purchaseorder-lineitems-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"lineNumber\",\r\n        \"value\": 6\r\n    },\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"quantity\",\r\n        \"value\": 7\r\n    },\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"description\",\r\n        \"value\": \"22 inch monitor with enhanced output\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/purchaseorders/2/lineitems/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"purchaseorders",
+								"2",
+								"lineitems",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "products-get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.connectwise.com+json; version=2022.2",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/procurement/products?conditions=ticket/id=2919",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"products"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "ticket/id=2919"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "products-post",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.connectwise.com+json; version=2022.2",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"catalogItem\": {\r\n        \"id\": 757\r\n    },\r\n    \"description\": \"Gamma SoGEA Broadband 80/20 (1 Month Contract)\",\r\n    \"sequenceNumber\": 3.000000,\r\n    \"quantity\": 1.00,\r\n    \"price\": 44.990000,\r\n    \"cost\": 23.450000,\r\n    \"extPrice\": 48.990000,\r\n    \"extCost\": 23.450000,\r\n    \"discount\": 0.000000,\r\n    \"agreementAmount\": 0.00,\r\n    \"billableOption\": \"Billable\",\r\n    \"locationId\": 2,\r\n    \"location\": {\r\n        \"id\": 2\r\n    },\r\n    \"businessUnitId\": 16,\r\n    \"businessUnit\": {\r\n        \"id\": 16\r\n    },\r\n    \"taxableFlag\": false,\r\n    \"dropshipFlag\": false,\r\n    \"specialOrderFlag\": false,\r\n    \"phaseProductFlag\": false,\r\n    \"cancelledFlag\": false,\r\n    \"quantityCancelled\": 0.00,\r\n    \"customerDescription\": \"SoGEA Broadband 80/20\",\r\n    \"productSuppliedFlag\": false,\r\n    \"subContractorAmountLimit\": 0.00,\r\n    \"recurring\": {\r\n        \"recurringRevenue\": 44.99,\r\n        \"recurringCost\": 23.450000,\r\n        \"startDate\": \"2023-03-08T05:00:00Z\",\r\n        \"endDate\": \"2023-03-31T04:00:00Z\",\r\n        \"billCycleId\": 2,\r\n        \"billCycle\": {\r\n            \"id\": 2,\r\n            \"name\": \"Monthly\",\r\n            \"_info\": {\r\n                \"billingCycle_href\": \"https://api-staging.connectwisedev.com/v4_6_release/apis/3.0//finance/billingCycles/2\"\r\n            }\r\n        },\r\n        \"cycles\": 1,\r\n        \"cycleType\": \"CalendarYear\"\r\n    },\r\n    \"ticket\": {\r\n        \"id\": 2919\r\n    },\r\n    \"warehouseId\": 1\r\n    },\r\n    \"warehouseBinId\": 1,\r\n    \"warehouseBinIdObject\": {\r\n        \"id\": 1\r\n    },\r\n    \"calculatedPriceFlag\": false,\r\n    \"calculatedCostFlag\": false,\r\n    \"warehouse\": \"Default\",\r\n    \"warehouseBin\": \"Default\",\r\n    \"taxCode\": {\r\n        \"id\": 11\r\n    },\r\n    \"listPrice\": 44.990000,\r\n    \"company\": {\r\n        \"id\": 3\r\n    },\r\n    \"productClass\": \"Agreement\",\r\n    \"needToPurchaseFlag\": false,\r\n    \"minimumStockFlag\": false,\r\n    \"poApprovedFlag\": false,\r\n    \"uom\": \"Month\",\r\n    \"customFields\": [\r\n        {\r\n            \"id\": 308,\r\n            \"caption\": \"test prod cust\",\r\n            \"type\": \"Text\",\r\n            \"entryMethod\": \"EntryField\",\r\n            \"numberOfDecimals\": 0\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/procurement/products",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"procurement",
+								"products"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Time",
+			"item": [
+				{
+					"name": "time-entries-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/time/entries/60",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"time",
+								"entries",
+								"60"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "time-entry-audits-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/time/entries/10/audits",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"time",
+								"entries",
+								"10",
+								"audits"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "time-entries-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"id\": 59,\r\n        \"company\": {\r\n            \"id\": 3\r\n        },\r\n        \"chargeToId\": 0,\r\n        \"chargeToType\": null,\r\n        \"member\": {\r\n            \"id\": 204\r\n        },\r\n        \"locationId\": 2,\r\n        \"businessUnitId\": 16,\r\n        \"workType\": {\r\n            \"id\": 3\r\n        },\r\n        \"workRole\": {\r\n            \"id\": 21\r\n        },\r\n        \"timeStart\": \"2022-11-28T22:52:00Z\",\r\n        \"timeEnd\": \"2022-11-28T22:53:09Z\",\r\n        \"hoursDeduct\": 0.00,\r\n        \"actualHours\": 0.02,\r\n        \"billableOption\": \"Billable\",\r\n        \"notes\": \"test time part 2\",\r\n        \"addToDetailDescriptionFlag\": false,\r\n        \"addToInternalAnalysisFlag\": false,\r\n        \"addToResolutionFlag\": false,\r\n        \"emailResourceFlag\": false,\r\n        \"emailContactFlag\": false,\r\n        \"emailCcFlag\": false,\r\n        \"hoursBilled\": 0.25,\r\n        \"invoiceHours\": 0.25,\r\n        \"enteredBy\": \"mlaplante\",\r\n        \"dateEntered\": \"2022-11-28T22:53:13Z\",\r\n        \"mobileGuid\": \"cc84d6de-359a-407c-a1c6-9d8afc80ff32\",\r\n        \"hourlyRate\": 125.0000,\r\n        \"agreementHours\": 0.00,\r\n        \"agreementAmount\": 0.00,\r\n        \"timeSheet\": {\r\n            \"id\": 598\r\n        }\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/time/entries/59",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"time",
+								"entries",
+								"59"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "time-entries-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"company\": {\r\n            \"id\": 3\r\n        },\r\n        \"chargeToId\": 0,\r\n        \"chargeToType\": null,\r\n        \"member\": {\r\n            \"id\": 204\r\n        },\r\n        \"locationId\": 2,\r\n        \"businessUnitId\": 16,\r\n        \"workType\": {\r\n            \"id\": 3\r\n        },\r\n        \"workRole\": {\r\n            \"id\": 21\r\n        },\r\n        \"timeStart\": \"2022-11-28T22:52:00Z\",\r\n        \"timeEnd\": \"2022-11-28T22:53:09Z\",\r\n        \"hoursDeduct\": 0.00,\r\n        \"actualHours\": 0.02,\r\n        \"billableOption\": \"Billable\",\r\n        \"notes\": \"test time part 2\",\r\n        \"addToDetailDescriptionFlag\": false,\r\n        \"addToInternalAnalysisFlag\": false,\r\n        \"addToResolutionFlag\": false,\r\n        \"emailResourceFlag\": false,\r\n        \"emailContactFlag\": false,\r\n        \"emailCcFlag\": false,\r\n        \"hoursBilled\": 0.25,\r\n        \"invoiceHours\": 0.25,\r\n        \"enteredBy\": \"mlaplante\",\r\n        \"dateEntered\": \"2022-11-28T22:53:13Z\",\r\n        \"mobileGuid\": \"cc84d6de-359a-407c-a1c6-9d8afc80ff32\",\r\n        \"hourlyRate\": 125.0000,\r\n        \"agreementHours\": 0.00,\r\n        \"agreementAmount\": 0.00,\r\n        \"timeSheet\": {\r\n            \"id\": 598\r\n        }\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/time/entries",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"time",
+								"entries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "time-entries-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"chargeToId\",\r\n        \"value\": null\r\n    },\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"chargeToType\",\r\n        \"value\": null\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/time/entries/59",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"time",
+								"entries",
+								"59"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Project",
+			"item": [
+				{
+					"name": "projects-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/project/projects",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "projecttemplates-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/project/projecttemplates",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projecttemplates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "projects-get Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/project/projects",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "project-phases-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/project/projects/4/phases",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projects",
+								"4",
+								"phases"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "projecttemplate-phases-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/project/projecttemplates/108/projectTemplatePhases",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projecttemplates",
+								"108",
+								"projectTemplatePhases"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "project-phases-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\"op\":\"replace\",\"path\":\"notes\"},\r\n    {\"op\":\"replace\",\"path\":\"description\",\"value\":\"Project Management\"},\r\n    {\"op\":\"replace\",\"path\":\"status\",\"value\":{\"id\":1}},\r\n    {\"op\":\"replace\",\"path\":\"parentPhase\",\"value\":{\"id\":92}}\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/project/projects/12/phases/91",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"project",
+								"projects",
+								"12",
+								"phases",
+								"91"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Service",
+			"item": [
+				{
+					"name": "tickets-get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.connectwise.com+json; version=2022.2",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets?conditions=lastUpdated>=[2023-02-07T10:00:00Z]",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "conditions",
+									"value": "lastUpdated>=[2023-02-07T10:00:00Z]"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-notes-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/3163/notes/3764",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"3163",
+								"notes",
+								"3764"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-notes-patch",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/10/notes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"10",
+								"notes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "tickets-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"summary\": \"Internal IIS server down (but pingable) test new ticket\",\r\n    \"recordType\": \"ServiceTicket\",\r\n    \"board\": {\r\n        \"id\": 1\r\n    },\r\n    \"status\": {\r\n        \"id\": 53\r\n    },\r\n    \"company\": {\r\n        \"id\": 4\r\n    },\r\n    \"site\": {\r\n        \"id\": 3\r\n    },\r\n    \"contact\": {\r\n        \"id\": 8\r\n    },\r\n    \"priority\": {\r\n        \"id\": 3\r\n    },\r\n    \"serviceLocation\": {\r\n        \"id\": 1\r\n    },\r\n    \"source\": {\r\n        \"id\": 2\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/tickets",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "tickets-patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"op\": \"replace\",\r\n        \"path\": \"/customFields/1/value\",\r\n        \"value\": \"MPF\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/2100",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"2100"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-boards-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/boards",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-info-boards-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/info/boards?pagesize=500&fields=id,name&page=1",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"info",
+								"boards"
+							],
+							"query": [
+								{
+									"key": "pagesize",
+									"value": "500"
+								},
+								{
+									"key": "fields",
+									"value": "id,name"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-statuses-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/boards/1/statuses/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"1",
+								"statuses",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-types-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/types",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-subtypes-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/boards/1/subtypes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"1",
+								"subtypes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "tickets-get-with-member-auth",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/3",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-teams-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/teams",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"teams"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-boards-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"name\": \"Test board from API\",\r\n        \"location\": {\r\n            \"id\": 2\r\n        },\r\n        \"department\": {\r\n            \"id\": 10\r\n        },\r\n        \"inactiveFlag\": false,\r\n        \"signOffTemplate\": {\r\n            \"id\": 1\r\n        },\r\n        \"sendToContactFlag\": false,\r\n        \"sendToResourceFlag\": false,\r\n        \"projectFlag\": false,\r\n        \"boardIcon\": {\r\n            \"id\": 265,\r\n            \"name\": \"service-network.gif\"\r\n        },\r\n        \"billTicketsAfterClosedFlag\": false,\r\n        \"billTicketSeparatelyFlag\": false,\r\n        \"billUnapprovedTimeExpenseFlag\": false,\r\n        \"overrideBillingSetupFlag\": false,\r\n        \"billTime\": \"NoDefault\",\r\n        \"billExpense\": \"NoDefault\",\r\n        \"billProduct\": \"Billable\",\r\n        \"autoAssignNewTicketsFlag\": false,\r\n        \"autoAssignNewECTicketsFlag\": false,\r\n        \"autoAssignNewPortalTicketsFlag\": false,\r\n        \"discussionsLockedFlag\": false,\r\n        \"timeEntryLockedFlag\": false,\r\n        \"closedLoopDiscussionsFlag\": false,\r\n        \"closedLoopResolutionFlag\": false,\r\n        \"closedLoopInternalAnalysisFlag\": false,\r\n        \"timeEntryDiscussionFlag\": false,\r\n        \"timeEntryResolutionFlag\": false,\r\n        \"timeEntryInternalAnalysisFlag\": false,\r\n        \"problemSort\": \"Descending\",\r\n        \"resolutionSort\": \"Descending\",\r\n        \"internalAnalysisSort\": \"Descending\",\r\n        \"emailConnectorAllowReopenClosedFlag\": false,\r\n        \"emailConnectorReopenResourcesFlag\": false,\r\n        \"emailConnectorNewTicketNoMatchFlag\": false,\r\n        \"emailConnectorNeverReopenByDaysFlag\": false,\r\n        \"emailConnectorReopenDaysLimit\": 0,\r\n        \"emailConnectorNeverReopenByDaysClosedFlag\": false,\r\n        \"emailConnectorReopenDaysClosedLimit\": 0,\r\n        \"useMemberDisplayNameFlag\": false,\r\n        \"sendToCCFlag\": false,\r\n        \"autoAssignTicketOwnerFlag\": false,\r\n        \"closedLoopAllFlag\": true,\r\n        \"percentageCalculation\": \"Manual\",\r\n        \"allSort\": \"Descending\",\r\n        \"markFirstNoteIssueFlag\": false,\r\n        \"restrictBoardByDefaultFlag\": false\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/boards",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-statuses-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"New (Email)\",\r\n    \"sortOrder\": 20,\r\n    \"displayOnBoard\": true,\r\n    \"inactive\": false,\r\n    \"closedStatus\": false,\r\n    \"timeEntryNotAllowed\": false,\r\n    \"defaultFlag\": false,\r\n    \"escalationStatus\": \"ResolutionPlan\",\r\n    \"customerPortalFlag\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/statuses",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"statuses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-types-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": " {\r\n    \"name\": \"Break-fix\",\r\n    \"category\": \"Reactive\",\r\n    \"defaultFlag\": false,\r\n    \"inactiveFlag\": false,\r\n    \"requestForChangeFlag\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/types",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-subtypes-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Hardware\",\r\n    \"inactiveFlag\": false,\r\n    \"typeAssociationIds\": [\r\n        25\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/subtypes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"subtypes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-board-teams-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Service Team\",\r\n    \"teamLeader\": {\r\n        \"id\": 176\r\n    },\r\n    \"members\": [\r\n        176,\r\n        186,\r\n        187\r\n    ],\r\n    \"defaultFlag\": true,\r\n    \"notifyOnTicketDelete\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/boards/12/teams",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"boards",
+								"12",
+								"teams"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-audit-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/system/audittrail?type=ticket&id=2986",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"system",
+								"audittrail"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "ticket"
+								},
+								{
+									"key": "id",
+									"value": "2986"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-tasks-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/1445/tasks",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"1445",
+								"tasks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-tasks-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"notes\": \"test note2\",\r\n    \"closedFlag\": false,\r\n    \"priority\": 1,\r\n    \"member\": {\r\n        \"id\": 224\r\n    },\r\n    \"resolution\": \"test resolution 2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/3166/tasks",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"3166",
+								"tasks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-documents-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/1445/documents",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"1445",
+								"documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "priorities-get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.connectwise.com+json; version=2022.2",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/priorities",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"priorities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-notes-put",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"ticketId\": 10,\r\n        \"text\": \"\\\\*\\\\*\\\\* Service time entry of User10 on 9/13/2005 - 11:04 AM \\\\*\\\\*\\\\*\\r\\nworked on desktop installs\",\r\n        \"detailDescriptionFlag\": false,\r\n        \"internalAnalysisFlag\": false,\r\n        \"resolutionFlag\": true,\r\n        \"issueFlag\": true,\r\n        \"dateCreated\": \"2009-05-01T14:31:47Z\",\r\n        \"createdBy\": \"Conversion\",\r\n        \"internalFlag\": true,\r\n        \"externalFlag\": false,\r\n        \"_info\": {\r\n            \"lastUpdated\": \"2009-05-01T14:31:47Z\",\r\n            \"updatedBy\": \"Conversion\"\r\n        }\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/10/notes/95",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"10",
+								"notes",
+								"95"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ticket-signoff-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/tickets/2973/notes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"tickets",
+								"2973",
+								"notes"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Unsupported",
+			"item": [
+				{
+					"name": "update-today-page-tabs",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "actionMessage",
+									"value": "{\"payload\":\"{\\\"memberRecId\\\":204,\\\"memberExtendedPropertyMap\\\":{\\\"todayTabView\\\":\\\"today,hosted_1,hosted_4,hosted_5\\\"}}\",\"payloadClassName\":\"UpdateMemberExtendedPropertyAction\",\"project\":\"SystemCommon\"}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://staging.connectwisedev.com/v4_6_release/services/system_io/actionprocessor/System/UpdateMemberExtendedPropertyAction.rails",
+							"protocol": "https",
+							"host": [
+								"staging",
+								"connectwisedev",
+								"com"
+							],
+							"path": [
+								"v4_6_release",
+								"services",
+								"system_io",
+								"actionprocessor",
+								"System",
+								"UpdateMemberExtendedPropertyAction.rails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-company-id-post",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "actionMessage",
+									"value": "{\"payload\":\"{\\\"companyDetailsViewModel\\\":{\\\"companyDetailPodViewModel\\\":{\\\"market\\\":{\\\"name\\\":\\\"\\\"},\\\"status\\\":{\\\"id\\\":13,\\\"name\\\":\\\"not-Approved\\\"},\\\"territory\\\":{\\\"id\\\":40,\\\"name\\\":\\\"House+Accounts\\\"},\\\"companyRecId\\\":147,\\\"companyId\\\":\\\"0AAA\\\",\\\"dateAcquired\\\":\\\"1676454099830\\\",\\\"typeList\\\":[{\\\"company_Type_Recid\\\":34,\\\"description\\\":\\\"Prospect\\\"}],\\\"userDefinedFieldValues\\\":[{\\\"rowNum\\\":1,\\\"userDefinedFieldRecId\\\":1,\\\"absolutePath\\\":\\\"userDefinedFieldValues[0]\\\"},{\\\"rowNum\\\":2,\\\"userDefinedFieldRecId\\\":2,\\\"absolutePath\\\":\\\"userDefinedFieldValues[1]\\\"}]},\\\"companyPrimaryContactPodViewModel\\\":{\\\"companyAddress\\\":{\\\"country\\\":{\\\"country_RecID\\\":1,\\\"country1\\\":\\\"United+States\\\"},\\\"companyAddressRecid\\\":154,\\\"company_RecID\\\":0,\\\"addressLine1\\\":\\\"\\\",\\\"addressLine2\\\":\\\"\\\",\\\"city\\\":\\\"\\\",\\\"description\\\":\\\"Main\\\",\\\"stateId\\\":\\\"\\\",\\\"zip\\\":\\\"\\\"},\\\"contact\\\":{\\\"country\\\":\\\"United+States\\\",\\\"firstName\\\":\\\"\\\",\\\"formattedPhone\\\":\\\"\\\",\\\"fullName\\\":\\\"+\\\",\\\"relationship\\\":\\\"\\\",\\\"title\\\":\\\"\\\",\\\"type\\\":\\\"\\\"},\\\"companyRecId\\\":147,\\\"companyName\\\":\\\"AAA\\\",\\\"country\\\":\\\"United+States\\\"},\\\"baseCompanyPodViewModel\\\":{\\\"companyAddress\\\":{\\\"country\\\":{\\\"country_RecID\\\":1,\\\"country1\\\":\\\"United+States\\\"},\\\"companyAddressRecid\\\":154,\\\"company_RecID\\\":147,\\\"addressLine1\\\":\\\"\\\",\\\"addressLine2\\\":\\\"\\\",\\\"city\\\":\\\"\\\",\\\"description\\\":\\\"Main\\\",\\\"stateId\\\":\\\"\\\",\\\"zip\\\":\\\"\\\"},\\\"company\\\":{\\\"companyRecid\\\":147,\\\"companyName\\\":\\\"AAA\\\",\\\"phoneNumber\\\":\\\"\\\"},\\\"companyName\\\":\\\"AAA\\\",\\\"companyPhone\\\":\\\"\\\",\\\"contactEmailAddress\\\":\\\"\\\",\\\"facebook\\\":\\\"\\\",\\\"faxNbr\\\":\\\"\\\",\\\"linkedIn\\\":\\\"\\\",\\\"twitter\\\":\\\"\\\",\\\"webSite\\\":\\\"\\\",\\\"userDefinedFieldValues\\\":[{\\\"rowNum\\\":1,\\\"userDefinedFieldRecId\\\":6,\\\"absolutePath\\\":\\\"userDefinedFieldValues[0]\\\"},{\\\"rowNum\\\":2,\\\"userDefinedFieldRecId\\\":305,\\\"absolutePath\\\":\\\"userDefinedFieldValues[1]\\\"}]},\\\"companyRecId\\\":147,\\\"companyId\\\":\\\"AAA\\\",\\\"companyName\\\":\\\"AAA\\\",\\\"lastUpdateUtc\\\":\\\"2/8/2024+5:50:55+PM\\\",\\\"screenLinks\\\":[{\\\"screenLinkRecid\\\":1,\\\"linkDefinition\\\":\\\"http://www.google.com/search?hl=en&q=[companyname]\\\",\\\"linkName\\\":\\\"Company+Google+Search\\\",\\\"screenLinkTable\\\":\\\"Company\\\"}],\\\"userDefinedFieldValues\\\":[{\\\"rowNum\\\":1,\\\"userDefinedFieldRecId\\\":1,\\\"absolutePath\\\":\\\"userDefinedFieldValues[0]\\\"},{\\\"rowNum\\\":2,\\\"userDefinedFieldRecId\\\":2,\\\"absolutePath\\\":\\\"userDefinedFieldValues[1]\\\"},{\\\"rowNum\\\":1,\\\"userDefinedFieldRecId\\\":6,\\\"absolutePath\\\":\\\"userDefinedFieldValues[0]\\\"},{\\\"rowNum\\\":2,\\\"userDefinedFieldRecId\\\":305,\\\"absolutePath\\\":\\\"userDefinedFieldValues[1]\\\"}]},\\\"companyRecId\\\":147}\",\"payloadClassName\":\"UpdateCompanyDetailsAction\",\"project\":\"ContactCommon\"}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://staging.connectwisedev.com/v2024_1/services/system_io/actionprocessor/Contact/UpdateCompanyDetailsAction.rails",
+							"protocol": "https",
+							"host": [
+								"staging",
+								"connectwisedev",
+								"com"
+							],
+							"path": [
+								"v2024_1",
+								"services",
+								"system_io",
+								"actionprocessor",
+								"Contact",
+								"UpdateCompanyDetailsAction.rails"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Schedule",
+			"item": [
+				{
+					"name": "schedule-entries-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/schedule/entries/627",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"entries",
+								"627"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "appointments-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api-na.myconnectwise.net/v2024_1//system/calendarsync/GetAppointment.rails?scheduleRecid=985068&scheduleDetailRecid=0&meetingRecid=0",
+							"protocol": "https",
+							"host": [
+								"api-na",
+								"myconnectwise",
+								"net"
+							],
+							"path": [
+								"v2024_1",
+								"",
+								"system",
+								"calendarsync",
+								"GetAppointment.rails"
+							],
+							"query": [
+								{
+									"key": "scheduleRecid",
+									"value": "985068"
+								},
+								{
+									"key": "scheduleDetailRecid",
+									"value": "0"
+								},
+								{
+									"key": "meetingRecid",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-entries-post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"objectId\": 567,\r\n    \"dateStart\": \"2022-03-21T12:00:00Z\",\r\n    \"dateEnd\": \"2022-03-21T16:00:00Z\",\r\n    \"member\": {\r\n        \"id\": 208\r\n    },\r\n    \"where\": {\r\n        \"id\": 1,\r\n        \"name\": \"On-Site\"\r\n    },\r\n    \"reminder\": {\r\n        \"id\": 4,\r\n        \"name\": \"15 minutes\"\r\n    },\r\n    \"status\": {\r\n        \"id\": 2,\r\n        \"name\": \"Firm\"\r\n    },\r\n    \"type\": {\r\n        \"id\": 4,\r\n        \"identifier\": \"S\"\r\n    },\r\n    \"span\": {\r\n        \"id\": 1,\r\n        \"identifier\": \"N\"\r\n    },\r\n    \"doneFlag\": false,\r\n    \"acknowledgedFlag\": false,\r\n    \"ownerFlag\": false,\r\n    \"meetingFlag\": false,\r\n    \"hours\": 0.00\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/schedule/entries",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"entries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-entries-post-ticket-owner",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"objectId\": 567,\r\n    \"member\": {\r\n        \"id\": 204\r\n    },\r\n    \"type\": {\r\n        \"id\": 4\r\n    },\r\n    \"ownerFlag\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{apiurl}}/schedule/entries",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"entries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-entries-delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/schedule/entries/403",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"entries",
+								"403"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "service-locations(where)-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/service/locations",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"service",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-reminderTimes-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/schedule/reminderTimes",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"reminderTimes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-statuses-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/schedule/statuses",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"statuses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule-types-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/schedule/types",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"schedule",
+								"types"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sales",
+			"item": [
+				{
+					"name": "activities-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/sales/activities",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"sales",
+								"activities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "opportunities-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/sales/opportunities",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"sales",
+								"opportunities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "opportunityforecsts-get",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{apiurl}}/sales/opportunities/15/forecast",
+							"host": [
+								"{{apiurl}}"
+							],
+							"path": [
+								"sales",
+								"opportunities",
+								"15",
+								"forecast"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "opportunity-audit-post",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "clientId",
+								"value": "{{clientid}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "tableRef",
+									"value": "so_opportunity",
+									"type": "text"
+								},
+								{
+									"key": "recID",
+									"value": "3",
+									"type": "text"
+								},
+								{
+									"key": "auditTextKey",
+									"value": "workflow_event",
+									"type": "text"
+								},
+								{
+									"key": "auditType",
+									"value": "Opportunity",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[0].AuditToken",
+									"value": "rule_name",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[0].Value",
+									"value": "Opportunity%3a+Won",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[0].LocaleRecId",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[1].AuditToken",
+									"value": "event_id",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[1].Value",
+									"value": "67",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[1].LocaleRecId",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "auditValues[1].AuditValueRecId",
+									"value": "67",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://staging.connectwisedev.com/v4_6_release/services/system_io/workflow/UpdateAuditTrail.rails",
+							"protocol": "https",
+							"host": [
+								"staging",
+								"connectwisedev",
+								"com"
+							],
+							"path": [
+								"v4_6_release",
+								"services",
+								"system_io",
+								"workflow",
+								"UpdateAuditTrail.rails"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "territories-get Copy",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "clientId",
+						"value": "{{clientid}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{apiurl}}/system/locations?conditions=locationFlag=true",
+					"host": [
+						"{{apiurl}}"
+					],
+					"path": [
+						"system",
+						"locations"
+					],
+					"query": [
+						{
+							"key": "conditions",
+							"value": "locationFlag=true"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "{{privatekey}}",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "{{logincompany}}+{{publickey}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
