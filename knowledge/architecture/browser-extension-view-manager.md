@@ -386,3 +386,27 @@ Tracked as initiatives rather than left inline — see `Initiatives-Open.md`:
   `fetch`/`XMLHttpRequest` directly into the page context and reading
   `window.performance.getEntriesByType('resource')` for URLs, then
   patching `fetch`/`XHR` for actual request bodies.
+
+---
+
+## 11. Naming & the toolbar popup (added 2026-07-23)
+
+**Naming:** the product is the **CAST Browser Extension** — drop the old "View
+Manager" / "Triton View Manager" name everywhere (folder, docs, copy). In the
+browser toolbar (by the address bar) it shows simply **"CAST"** with the **Triton
+trident icon** (`INIT-0007`).
+
+**Popup (click the toolbar icon)** — a small branded modal showing:
+- **Detected user:** `First Last (cwMemberID)` — from the localStorage session
+  read (§3): `member.fullName` (or first/last) + `member.memberID`.
+- **Position** — the CW security role (`member.roleName`).
+- **Department** — `member.defaultGroup.description`. **If enabled for that user
+  in the CAST app**, Department is a **dropdown** letting them pick a *different*
+  Department to preview/apply that Department's view customization (the per-user
+  "may switch department" flag comes from the app config / check-in response).
+- **Extension version** — `chrome.runtime.getManifest().version`.
+- **Last sync** — timestamp of the last *successful* check-in with the CAST app
+  server (the staleness timestamp from `extension-telemetry-and-identity.md` §1).
+
+This popup is also the natural home for the manual role/department override
+(§3's safety net) and the "Report a problem" button (§8).

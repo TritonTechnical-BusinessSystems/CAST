@@ -1,35 +1,17 @@
 /**
- * Settings + secret store on better-sqlite3 (INIT-0013 / INIT-0008).
- *
- * Embedded, synchronous, single-file — the right fit for this internal single-node
- * app (same choice as SOC). Secret VALUES are AES-256-GCM encrypted at rest;
- * non-secret settings are plain JSON. Public API is unchanged from the prior
- * file-store so nothing else needed to change.
- *
- * Encryption key: from CAST_SECRET_KEY (env) when set; else a random dev keyfile.
+ * Settings + secret store on the shared better-sqlite3 DB (INIT-0013). Secret
+ * VALUES are AES-256-GCM encrypted at rest; settings are plain JSON. Key from
+ * CAST_SECRET_KEY (env) when set, else a dev keyfile.
  */
-import Database from "better-sqlite3";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { db, DB_KEY_FILE } from "./db";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
-
-const DATA_DIR = process.env.CAST_DATA_DIR ?? join(process.cwd(), ".data");
-const DB_FILE = join(DATA_DIR, "cast.db");
-const KEY_FILE = join(DATA_DIR, "secret.key");
-
-mkdirSync(DATA_DIR, { recursive: true });
-const db = new Database(DB_FILE);
-db.pragma("journal_mode = WAL");
-db.exec(`
-  CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, iv TEXT NOT NULL, tag TEXT NOT NULL, data TEXT NOT NULL);
-`);
 
 function getKey(): Buffer {
   const env = process.env.CAST_SECRET_KEY;
   if (env && env.length >= 16) return scryptSync(env, "cast.secret.salt.v1", 32);
-  if (!existsSync(KEY_FILE)) writeFileSync(KEY_FILE, randomBytes(32).toString("hex"), { mode: 0o600 });
-  return Buffer.from(readFileSync(KEY_FILE, "utf8").trim(), "hex");
+  if (!existsSync(DB_KEY_FILE)) writeFileSync(DB_KEY_FILE, randomBytes(32).toString("hex"), { mode: 0o600 });
+  return Buffer.from(readFileSync(DB_KEY_FILE, "utf8").trim(), "hex");
 }
 
 export function getSetting<T = unknown>(key: string): T | undefined {

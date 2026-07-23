@@ -4,7 +4,7 @@
  * CW call. The SPA can write/update creds but never reads a plaintext secret back.
  */
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requirePermission } from "../middleware/auth";
 import { config } from "../config";
 import { resolveCwCreds, saveCwCreds, mask } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
@@ -35,7 +35,7 @@ router.post("/connectwise/test", requireAuth, async (_req, res) => {
   }
 });
 
-router.post("/connectwise", requireAuth, (req, res) => {
+router.post("/connectwise", requirePermission("integrations.write"), (req, res) => {
   const { company, publicKey, privateKey, clientId, baseUrl } = (req.body ?? {}) as Record<string, string>;
   if (!company && !publicKey && !privateKey && !clientId && !baseUrl) {
     return res.status(400).json({ error: "Provide at least one credential field to save" });

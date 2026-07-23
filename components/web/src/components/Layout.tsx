@@ -25,8 +25,11 @@ const groups = [
 
 const allItems = groups.flatMap((g) => g.items);
 
+// Nav items that require a permission to appear.
+const REQUIRES: Record<string, string> = { "/integrations": "integrations.write" };
+
 export function Layout({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const current = allItems.find((n) => pathname.startsWith(n.href));
@@ -47,7 +50,9 @@ export function Layout({ children }: { children: ReactNode }) {
           {groups.map((g) => (
             <div key={g.label}>
               <div className="rail-section-label">{g.label}</div>
-              {g.items.map((item) => {
+              {g.items
+                .filter((item) => !REQUIRES[item.href] || can(REQUIRES[item.href]))
+                .map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink key={item.href} to={item.href} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
@@ -68,7 +73,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="row gap-3">
             <div className="topbar-user">
               <div className="topbar-user-name">{user?.displayName}</div>
-              <div className="topbar-user-tag">{user?.source === "ad" ? "Active Directory" : "Local account"}</div>
+              <div className="topbar-user-tag">
+                {(user?.source === "ad" ? "Active Directory" : "Local account")} · {user?.role}
+              </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onSignOut}>
               <IconLogout /> Sign out

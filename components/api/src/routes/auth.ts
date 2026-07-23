@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticateAD } from "../auth/ad";
 import { authenticateLocal } from "../auth/local";
 import { issueSession, clearSession, requireAuth } from "../middleware/auth";
+import { permissionsFor } from "../auth/permissions";
 import { adConfigured } from "../config";
 
 const router = Router();
@@ -27,7 +28,7 @@ router.post("/login", async (req, res) => {
     return;
   }
   issueSession(res, result.user);
-  res.json({ user: result.user });
+  res.json({ user: result.user, permissions: permissionsFor(result.user.role) });
 });
 
 router.post("/logout", (_req, res) => {
@@ -36,7 +37,7 @@ router.post("/logout", (_req, res) => {
 });
 
 router.get("/me", requireAuth, (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: req.user, permissions: permissionsFor(req.user!.role) });
 });
 
 /** Map internal auth reasons to user-facing messages (naming per lexicon). */

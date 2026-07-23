@@ -9,11 +9,14 @@
  */
 import { Client } from "ldapts";
 import { config, adConfigured } from "../config";
+import type { Role } from "./permissions";
+import { roleForGroups, DEFAULT_ROLE } from "./accessConfig";
 
 export interface AuthedUser {
   id: string;
   displayName: string;
   source: "ad" | "local";
+  role: Role;
 }
 
 export type AuthResult =
@@ -48,8 +51,9 @@ export async function authenticateAD(username: string, password: string): Promis
       await userClient.unbind().catch(() => {});
     }
 
-    // 3. Require membership in the CAST Users group (nested via the recursive
-    //    matching-rule OID 1.2.840.113556.1.4.1941).
+    // 3. Require CAST Users membership (nested via the recursive matching-rule
+    //    OID 1.2.840.113556.1.4.1941), then resolve the user's role from groups.
+    let role: Role = DEFAULT_ROLE;
     const memberClient = new Client({ url: config.ldapUrl });
     try {
       await memberClient.bind(config.ldapBindDN, config.ldapBindPassword);
@@ -59,6 +63,14 @@ export async function authenticateAD(username: string, password: string): Promis
         attributes: ["sAMAccountName"],
       });
       if (groupHits.length === 0) return { ok: false, reason: "not-in-cast-users-group" };
+
+      // Role from the user's group CNs (direct memberOf; nested role-groups can
+      // be added later with the same recursive OID). Map in auth/accessConfig.ts.
+      const { searchEntries: userEntries } = await memberClient.search(userDN, { scope: "base", attributes: ["memberOf"] });
+      const mo = userEntries[0]?.memberOf;
+      const dns = Array.isArray(mo) ? mo.map(String) : mo ? [String(mo)] : [];
+      const cns = dns.map((dn) => /^CN=([^,]+)/i.exec(dn)?.[1] ?? "").filter(Boolean);
+      role = roleForGroups(cns);
     } finally {
       await memberClient.unbind().catch(() => {});
     }
@@ -69,6 +81,7 @@ export async function authenticateAD(username: string, password: string): Promis
         id: String(entry.sAMAccountName ?? username),
         displayName: String(entry.displayName ?? username),
         source: "ad",
+        role,
       },
     };
   } catch {

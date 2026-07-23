@@ -9,6 +9,7 @@ import trackingRoutes from "./routes/tracking";
 import integrationRoutes from "./routes/integrations";
 import healthRoutes from "./routes/health";
 import { startVesselSync } from "./jobs/vesselSync";
+import { seedBreakGlass } from "./auth/local";
 
 const app = express();
 app.use(express.json());
@@ -26,5 +27,6 @@ app.use("/api/health", healthRoutes);
 
 app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);
+  seedBreakGlass();
   startVesselSync();
 });
