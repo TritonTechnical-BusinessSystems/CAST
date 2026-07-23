@@ -52,6 +52,7 @@
   --text-xl: 1.25rem;    /* 20 */
   --text-2xl: 1.5rem;    /* 24 */
   --text-3xl: 1.875rem;  /* 30 */
+  --text-4xl: 2.25rem;   /* 36 — hero wordmark (public pages) */
 
   --weight-normal: 400;
   --weight-medium: 500;

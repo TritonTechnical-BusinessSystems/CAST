@@ -15,7 +15,7 @@ export function Download() {
           The CAST browser extension standardizes ConnectWise for your role — hiding clutter and surfacing what matters,
           automatically.
         </p>
-        <a className="btn btn-primary download-cta" href="/api/extension/install.bat" download>
+        <a className="btn btn-primary btn-lg download-cta" href="/api/extension/install.bat" download>
           <IconDownload width={18} height={18} />
           Download the CAST Browser Extension
         </a>

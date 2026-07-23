@@ -181,20 +181,20 @@
   gap: var(--space-5); padding: var(--space-6); background: var(--color-surface-rail);
 }
 .download-card {
-  width: 100%; max-width: 460px; background: var(--color-surface); border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg); padding: var(--space-8) var(--space-7); text-align: center;
+  width: 100%; max-width: 440px; background: var(--color-surface); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); padding: var(--space-8); text-align: center;
 }
-.download-logo { width: 64px; height: 64px; }
-.download-title { font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: 2.5rem; letter-spacing: 0.02em; margin-top: var(--space-2); }
+.download-logo { display: block; margin: 0 auto; width: 60px; height: 60px; }
+.download-title { font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-4xl); letter-spacing: 0.02em; margin-top: var(--space-1); }
 .download-tagline { color: var(--color-text-muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-1); }
-.download-desc { color: var(--color-text-muted); font-size: var(--text-base); line-height: 1.6; margin: var(--space-5) 0 var(--space-6); }
-.download-cta { width: 100%; height: 52px; padding: 0 var(--space-6); font-size: var(--text-md); }
-.download-for { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.1em; margin-top: var(--space-3); }
+.download-desc { color: var(--color-text-soft); font-size: var(--text-base); line-height: var(--leading-loose); margin: var(--space-5) 0 var(--space-6); }
+.download-cta { min-width: 260px; padding: 0 var(--space-6); }
+.download-for { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.1em; margin: var(--space-3) 0 0; }
 
-/* numbered install steps */
-.download-steps { list-style: none; margin: var(--space-7) 0 0; padding: var(--space-5) 0 0; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-3); text-align: left; }
+/* numbered install steps — grouped in a contained inset panel */
+.download-steps { list-style: none; margin: var(--space-6) 0 0; padding: var(--space-4) var(--space-5); background: var(--color-surface-sunken); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-3); text-align: left; }
 .download-steps li { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-base); color: var(--color-text); }
-.download-steps .step-num { flex-shrink: 0; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); background: var(--color-brand-wash); color: var(--color-brand-strong); font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+.download-steps .step-num { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); background: var(--color-brand); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-sm); }
 
 /* configuration sign-in — a button, set apart below the card */
 .download-signin { background: transparent; color: rgba(255, 255, 255, 0.85); border: 1px solid rgba(255, 255, 255, 0.28); }
