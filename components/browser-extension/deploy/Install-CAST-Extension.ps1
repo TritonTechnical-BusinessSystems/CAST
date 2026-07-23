@@ -12,7 +12,7 @@
 $ErrorActionPreference = "Stop"
 
 $ExtId  = "cijknnchejganljdmpdmdkajcmknmdpp"
-$Update = "https://cast-updates.tritontechnical.com/update-manifest.xml"
+$Update = "https://cast.tritontechnical.com/api/extension/update.xml"
 
 foreach ($base in @("HKLM:\SOFTWARE\Policies\Google\Chrome",
                     "HKLM:\SOFTWARE\Policies\Microsoft\Edge")) {

@@ -5,7 +5,7 @@ Force-installing CAST just means writing one **registry policy** on the machine
 to write it. Pick whichever fits — no Pulseway required.
 
 **Extension ID:** `cijknnchejganljdmpdmdkajcmknmdpp`
-**Update URL:** `https://cast-updates.tritontechnical.com/update-manifest.xml`
+**Update URL:** `https://cast.tritontechnical.com/api/extension/update.xml`
 
 ## Ways to push it
 | Method | How | Best for |

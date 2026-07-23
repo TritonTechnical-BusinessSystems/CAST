@@ -6,10 +6,10 @@ Windows Registry Editor Version 5.00
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\cijknnchejganljdmpdmdkajcmknmdpp]
 "installation_mode"="force_installed"
-"update_url"="https://cast-updates.tritontechnical.com/update-manifest.xml"
+"update_url"="https://cast.tritontechnical.com/api/extension/update.xml"
 "override_update_url"=dword:00000001
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\cijknnchejganljdmpdmdkajcmknmdpp]
 "installation_mode"="force_installed"
-"update_url"="https://cast-updates.tritontechnical.com/update-manifest.xml"
+"update_url"="https://cast.tritontechnical.com/api/extension/update.xml"
 "override_update_url"=dword:00000001
