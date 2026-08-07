@@ -16,8 +16,13 @@ The mechanics below are proven — they mirror **LogisticsCoordinator's live CW
 integration** (which is Python/httpx; CAST reimplements the same pattern in
 TypeScript in `components/api/src/connectwise/`). LC reference:
 `/home/matt/projects/Triton/LogisticsCoordinator/CLAUDE.md` §"ConnectWise API
-Reference" and `backend/app/services/cw_client.py`, plus the official
-`cw-api/PSA.postman_collection.json`.
+Reference" and `backend/app/services/cw_client.py`, plus the official Postman
+collection.
+
+> **Official CW docs:** `/home/matt/devresources/documentation/connectwise/`
+> (shared across CAST, CWHelper, and LogisticsCoordinator — not duplicated
+> per-repo as of 2026-08-07) holds the Postman collection, staging
+> environment, getting-started PDF, and field mapping spreadsheet.
 
 ## 1. Credentials (server-side only)
 
