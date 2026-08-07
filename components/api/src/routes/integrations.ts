@@ -5,7 +5,7 @@
  */
 import { Router } from "express";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { config } from "../config";
+import { config, isCwWritesEnabled, setCwWritesEnabled } from "../config";
 import { resolveCwCreds, saveCwCreds, mask } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
 
@@ -21,9 +21,17 @@ router.get("/connectwise", requireAuth, (_req, res) => {
     clientIdMasked: creds ? mask(creds.clientId) : "",
     imoField: config.cwImoFieldCaption,
     mmsiField: config.cwMmsiFieldCaption,
-    writesEnabled: config.cwWritesEnabled,
+    writesEnabled: isCwWritesEnabled(),
     source,
   });
+});
+
+// The safety-gate toggle itself — same admin-only tier as saving credentials.
+router.put("/connectwise/writes", requirePermission("integrations.write"), (req, res) => {
+  const { enabled } = (req.body ?? {}) as { enabled?: unknown };
+  if (typeof enabled !== "boolean") return res.status(400).json({ error: "enabled must be a boolean" });
+  setCwWritesEnabled(enabled);
+  res.json({ writesEnabled: isCwWritesEnabled() });
 });
 
 router.post("/connectwise/test", requireAuth, async (_req, res) => {

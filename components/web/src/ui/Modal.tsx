@@ -13,9 +13,9 @@ export function Modal({ title, children, footer, onClose }: { title: ReactNode; 
 
   return (
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true">
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="modal-header">
-          <h2 className="modal-title">{title}</h2>
+          <h2 className="modal-title" id="modal-title">{title}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close">
             <IconX />
           </button>

@@ -4,10 +4,11 @@
  */
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
-import { config, adConfigured, aisstreamConfigured } from "../config";
+import { config, adConfigured, aisstreamConfigured, isCwWritesEnabled } from "../config";
 import { resolveCwCreds } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
 import { getPackageManifest } from "../health/packages";
+import { getContainers } from "../health/containers";
 
 const router = Router();
 
@@ -17,6 +18,15 @@ router.get("/packages", requireAuth, async (_req, res) => {
     res.json({ packages: await getPackageManifest() });
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Package scan failed" });
+  }
+});
+
+/** Docker container inventory, via the read-only docker-socket-proxy. */
+router.get("/containers", requireAuth, async (_req, res) => {
+  try {
+    res.json({ containers: await getContainers() });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Container query failed" });
   }
 });
 const BUILD = process.env.CAST_BUILD ?? "dev";
@@ -43,7 +53,7 @@ router.get("/full", requireAuth, async (_req, res) => {
     app: { version: VERSION, build: BUILD, env: config.nodeEnv },
     integrations: { connectwise, aisstream, activeDirectory },
     sync,
-    cwWrites: config.cwWritesEnabled,
+    cwWrites: isCwWritesEnabled(),
   });
 });
 

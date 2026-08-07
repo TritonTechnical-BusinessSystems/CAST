@@ -10,6 +10,23 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.2.0 — build 2608007 — 2026-08-07T22:32:19Z
+
+### Added
+- [Frontend] **System Health: Docker container inventory.** A new "Docker Containers" card lists every container in the stack — name, purpose, image, live state/health, uptime, ports. `cast-api` never touches the raw Docker socket: it queries a new read-only `docker-proxy` service (`tecnativa/docker-socket-proxy`, `CONTAINERS` allow-listed only, never published to the host). Verified in isolation (proxy allows `GET /containers/json`, blocks `POST /containers/create` with 403) before wiring it in.
+- [Backend] `GET /api/health/containers`.
+- [Frontend] **ConnectWise writes are now toggleable in-app** (Integrations page, admin-only) — previously required editing `.env` and redeploying. Disabling is one click; enabling requires an extra confirm step (a modal explaining the consequence) since it's the riskier direction. A warning banner shows when writes are live.
+- [Backend] `PUT /api/integrations/connectwise/writes`. `isCwWritesEnabled()`/`setCwWritesEnabled()` (`config.ts`) — the in-app value wins once set, with the env var (`CW_WRITES_ENABLED`) as the boot-time seed only; every write-check reads it live, no restart needed. First working precedent of the precedence rule `INIT-0013` needed.
+- [UX] **`ux-designer` now drives a real, isolated browser** (Playwright, its own profile — never the shared FORGE desktop) as its default review step, not only when handed a screenshot. It starts a local dev instance, logs in as the break-glass account, navigates every changed route, and checks the mobile breakpoint. Source-only review is now the fallback for when no runnable instance exists. Closes half of `INIT-0022`'s tracked gap (the extension load-test against a real managed device is still open).
+
+### Fixed
+- [Backend] The real cause of the shutdown-crash investigated across 0.1.4.0–0.1.5: `better-sqlite3` v11.x on Node 24 ([WiseLibs/better-sqlite3#1376](https://github.com/WiseLibs/better-sqlite3/issues/1376)). Both Dockerfiles pinned to `node:22-slim`; zero crashes across 5 isolated start/stop cycles before deploying.
+- [Infra] `cast-api` image **1.14GB → 511MB** (multi-stage build — the compiler toolchain no longer ships in production); `deploy.sh`/`cast-autoupdate.sh` build sequentially and retry `docker compose up -d` once, both fixing real failures hit live during this session's deploys.
+
+### Docs
+- `knowledge/architecture/cast-web-app-deployment.md` — topology updated for `docker-proxy`, corrected the bind-mount description, updated the deploy-script summary.
+- `INIT-0016`, `INIT-0013`, `INIT-0022` updated to reflect the above.
+
 ## v0.1.5 — build 2608006 — 2026-08-07T21:59:29Z
 
 ### Fixed

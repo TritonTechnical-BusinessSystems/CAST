@@ -69,7 +69,7 @@ let manage: CwClient | null = null;
 /**
  * The active CW client: the live `ManageCwClient` when credentials resolve (env
  * or the encrypted store), otherwise the in-memory stub. Writes remain gated by
- * config.cwWritesEnabled inside ManageCwClient regardless.
+ * isCwWritesEnabled() inside ManageCwClient regardless.
  */
 export function getCwClient(): CwClient {
   if (resolveCwCreds().creds) {

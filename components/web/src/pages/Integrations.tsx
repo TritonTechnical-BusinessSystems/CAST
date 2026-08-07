@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { PageHeader, Card, CardHeader, CardBody, CardFooter, StatusDot, Button, Field, Input, Banner, Badge, Spinner, useToast } from "../ui";
+import { PageHeader, Card, CardHeader, CardBody, CardFooter, StatusDot, Button, Field, Input, Banner, Badge, Spinner, Modal, useToast } from "../ui";
+import { useAuth } from "../auth";
 
 type DotState = "ok" | "warn" | "down" | "idle";
 
@@ -18,16 +19,33 @@ interface CwStatus {
 
 export function Integrations() {
   const toast = useToast();
+  const { can } = useAuth();
   const [status, setStatus] = useState<CwStatus | null>(null);
   const [test, setTest] = useState<{ state: "idle" | "testing" | "ok" | "fail"; detail?: string }>({ state: "idle" });
   const [form, setForm] = useState({ company: "", publicKey: "", privateKey: "", clientId: "" });
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [confirmEnable, setConfirmEnable] = useState(false);
+  const [togglingWrites, setTogglingWrites] = useState(false);
 
   const load = () => {
     api.get<CwStatus>("/integrations/connectwise").then(setStatus).catch(() => {});
   };
   useEffect(load, []);
+
+  const setWrites = async (enabled: boolean) => {
+    setTogglingWrites(true);
+    try {
+      const r = await api.put<{ writesEnabled: boolean }>("/integrations/connectwise/writes", { enabled });
+      setStatus((s) => (s ? { ...s, writesEnabled: r.writesEnabled } : s));
+      toast(enabled ? "warning" : "success", enabled ? "ConnectWise writes are now ENABLED." : "ConnectWise writes disabled.");
+      setConfirmEnable(false);
+    } catch (e) {
+      toast("error", e instanceof Error ? e.message : "Failed to change writes setting");
+    } finally {
+      setTogglingWrites(false);
+    }
+  };
 
   const runTest = async () => {
     setTest({ state: "testing" });
@@ -84,6 +102,9 @@ export function Integrations() {
             {!status.configured && <Banner tone="warning">Not configured yet — enter credentials below.</Banner>}
             {test.state === "ok" && <Banner tone="success">Connected. {test.detail}</Banner>}
             {test.state === "fail" && <Banner tone="danger">{test.detail}</Banner>}
+            {status.writesEnabled && (
+              <Banner tone="warning">ConnectWise writes are enabled — CAST can make live changes in ConnectWise.</Banner>
+            )}
             <div>
               <div className="kv"><span className="kv-key">Site</span><span className="kv-val mono">{status.baseUrl}</span></div>
               <div className="kv"><span className="kv-key">Company</span><span className="kv-val mono">{status.company || "—"}</span></div>
@@ -92,8 +113,20 @@ export function Integrations() {
               <div className="kv"><span className="kv-key">IMO / MMSI fields</span><span className="kv-val">{status.imoField} / {status.mmsiField}</span></div>
               <div className="kv"><span className="kv-key">Source</span><span className="kv-val"><Badge tone="neutral">{status.source}</Badge></span></div>
               <div className="kv">
-                <span className="kv-key">CW writes</span>
-                <span className="kv-val">{status.writesEnabled ? <Badge tone="danger">ENABLED</Badge> : <Badge tone="success">disabled (safe)</Badge>}</span>
+                <span className="kv-key">ConnectWise writes</span>
+                <span className="kv-val row gap-2">
+                  {status.writesEnabled ? <Badge tone="danger">ENABLED</Badge> : <Badge tone="success">disabled (safe)</Badge>}
+                  {can("integrations.write") &&
+                    (status.writesEnabled ? (
+                      <Button size="sm" variant="secondary" onClick={() => setWrites(false)} disabled={togglingWrites}>
+                        {togglingWrites ? "Disabling…" : "Disable"}
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="secondary" onClick={() => setConfirmEnable(true)} disabled={togglingWrites}>
+                        Enable…
+                      </Button>
+                    ))}
+                </span>
               </div>
             </div>
           </div>
@@ -117,6 +150,28 @@ export function Integrations() {
           )}
         </CardFooter>
       </Card>
+      {confirmEnable && (
+        <Modal
+          title="Enable ConnectWise writes?"
+          onClose={() => !togglingWrites && setConfirmEnable(false)}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmEnable(false)} disabled={togglingWrites}>Cancel</Button>
+              <Button variant="danger" onClick={() => setWrites(true)} disabled={togglingWrites}>
+                {togglingWrites ? "Enabling…" : "Enable writes"}
+              </Button>
+            </>
+          }
+        >
+          <p>
+            CAST will begin writing to your live ConnectWise instance — vessel IMO/MMSI values and location updates will be
+            saved to real records.
+          </p>
+          <p className="muted text-sm">
+            Until now CAST has been read-only. You can turn writes back off from this page at any time.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

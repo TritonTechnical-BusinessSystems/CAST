@@ -3,10 +3,10 @@
  * Auth/base-URL/custom-field pattern mirrors LogisticsCoordinator's proven
  * integration (knowledge/architecture/connectwise-api-integration.md).
  *
- * SAFETY: every write checks config.cwWritesEnabled and refuses otherwise —
- * the user gate. Reads are always allowed.
+ * SAFETY: every write checks isCwWritesEnabled() and refuses otherwise — the
+ * user gate, toggleable in-app (Integrations page). Reads are always allowed.
  */
-import { config } from "../config";
+import { config, isCwWritesEnabled } from "../config";
 import { resolveCwCreds, type CwCreds } from "./creds";
 import type { CwClient, VesselCompany } from "./client";
 
@@ -109,8 +109,8 @@ export class ManageCwClient implements CwClient {
   }
 
   async setVesselIdentifiers(id: string, patch: { imo?: string; mmsi?: string }): Promise<VesselCompany> {
-    if (!config.cwWritesEnabled) {
-      throw new Error("ConnectWise writes are disabled (safety gate). Set CW_WRITES_ENABLED=true to allow.");
+    if (!isCwWritesEnabled()) {
+      throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
     // CW requires the WHOLE customFields array on PATCH — GET, splice, PATCH back.
     const company = await cwFetch<CwCompany>(`/company/companies/${id}?fields=id,name,status,customFields`);

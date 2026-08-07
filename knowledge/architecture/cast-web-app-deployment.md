@@ -2,7 +2,7 @@
 status: active
 read-when: Deploying CAST to trt-cast-01, or changing container topology, nginx, TLS, or the auto-update mechanism.
 related: [cast-web-app-vm-provisioning.md, connectwise-api-integration.md, ../decisions/0006-web-app-stack-vite-react-express.md]
-updated: 2026-07-23
+updated: 2026-08-07
 ---
 
 # CAST web app — deployment
@@ -13,11 +13,18 @@ mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
 (acme-dns DNS-01) and the GA auto-update timer enabled. App dir `/opt/cast/app`.
 
 ## Topology (`docker-compose.yml`)
-- **api** (`@cast/api`, Express via tsx) — internal only; encrypted store persisted
-  in the `cast_data` volume (`/app/components/api/.data`).
-- **web** (`nginx:alpine`) — serves the SPA + proxies `/api` → `api:3001`, terminates
-  TLS, publishes 80+443, bind-mounts `/etc/letsencrypt:ro`.
-Both `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
+- **docker-proxy** (`tecnativa/docker-socket-proxy`) — read-only view of the Docker
+  daemon for System Health's container inventory (`INIT-0016`). `api` talks to
+  this, never the raw socket — only `CONTAINERS` (GET) is allow-listed, and it's
+  never published to the host, only reachable from `api` on the internal network.
+- **api** (`@cast/api`, Express via tsx, multi-stage build) — internal only;
+  encrypted store persisted via a **host bind mount** `/opt/cast/data` →
+  `/app/components/api/.data` (not a named volume — `scripts/backup.sh` reads it
+  directly). Depends on `docker-proxy`.
+- **web** (built from `components/web/Dockerfile`, final stage `nginx:1.27-alpine`)
+  — serves the SPA + proxies `/api` → `api:3001`, terminates TLS, publishes
+  80+443, bind-mounts `/etc/letsencrypt:ro`. `depends_on: api` (`service_healthy`).
+All `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
 
 ## nginx (`components/web/nginx.conf`)
 `80 → 301 https`. `443 ssl` serves the SPA (try_files fallback, immutable asset
@@ -31,7 +38,11 @@ Renewal: `certbot.timer`; a deploy-hook reloads nginx.
 
 ## Deploy
 - App dir on VM: `/opt/cast/app` (git clone via the read-only deploy key).
-- **Manual:** `scripts/deploy.sh` (pull `main` + `docker compose up -d --build`).
+- **Manual:** `scripts/deploy.sh` — pulls `main`, builds `api` and `web`
+  **sequentially** (the VM is 2 vCPU/4GB; building both at once has caused a
+  memory-starved build failure), then `docker compose up -d` with one retry
+  after a short wait (covers a transient window where the outgoing container
+  is still settling and `web`'s health-gated dependency aborts the first try).
 - **Unattended GA-only:** `scripts/cast-autoupdate.sh` + `scripts/systemd/cast-autoupdate.{service,timer}`
   — daily; checks out the latest **GA** tag (`vX.Y.Z.C`, no pre-release suffix) and
   redeploys. Pull-based (outbound only). Install: copy units to `/etc/systemd/system`,

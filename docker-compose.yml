@@ -2,6 +2,22 @@
 # (knowledge/architecture/cast-web-app-vm-provisioning.md + cast-web-app-deployment.md).
 # Deploy from the repo root:  docker compose up -d --build
 services:
+  # Read-only view of the Docker daemon for System Health's container
+  # inventory (INIT-0016) — cast-api talks to THIS, never the raw socket, so a
+  # compromised API process can list containers but never control the daemon.
+  # Only CONTAINERS (GET) is allow-listed; everything else (POST/exec/etc.) is
+  # off by default. Never published to the host — reachable only from `api`
+  # over the internal bridge network.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: cast-docker-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [internal]
+
   api:
     build:
       context: .
@@ -14,6 +30,7 @@ services:
       # Encrypted store + key on a host bind mount so backups read it directly
       # (scripts/backup.sh). Persists across redeploys.
       - /opt/cast/data:/app/components/api/.data
+    depends_on: [docker-proxy]
     networks: [internal]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

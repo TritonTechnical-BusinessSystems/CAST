@@ -118,6 +118,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - Needs a persistence + **encryption-at-rest** decision (envelope encryption / a key from the host env or a secrets manager — a plain DB column is not sufficient). Ties to whatever store INIT-0008 picks (e.g. better-sqlite3).
   - Gate behind the strongest auth tier (admin / break-glass), not ordinary CAST Users.
   - Precedence rule needed: in-app-stored value vs. `.env` value — which wins, and how a service picks up a change without a restart.
+  - **A working precedent now exists (2026-08-07):** the `CW_WRITES_ENABLED` safety gate is now toggleable in-app (Integrations page, admin-only) — `isCwWritesEnabled()`/`setCwWritesEnabled()` in `components/api/src/config.ts` read/write a plain `settings` row (not the encrypted `secrets` table, since it's a boolean flag, not a credential) with the env var as the boot-time seed only; once toggled, the stored value wins and every write-check reads it live — no restart needed. Worth generalizing this exact pattern to real secrets (API keys) when this initiative is picked up in full.
 - **Related:** `INIT-0008`, `INIT-0012`, `knowledge/architecture/vessel-location-updating-aisstream.md`, `knowledge/decisions/0002-extension-never-touches-cw-credentials.md`.
 
 ### INIT-0014 — Vessel identity reconciliation & enrichment (backend interface)
@@ -150,7 +151,7 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0002`, `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0014`, `INIT-0016`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/architecture/vessel-location-updating-aisstream.md`.
 
 ### INIT-0016 — System Health page (like LogisticsCoordinator)
-- **Status:** In progress (page + `/api/health/full` integration probes built; host CPU/mem/disk gauges TODO) · **Source:** User · **Added:** 2026-07-23
+- **Status:** In progress (page + `/api/health/full` integration probes + Docker container inventory built 2026-08-07; host CPU/mem/disk gauges TODO) · **Source:** User · **Added:** 2026-07-23
 - **Serves:** Operational visibility — one page showing the health of CAST's dependencies/integrations so problems surface before someone reports them. Models LC's "System Health" page (System nav section).
 - **Idea:** A **System Health** page surfacing live green/amber/red status for: the **CW API** connection (reachable / auth / permission warnings — e.g. the statuses/boards Security gaps found 2026-07-23); the **aisstream** monitor (connected, last-message age); **AD/LDAPS** bind; the **vessel-sync** job (last/next run); the datastore; and build/version + uptime.
 - **Fleshing-out notes:**
@@ -158,7 +159,8 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
   - Model on LC's System Health page (investigate its exact contents/layout at build time).
   - Built on the design-system foundation from shared primitives (status cards / dots / badges) — a first-class screen, not ad-hoc.
   - Backend: a `/api/health/*` aggregation (extends the current `/api/health`) that probes each dependency.
-- **Related:** `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0014`, `INIT-0015`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/architecture/extension-telemetry-and-identity.md`.
+  - **Done 2026-08-07:** Docker container inventory (`GET /api/health/containers`, `ContainersCard` on the page) — name, purpose, image, live state/health, uptime, ports for every container in the stack. `cast-api` never touches the raw Docker socket: it queries a new `docker-proxy` service (`tecnativa/docker-socket-proxy`, read-only, `CONTAINERS` allow-listed only, never published to the host) added to `docker-compose.yml` — see `knowledge/architecture/cast-web-app-deployment.md`. This pattern (socket proxy, not a raw bind mount) is the template for any future host-introspection need.
+- **Related:** `INIT-0008`, `INIT-0012`, `INIT-0013`, `INIT-0014`, `INIT-0015`, `knowledge/architecture/connectwise-api-integration.md`, `knowledge/architecture/extension-telemetry-and-identity.md`, `knowledge/architecture/cast-web-app-deployment.md`.
 
 ### INIT-0017 — Geo Alerts (vessel geofencing → CW action)
 - **Status:** In progress (config surface built) · **Source:** User (evolved from the refit-signals idea) · **Added:** 2026-07-23
@@ -218,13 +220,14 @@ Entry template: `knowledge/templates/initiative.md`. IDs are stable and never re
 - **Related:** `INIT-0001`, `INIT-0020`, `knowledge/architecture/extension-telemetry-and-identity.md`, `knowledge/architecture/browser-extension.md`.
 
 ### INIT-0022 — Visual verification harness (Claude can see and drive a real browser)
-- **Status:** Fleshing-out · **Source:** User/Claude · **Added:** 2026-07-23
-- **Serves:** Two long-standing blind spots. (1) The `ux-designer` pre-deploy gate has been reviewing CAST web UI by **reading source and inferring appearance** — it has never seen a rendered page. (2) Per `CLAUDE.md`'s status line, the packed `cast.crx` has **never been load-tested on a real managed device** against a live ConnectWise session.
-- **Idea:** Give Claude a real browser it can both **see** and **drive**, on the same screen Matt is watching, so UI review uses rendered evidence and the extension can be exercised end-to-end against live CW.
-- **What now exists (2026-07-23, on `forge` — machine infra, scripts in `~/forge-setup/`, NOT in this repo):**
-  - Persistent VNC desktop on display `:1` (XFCE + TigerVNC + noVNC), systemd-enabled so it survives reboot. Matt connects with TigerVNC Viewer to **`forge:1`**; Claude drives the same display via `DISPLAY=:1`.
-  - Two **user-scoped** Playwright MCP servers (in `~/.claude.json`, so all forge projects get them): `playwright` (isolated headless Chromium) and `playwright-shared` (attaches over CDP to the Chrome on `:1`).
+- **Status:** In progress — UX-review half done (2026-08-07); extension load-test half still open · **Source:** User/Claude · **Added:** 2026-07-23
+- **Serves:** Two long-standing blind spots. (1) The `ux-designer` pre-deploy gate had been reviewing CAST web UI by **reading source and inferring appearance** — **closed 2026-08-07**, see below. (2) Per `CLAUDE.md`'s status line, the packed `cast.crx` has **never been load-tested on a real managed device** against a live ConnectWise session — still open.
+- **Idea:** Give Claude a real browser it can both **see** and **drive**, so UI review uses rendered evidence and the extension can be exercised end-to-end against live CW.
+- **Done 2026-08-07 — blind spot (1) closed, by explicit user instruction ("give ux-designer the tools access it needs — permanently"):** `.claude/agents/ux-designer.md` now carries `mcp__playwright` (the isolated headless server, its own profile) as a granted tool, with instructions to drive it as the **default** review step — start a local dev instance (`pnpm dev`) or hit the live site, log in as the local break-glass `TritonAdmin` account, navigate every changed route, check both desktop and the `768px` breakpoint, click through interactive states. Source-only review is now the fallback for when no runnable instance exists, not the norm. Explicitly forbidden from touching `playwright-shared` (see below) — that stays scoped to interactive work with Matt.
+- **What exists on `forge` for this (updated 2026-08-07 — host was rebuilt; the entry below superseded the original VNC-based one, kept for history in git):**
+  - ~~Persistent VNC desktop on display `:1`...~~ **Superseded.** GUI access is now **xrdp**, not VNC — see `~/projects/FORGE/CANON.md` (the living source of truth for this, not this initiative). Claude-in-Chrome connects automatically in a plain interactive session on FORGE.
+  - Two **user-scoped** Playwright MCP servers (`~/.claude.json`, all forge projects get them): `playwright` (isolated headless Chromium, its own profile — this is what `ux-designer` now uses) and `playwright-shared` (attaches over CDP to the Chrome on the shared xrdp desktop — reserved for interactive work Matt is watching, never for an autonomous review agent).
   - Real Google Chrome installed — required for loading the signed `.crx`, which Playwright's bundled Chromium can't properly exercise.
-- **Next steps:** (a) load `cast.crx` into the Chrome on `:1`, have Matt sign into ConnectWise by hand — credentials never pass through Claude — and verify the rule engine against real PSA pages; (b) feed real screenshots of every route into the `ux-designer` gate; (c) consider a scripted pre-deploy pass that captures each route for review.
-- **Known constraint:** forge is a Hyper-V guest and **GPU acceleration is impossible** (DDA is Windows-Server-only; GPU-P needs a Windows guest driver), so all rendering is llvmpipe on CPU. vCPU count is the only performance lever. Also worth revisiting: **RDP (`xrdp`) would outperform VNC** for desktop use and adds native clipboard + file transfer.
+- **Next steps (blind spot (2), still open):** (a) load `cast.crx` into the real Chrome on the xrdp desktop, have Matt sign into ConnectWise by hand — credentials never pass through Claude — and verify the rule engine against real PSA pages; (b) consider a scripted pre-deploy pass that captures every route for a written record, not just an interactive review.
+- **Known constraint:** forge is a Hyper-V guest and **GPU acceleration is impossible** (DDA is Windows-Server-only; GPU-P needs a Windows guest driver), so all rendering is llvmpipe on CPU. vCPU count is the only performance lever.
 - **Related:** `INIT-0001`, `INIT-0020`, `knowledge/architecture/browser-extension.md`, `knowledge/architecture/cast-web-app-deployment.md`, memory `forge-shared-browser-desktop`.

@@ -3,6 +3,7 @@
  * (knowledge/decisions/0002). See .env.example.
  */
 import "dotenv/config";
+import { getSetting, setSetting } from "./store/secretStore";
 
 const env = process.env;
 
@@ -17,6 +18,12 @@ export const config = {
   /** Secret for signing the JWT session cookie. MUST be set in production. */
   jwtSecret: env.CAST_JWT_SECRET ?? DEV_JWT_FALLBACK,
   jwtExpiresIn: env.CAST_JWT_EXPIRES_IN ?? "8h",
+
+  /**
+   * Read-only docker-socket-proxy (System Health container inventory,
+   * INIT-0016) — never the raw Docker socket from within this process.
+   */
+  dockerProxyUrl: env.CAST_DOCKER_PROXY_URL ?? "http://docker-proxy:2375",
 
   /** Active Directory (LDAPS). Mechanism still open — INIT-0008. */
   ldapUrl: env.CAST_LDAP_URL ?? "",
@@ -60,9 +67,12 @@ export const config = {
    */
   cwVesselMarket: env.CW_VESSEL_MARKET ?? "Yacht",
   /**
-   * HARD SAFETY GATE: all ConnectWise *writes* are refused unless this is
-   * explicitly "true". Default off — the user must approve writes (they asked
-   * for no CW writes until they agree). Reads are unaffected.
+   * HARD SAFETY GATE boot default: all ConnectWise *writes* are refused unless
+   * this resolves true. Default off. This env value is only the SEED for a
+   * fresh install — once toggled in-app (isCwWritesEnabled/setCwWritesEnabled
+   * below), the stored value in the settings DB takes over as the source of
+   * truth, so ops can flip it from the UI without a redeploy. Reads are
+   * unaffected either way.
    */
   cwWritesEnabled: (env.CW_WRITES_ENABLED ?? "false").toLowerCase() === "true",
 } as const;
@@ -88,4 +98,16 @@ export function aisstreamConfigured(): boolean {
 
 export function cwConfigured(): boolean {
   return Boolean(config.cwCompany && config.cwPublicKey && config.cwPrivateKey && config.cwClientId);
+}
+
+const CW_WRITES_SETTING_KEY = "cwWritesEnabled";
+
+/** Live safety-gate check — the in-app toggle if set, else the env boot default. */
+export function isCwWritesEnabled(): boolean {
+  const stored = getSetting<boolean>(CW_WRITES_SETTING_KEY);
+  return stored !== undefined ? stored : config.cwWritesEnabled;
+}
+
+export function setCwWritesEnabled(enabled: boolean): void {
+  setSetting(CW_WRITES_SETTING_KEY, enabled);
 }

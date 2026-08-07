@@ -3,6 +3,7 @@ import { api } from "../api";
 import { Button, Card, CardBody, Tabs, Table, Badge, Banner, Spinner, EmptyState, Select, Modal, IconX } from "../ui";
 import type { TabDef } from "../ui";
 import { useTabParam } from "../useTabParam";
+import { ago } from "../ago";
 
 // Tabs mirror the extension's design record (mockup §1). "Deployment" is the
 // per-member deployment catalog; "Install" is the installer download.
@@ -110,17 +111,6 @@ interface FleetData {
 
 type FilterMode = "all" | "current" | "attention";
 type Status = "current" | "stale" | "missing";
-
-function ago(iso: string | null): string {
-  if (!iso) return "—";
-  const d = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(d / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
 
 // A member is "current" if any device synced within the threshold; "missing" if
 // no device has ever checked in; otherwise "stale" (installed but out of date).
