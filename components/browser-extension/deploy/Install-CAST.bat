@@ -2,11 +2,22 @@
 title CAST Browser Extension - Installer
 
 :: Self-elevate (writing the browser policy needs admin — one UAC click).
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-  echo Requesting administrator permission...
-  powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-  exit /b
+:: fltmc requires admin and has NO service dependency. (net session depends on
+:: the Server service, which many hardened/managed environments disable — when
+:: it's off, net session fails even AFTER elevation, so the script thinks it's
+:: still unelevated and relaunches itself again: repeat UAC prompts + cmd windows.)
+::
+:: The %1==""  guard makes this a ONE-SHOT attempt: only the original,
+:: argument-less launch can trigger a relaunch. The relaunched copy runs with
+:: "elevated" as %1, so even if the admin check ever misfires again, it cannot
+:: re-elevate a second time — no loop is possible.
+if "%~1"=="" (
+  fltmc >nul 2>&1
+  if %errorlevel% neq 0 (
+    echo Requesting administrator permission...
+    powershell -Command "Start-Process -FilePath '%~f0' -ArgumentList 'elevated' -Verb RunAs"
+    exit /b
+  )
 )
 
 set "EXTID=cijknnchejganljdmpdmdkajcmknmdpp"

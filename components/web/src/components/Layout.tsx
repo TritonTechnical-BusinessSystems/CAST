@@ -45,7 +45,11 @@ export function Layout({ children }: { children: ReactNode }) {
           <img src="/favicon.png" alt="" />
           <span className="rail-brand-name">CAST</span>
         </div>
-        <div className="rail-tagline">ConnectWise Augmentation Suite for Triton</div>
+        <div className="rail-tagline">
+          ConnectWise Augmentation
+          <br />
+          Suite for Triton
+        </div>
         <nav className="rail-nav">
           {groups.map((g) => (
             <div key={g.label}>

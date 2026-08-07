@@ -10,6 +10,42 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.1.3.0 — build 2608001 — 2026-08-07T21:12:25Z
+
+### Fixed
+- [Infra] **Installer no longer loops on the UAC prompt.** The admin check moved from `net session` to `fltmc`: `net session` depends on the Server service, which many hardened/managed environments disable — with it off the check fails even *after* elevation, so the script concluded it was still unelevated and relaunched itself repeatedly. A one-shot `%1` guard makes a second elevation structurally impossible: only the original, argument-less launch can relaunch, and the relaunched copy carries `elevated` as `%1`.
+
+### Changed
+- [UX] Rail tagline breaks after "ConnectWise Augmentation" rather than running as one line in the narrow rail.
+- [Design-System] Rail "CAST" title uses `text-box: trim-both cap alphabetic` (Chromium 133+) so `align-items: center` centres the **glyphs** instead of the line box — all-caps otherwise sits high. Degrades to the previous slightly-high rendering on older engines.
+
+## v0.1.2.0 — build 2607003 — 2026-07-23T19:55:04Z
+
+Extension `0.0.2 → 0.0.3`.
+
+### Added
+- [Extension] **Device identity via managed storage** — `Install-CAST.bat` stamps `%COMPUTERNAME%` into the extension's 3rdparty policy, `managed-schema.json` declares it, and the service worker reads `deviceName`. `deviceId` stays a per-profile UUID, so multiple browsers on one machine remain distinct rows sharing one device name.
+- [Frontend] Deployment tab: per-row prune of a stale device/browser **record** (auth-gated `DELETE /checkins/:id`), behind a confirm modal that makes clear it does not uninstall the extension.
+- [Database] `device_name` column on `checkins` (guarded migration); the check-in API accepts and returns it.
+- [Extension] Popup: manual refresh control beside Last sync.
+
+### Changed
+- [Extension] Browser reported as a friendly label ("Microsoft Edge v150… (64-bit)") via `userAgentData`, not the raw UA string.
+- [Extension] Popup "Department" → **"View Applied"** (named views); the selection persists per browser via `chrome.storage.local`.
+- [UX] Deployment tab shows device name before browser, and drops the duplicated per-row sync time (the Latest sync column already carries it).
+- [Design-System] Rail: "CAST" title sized to 85% of the icon height and vertically centred; product name moved from the footer to under the logo; footer shows only version + build; version display drops a trailing `.0`.
+
+## v0.1.1.0 — build 2607002 — 2026-07-23T19:26:18Z
+
+### Added
+- [Frontend] **Tab state backed by `?tab=`** (`useTabParam`) on the Browser Extension and Vessel Tracking pages, so a refresh or a shared link keeps the same tab instead of snapping back to the first. Legacy vessel routes redirect to the matching tab.
+
+### Changed
+- [Backend] Fleet filters CW members to `licenseClass='F'` (real member users), excluding the 15 API/integration accounts (CPQ, RMM, BrightGauge, `app_CAST`, …). Verified live.
+- [UX] Extension tabs renamed: "Fleet" → **"Deployment"** (the per-member catalog) and "Deployment" → **"Install"** (the installer); components renamed to match.
+- [UX] Devices column empty state "Not installed" → "Not registered".
+- [UX] User column sorted alphabetically.
+
 ## v0.1.0.0 — build 2607001 — 2026-07-23T18:33:45Z
 
 First stamped build — build-number discipline starts here. Bundles the pre-release scaffolding plus this build's work, cut for the first real extension install.

@@ -10,3 +10,7 @@ coverage/
 *.pem
 .keys/
 .DS_Store
+# Per-machine Claude Code settings. .claude/settings.json IS tracked (shared
+# permissions + agents); the .local variant is this machine's own overrides.
+.claude/settings.local.json
+*.bak
