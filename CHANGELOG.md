@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.1.4.2 — build 2608005 — 2026-08-07T21:54:33Z
+
+### Fixed
+- [Infra] `cast-api`'s multi-stage split (0.1.4.1) left `pnpm` itself un-fetched in the final image — `corepack enable` only installs shims, and the previous single-stage build got pnpm baked in for free as a side effect of running `pnpm install` in the same stage. The container was fetching it from the npm registry on its first start instead, a new (and unnecessary) runtime network dependency. Now forced at build time (`pnpm --version`, right after the manifests it reads its pin from are in place). Verified with `docker run --network none`.
+
 ## v0.1.4.1 — build 2608004 — 2026-08-07T21:52:34Z
 
 ### Changed

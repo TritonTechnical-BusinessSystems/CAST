@@ -32,6 +32,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 # The full /app tree as pnpm left it — node_modules lives in more than one
 # place under pnpm's workspace layout (root + each package's own symlink dir).
 COPY --from=deps /app /app
+# `corepack enable` alone only installs shims — pnpm itself is fetched lazily
+# on first invocation. In the old single-stage build that happened for free
+# during `pnpm install`; here it must be forced explicitly at BUILD time
+# (reads the pin from package.json above), or the container's first start
+# would reach out to the npm registry before it could run at all.
+RUN pnpm --version
 
 # Sources.
 COPY packages/config-schema packages/config-schema
