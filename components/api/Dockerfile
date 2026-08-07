@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # CAST API — runs TypeScript directly via tsx (no compile step), same
 # "run the source" spirit as the SOC backend. Build context is the REPO ROOT.
 FROM node:24-slim
@@ -13,7 +14,10 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/config-schema/package.json packages/config-schema/package.json
 COPY components/api/package.json components/api/package.json
 COPY components/web/package.json components/web/package.json
-RUN pnpm install --frozen-lockfile --filter @cast/api...
+# Cache mount persists pnpm's content-addressable store across builds — on a
+# lockfile change, only the diff re-downloads instead of the whole tree.
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --filter @cast/api...
 
 # Sources.
 COPY packages/config-schema packages/config-schema

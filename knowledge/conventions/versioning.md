@@ -18,7 +18,7 @@ Two separate identifiers: a **semantic product version** and a **date-stamped bu
 | **PATCH** | Fixes a defect in existing behavior; no new feature | Claude |
 | **CORRECTION** | Non-functional fix (copy, styling, docs, packaging, reverting a bad release) | Claude |
 
-- **First build:** `v0.1.0.0`. Canonical form is four segments; a trailing `.0` correction may be dropped in casual display (`v0.1.0`), but the changelog uses the full form.
+- **First build:** `v0.1.0.0`. Canonical form (as stored in `version.json`) is always four segments. **Displayed to a human, a trailing `.0` CORRECTION is always dropped** — `v0.1.0.0` reads as `v0.1.0` everywhere: the changelog, commit message subjects, Release Notes, and in-app version displays (the rail footer already does this: `Layout.tsx`, `__APP_VERSION__.replace(/\.0$/, "")`). Drop only the single trailing segment, and only when it's `0` — don't cascade (`0.1.0.0` → `0.1.0`, never `0.1`).
 - **Increment rule:** Claude picks the **highest applicable** level each publish; bumping a level **resets every level below it to `0`**. MAJOR is never auto-bumped.
 - **patch vs correction tiebreak:** *Does it change runtime behavior or fix a defect a user could hit?* → yes = PATCH, no = CORRECTION.
 

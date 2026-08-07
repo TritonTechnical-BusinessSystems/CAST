@@ -21,6 +21,10 @@ if [ "$LATEST" = "$CURRENT" ]; then echo "already on latest GA ($CURRENT)"; exit
 
 echo "updating: $CURRENT -> $LATEST"
 git checkout -q "$LATEST"
-docker compose up -d --build
+# Sequential builds — this box is 2 vCPU/4GB; building both images at once
+# risks a memory-starved build failure (see scripts/deploy.sh).
+docker compose build api
+docker compose build web
+docker compose up -d
 docker image prune -f >/dev/null 2>&1 || true
 echo "deployed $LATEST"

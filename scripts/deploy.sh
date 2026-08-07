@@ -8,7 +8,10 @@ echo "== pulling latest main =="
 git fetch --prune origin
 git checkout -q main
 git pull --ff-only origin main
-echo "== building + starting containers =="
-docker compose up -d --build
+echo "== building images (sequentially — this box is 2 vCPU/4GB; building both at once risks a memory-starved build failure) =="
+docker compose build api
+docker compose build web
+echo "== starting containers =="
+docker compose up -d
 docker image prune -f >/dev/null 2>&1 || true
 docker compose ps

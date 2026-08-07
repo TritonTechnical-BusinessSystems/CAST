@@ -10,7 +10,14 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
-## v0.1.3.0 — build 2608001 — 2026-08-07T21:12:25Z
+## v0.1.3.1 — build 2608002 — 2026-08-07T21:39:49Z
+
+### Changed
+- [Infra] `deploy.sh` / `cast-autoupdate.sh` build `cast-api` and `cast-web` **sequentially** instead of Docker Compose's default parallel build — the deploy host is 2 vCPU/4GB, and building both images at once had already caused one build to fail from memory pressure.
+- [Infra] Both Dockerfiles cache pnpm's content-addressable store across builds (`--mount=type=cache`) — a lockfile change now only re-downloads the diff instead of the whole dependency tree.
+- [Docs] `versioning.md` / `changelog-and-releases.md`: a trailing `.0` CORRECTION segment is now dropped **everywhere** a version is shown to a human (changelog, Release Notes, commit subjects, in-app displays), not just in "casual display" as before. Retro-fixed the four existing changelog headers to match.
+
+## v0.1.3 — build 2608001 — 2026-08-07T21:12:25Z
 
 ### Fixed
 - [Infra] **Installer no longer loops on the UAC prompt.** The admin check moved from `net session` to `fltmc`: `net session` depends on the Server service, which many hardened/managed environments disable — with it off the check fails even *after* elevation, so the script concluded it was still unelevated and relaunched itself repeatedly. A one-shot `%1` guard makes a second elevation structurally impossible: only the original, argument-less launch can relaunch, and the relaunched copy carries `elevated` as `%1`.
@@ -19,7 +26,7 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 - [UX] Rail tagline breaks after "ConnectWise Augmentation" rather than running as one line in the narrow rail.
 - [Design-System] Rail "CAST" title uses `text-box: trim-both cap alphabetic` (Chromium 133+) so `align-items: center` centres the **glyphs** instead of the line box — all-caps otherwise sits high. Degrades to the previous slightly-high rendering on older engines.
 
-## v0.1.2.0 — build 2607003 — 2026-07-23T19:55:04Z
+## v0.1.2 — build 2607003 — 2026-07-23T19:55:04Z
 
 Extension `0.0.2 → 0.0.3`.
 
@@ -35,7 +42,7 @@ Extension `0.0.2 → 0.0.3`.
 - [UX] Deployment tab shows device name before browser, and drops the duplicated per-row sync time (the Latest sync column already carries it).
 - [Design-System] Rail: "CAST" title sized to 85% of the icon height and vertically centred; product name moved from the footer to under the logo; footer shows only version + build; version display drops a trailing `.0`.
 
-## v0.1.1.0 — build 2607002 — 2026-07-23T19:26:18Z
+## v0.1.1 — build 2607002 — 2026-07-23T19:26:18Z
 
 ### Added
 - [Frontend] **Tab state backed by `?tab=`** (`useTabParam`) on the Browser Extension and Vessel Tracking pages, so a refresh or a shared link keeps the same tab instead of snapping back to the first. Legacy vessel routes redirect to the matching tab.
@@ -46,7 +53,7 @@ Extension `0.0.2 → 0.0.3`.
 - [UX] Devices column empty state "Not installed" → "Not registered".
 - [UX] User column sorted alphabetically.
 
-## v0.1.0.0 — build 2607001 — 2026-07-23T18:33:45Z
+## v0.1.0 — build 2607001 — 2026-07-23T18:33:45Z
 
 First stamped build — build-number discipline starts here. Bundles the pre-release scaffolding plus this build's work, cut for the first real extension install.
 

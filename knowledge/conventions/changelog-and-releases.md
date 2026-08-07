@@ -11,12 +11,12 @@ updated: 2026-07-18
 
 `CHANGELOG.md` is the continuous technical source of truth. Each published build adds an entry.
 
-**Entry header:** `## vMAJOR.MINOR.PATCH.CORRECTION — build YYMM### — <ISO-8601 UTC>`
+**Entry header:** `## vMAJOR.MINOR.PATCH.CORRECTION — build YYMM### — <ISO-8601 UTC>` — drop a trailing `.0` CORRECTION in the heading itself (`versioning.md`): `v0.6.0`, not `v0.6.0.0`.
 
 **Grouped by change type, each line tagged with a category:**
 
 ```markdown
-## v0.6.0.0 — build 2607002 — 2026-07-14T09:12:00Z
+## v0.6.0 — build 2607002 — 2026-07-14T09:12:00Z
 ### Added
 - [UX] <a user-visible capability>
 - [Integrations] <a new integration, read-only>
