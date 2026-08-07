@@ -10,6 +10,12 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.1.4.1 — build 2608004 — 2026-08-07T21:52:34Z
+
+### Changed
+- [Infra] `cast-api`'s Dockerfile is now **multi-stage** — the build toolchain (python3/make/g++, needed only to compile `better-sqlite3`'s native module) no longer ships in the production image. Verified the compiled module still loads and outbound HTTPS still works (`ca-certificates` kept in the final stage) before deploying. Image size **1.14GB → 511MB**.
+- [Infra] `cast-web`'s Dockerfile copies `version.json` last, right before the one build step that reads it, instead of alongside the other manifests. `version.json` changes on every deploy (build-number bump), so copying it early was busting the `pnpm install` layer's cache on every single deploy even when the lockfile hadn't changed.
+
 ## v0.1.4 — build 2608003 — 2026-08-07T21:46:35Z
 
 ### Fixed
