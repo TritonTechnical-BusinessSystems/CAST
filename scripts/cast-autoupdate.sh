@@ -25,6 +25,7 @@ git checkout -q "$LATEST"
 # risks a memory-starved build failure (see scripts/deploy.sh).
 docker compose build api
 docker compose build web
-docker compose up -d
+# See scripts/deploy.sh for why this can need a retry.
+docker compose up -d || { echo "retrying after old container settles..."; sleep 10; docker compose up -d; }
 docker image prune -f >/dev/null 2>&1 || true
 echo "deployed $LATEST"

@@ -12,6 +12,11 @@ echo "== building images (sequentially — this box is 2 vCPU/4GB; building both
 docker compose build api
 docker compose build web
 echo "== starting containers =="
-docker compose up -d
+# api's old instance can briefly go unhealthy while shutting down (SIGTERM
+# racing better-sqlite3's native cleanup — fixed going forward, but the
+# outgoing container on an upgrade deploy may still be running old code), and
+# web's depends_on:service_healthy then refuses to start, aborting `up -d`
+# without retrying. One retry after a short wait covers that window.
+docker compose up -d || { echo "retrying after old container settles..."; sleep 10; docker compose up -d; }
 docker image prune -f >/dev/null 2>&1 || true
 docker compose ps

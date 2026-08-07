@@ -13,6 +13,7 @@ import checkinRoutes from "./routes/checkins";
 import extensionRoutes from "./routes/extension";
 import { startVesselSync } from "./jobs/vesselSync";
 import { seedBreakGlass } from "./auth/local";
+import { db } from "./store/db";
 
 const app = express();
 app.use(express.json());
@@ -31,8 +32,22 @@ app.use("/api/geo-alerts", geoAlertRoutes);
 app.use("/api/checkins", checkinRoutes);
 app.use("/api/extension", extensionRoutes);
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);
   seedBreakGlass();
   startVesselSync();
 });
+
+// better-sqlite3 must finalize its prepared statements before the Node
+// environment tears down (docker stop / compose recreate sends SIGTERM) — an
+// abrupt process exit races that finalization against Node's own cleanup-hook
+// removal and crashes with "Assertion failed: (env) != nullptr" in
+// RemoveEnvironmentCleanupHook. Closing the db first avoids the race.
+function shutdown() {
+  server.close(() => {
+    db.close();
+    process.exit(0);
+  });
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

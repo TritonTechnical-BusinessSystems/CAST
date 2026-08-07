@@ -10,6 +10,12 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.1.4 — build 2608003 — 2026-08-07T21:46:35Z
+
+### Fixed
+- [Backend] **API no longer crashes on shutdown.** `better-sqlite3` was crashing with a native assertion (`RemoveEnvironmentCleanupHook`, a `Statement` destructor firing after Node's environment teardown) whenever the process received SIGTERM — every container recreate on deploy. `server.ts` now closes the HTTP server and the database explicitly on `SIGTERM`/`SIGINT` before exiting, so shutdown is clean instead of racing native cleanup. Found live: the previous 0.1.3.1 deploy crash-looped `cast-api` during its own container recreate, which in turn kept `cast-web` from starting at all (`depends_on: service_healthy`) — the site was briefly fully down until the retry below and this fix.
+- [Infra] `deploy.sh` / `cast-autoupdate.sh` retry `docker compose up -d` once after a short wait if it fails — covers the transient window (above) where the outgoing container is still unhealthy and `web`'s health-gated dependency aborts the first attempt.
+
 ## v0.1.3.1 — build 2608002 — 2026-08-07T21:39:49Z
 
 ### Changed
