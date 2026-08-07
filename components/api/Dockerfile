@@ -2,11 +2,17 @@
 # CAST API — runs TypeScript directly via tsx (no compile step), same
 # "run the source" spirit as the SOC backend. Build context is the REPO ROOT.
 #
+# Pinned to node:22-slim (not 24): better-sqlite3 v11.x crashes on Node 24 at
+# runtime (WiseLibs/better-sqlite3#1376 — assertion in
+# RemoveEnvironmentCleanupHook when a Statement is GC'd), confirmed live on
+# this app. Node 22 satisfies the >=22 engines floor and is the documented
+# working version. Revisit if better-sqlite3 publishes real Node 24 support.
+#
 # Multi-stage: the build toolchain (python3/make/g++, needed only to compile
 # better-sqlite3's native module) never reaches the final image — it's ~150-
 # 300MB of compiler + headers with zero runtime purpose, and it's the single
 # biggest thing this build exports/unpacks on every deploy.
-FROM node:24-slim AS deps
+FROM node:22-slim AS deps
 WORKDIR /app
 RUN corepack enable
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
@@ -22,7 +28,7 @@ COPY components/web/package.json components/web/package.json
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --filter @cast/api...
 
-FROM node:24-slim
+FROM node:22-slim
 WORKDIR /app
 RUN corepack enable
 # ca-certificates is a RUNTIME dependency too (outbound HTTPS to ConnectWise,

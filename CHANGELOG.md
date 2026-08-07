@@ -10,7 +10,12 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
-## v0.1.4.2 — build 2608005 — 2026-08-07T21:54:33Z
+## v0.1.5 — build 2608006 — 2026-08-07T21:59:29Z
+
+### Fixed
+- [Backend] **The real cause of the earlier shutdown crash (0.1.4.0) was `better-sqlite3` v11.x on Node 24, not shutdown timing.** The 0.1.4.0 fix (closing the db on SIGTERM) was real but insufficient — the crash trace showed it happening at *startup*, before the server even logged "listening", triggered by any `Statement` object's GC finalization racing Node 24's environment-cleanup-hook machinery ([WiseLibs/better-sqlite3#1376](https://github.com/WiseLibs/better-sqlite3/issues/1376), a documented, unresolved incompatibility). Both Dockerfiles pinned `node:24-slim` → `node:22-slim` — still satisfies the `>=22` engines floor, confirmed zero crashes across 5 start/stop cycles in isolation before deploying.
+
+
 
 ### Fixed
 - [Infra] `cast-api`'s multi-stage split (0.1.4.1) left `pnpm` itself un-fetched in the final image — `corepack enable` only installs shims, and the previous single-stage build got pnpm baked in for free as a side effect of running `pnpm install` in the same stage. The container was fetching it from the npm registry on its first start instead, a new (and unnecessary) runtime network dependency. Now forced at build time (`pnpm --version`, right after the manifests it reads its pin from are in place). Verified with `docker run --network none`.
