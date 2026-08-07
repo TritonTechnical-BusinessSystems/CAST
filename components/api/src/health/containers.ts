@@ -18,10 +18,12 @@ export interface ContainerInfo {
   ports: string[];
 }
 
+// Short — this renders as a table cell, not a paragraph. Longer explanation
+// of each service lives in knowledge/architecture/cast-web-app-deployment.md.
 const PURPOSE: Record<string, string> = {
-  api: "CAST API — Express backend: auth, ConnectWise integration, vessel sync, secret store.",
-  web: "CAST Web — nginx serving the SPA and TLS-terminating reverse proxy for /api.",
-  "docker-proxy": "Docker Socket Proxy — read-only container introspection for this page. No control access to the daemon.",
+  api: "Express backend — auth, ConnectWise, vessel sync",
+  web: "nginx — serves the SPA, proxies /api",
+  "docker-proxy": "Read-only Docker introspection for this page",
 };
 
 interface DockerApiContainer {

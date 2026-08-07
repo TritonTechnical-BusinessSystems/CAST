@@ -3,6 +3,8 @@
  * timeout and graceful degrade (the LC pattern), so the page always renders.
  */
 import { Router } from "express";
+import { readFileSync } from "fs";
+import { join, resolve } from "path";
 import { requireAuth } from "../middleware/auth";
 import { config, adConfigured, aisstreamConfigured, isCwWritesEnabled } from "../config";
 import { resolveCwCreds } from "../connectwise/creds";
@@ -29,8 +31,21 @@ router.get("/containers", requireAuth, async (_req, res) => {
     res.status(500).json({ error: e instanceof Error ? e.message : "Container query failed" });
   }
 });
-const BUILD = process.env.CAST_BUILD ?? "dev";
-const VERSION = process.env.CAST_VERSION ?? "0.1.0.0";
+// CAST_VERSION/CAST_BUILD env vars were never actually set anywhere (not in
+// docker-compose.yml, not in either Dockerfile) — this silently always
+// reported the "dev"/"0.1.0.0" fallback in production, disagreeing with the
+// rail footer's real __APP_VERSION__/__APP_BUILD__. Read version.json
+// directly instead, matching how the web app's vite.config.ts does it.
+const REPO_ROOT = resolve(process.cwd(), "..", ".."); // container cwd = /app/components/api
+let BUILD = "unknown";
+let VERSION = "unknown";
+try {
+  const ver = JSON.parse(readFileSync(join(REPO_ROOT, "version.json"), "utf8")) as { version: string; build: string };
+  VERSION = ver.version;
+  BUILD = ver.build;
+} catch {
+  console.warn("[health] version.json not found — reporting version/build as unknown");
+}
 
 router.get("/full", requireAuth, async (_req, res) => {
   const connectwise = resolveCwCreds().creds

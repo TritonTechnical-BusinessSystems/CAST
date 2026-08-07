@@ -57,6 +57,14 @@ export function Integrations() {
     }
   };
 
+  // Run the live check once on arrival, same as System Health's own probe —
+  // otherwise the dot sits idle-grey here while /health independently shows
+  // ConnectWise as connected, disagreeing about the same fact.
+  useEffect(() => {
+    if (status?.configured && test.state === "idle") runTest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   const save = async () => {
     setSaving(true);
     try {
@@ -89,6 +97,7 @@ export function Integrations() {
           title={
             <span className="row gap-2">
               <StatusDot state={dot} /> ConnectWise PSA
+              {test.state === "ok" && <span className="muted text-sm">{test.detail}</span>}
             </span>
           }
           action={
@@ -100,7 +109,6 @@ export function Integrations() {
         <CardBody>
           <div className="col gap-3">
             {!status.configured && <Banner tone="warning">Not configured yet — enter credentials below.</Banner>}
-            {test.state === "ok" && <Banner tone="success">Connected. {test.detail}</Banner>}
             {test.state === "fail" && <Banner tone="danger">{test.detail}</Banner>}
             {status.writesEnabled && (
               <Banner tone="warning">ConnectWise writes are enabled — CAST can make live changes in ConnectWise.</Banner>
@@ -112,21 +120,24 @@ export function Integrations() {
               <div className="kv"><span className="kv-key">Client ID</span><span className="kv-val mono">{status.clientIdMasked || "—"}</span></div>
               <div className="kv"><span className="kv-key">IMO / MMSI fields</span><span className="kv-val">{status.imoField} / {status.mmsiField}</span></div>
               <div className="kv"><span className="kv-key">Source</span><span className="kv-val"><Badge tone="neutral">{status.source}</Badge></span></div>
-              <div className="kv">
-                <span className="kv-key">ConnectWise writes</span>
-                <span className="kv-val row gap-2">
-                  {status.writesEnabled ? <Badge tone="danger">ENABLED</Badge> : <Badge tone="success">disabled (safe)</Badge>}
-                  {can("integrations.write") &&
-                    (status.writesEnabled ? (
-                      <Button size="sm" variant="secondary" onClick={() => setWrites(false)} disabled={togglingWrites}>
-                        {togglingWrites ? "Disabling…" : "Disable"}
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="secondary" onClick={() => setConfirmEnable(true)} disabled={togglingWrites}>
-                        Enable…
-                      </Button>
-                    ))}
-                </span>
+            </div>
+            <div className="panel row between gap-4">
+              <div>
+                <div className="label">ConnectWise writes</div>
+                <div className="muted text-sm">Whether CAST can save changes back to live ConnectWise records.</div>
+              </div>
+              <div className="row gap-2">
+                {status.writesEnabled ? <Badge tone="danger">ENABLED</Badge> : <Badge tone="success">disabled (safe)</Badge>}
+                {can("integrations.write") &&
+                  (status.writesEnabled ? (
+                    <Button size="sm" variant="danger" onClick={() => setWrites(false)} disabled={togglingWrites}>
+                      {togglingWrites ? "Disabling…" : "Disable"}
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmEnable(true)} disabled={togglingWrites}>
+                      Enable…
+                    </Button>
+                  ))}
               </div>
             </div>
           </div>
@@ -163,13 +174,15 @@ export function Integrations() {
             </>
           }
         >
-          <p>
-            CAST will begin writing to your live ConnectWise instance — vessel IMO/MMSI values and location updates will be
-            saved to real records.
-          </p>
-          <p className="muted text-sm">
-            Until now CAST has been read-only. You can turn writes back off from this page at any time.
-          </p>
+          <div className="col gap-3">
+            <p>
+              CAST will begin writing to your live ConnectWise instance — vessel IMO/MMSI values and location updates will be
+              saved to real records.
+            </p>
+            <p className="muted text-sm">
+              Until now CAST has been read-only. You can turn writes back off from this page at any time.
+            </p>
+          </div>
         </Modal>
       )}
     </div>

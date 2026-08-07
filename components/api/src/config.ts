@@ -15,8 +15,15 @@ export const config = {
   nodeEnv: env.NODE_ENV ?? "development",
   isProd: (env.NODE_ENV ?? "development") === "production",
 
-  /** Secret for signing the JWT session cookie. MUST be set in production. */
-  jwtSecret: env.CAST_JWT_SECRET ?? DEV_JWT_FALLBACK,
+  /**
+   * Secret for signing the JWT session cookie. MUST be set in production.
+   * `||` not `??`: an empty-string env value (a blank line in `.env`) must
+   * also fall back — `??` only catches null/undefined and previously let an
+   * empty secret through, which crashed the whole process on first login
+   * (jwt.sign throws synchronously inside an async handler → unhandled
+   * rejection → Node terminates by default).
+   */
+  jwtSecret: env.CAST_JWT_SECRET || DEV_JWT_FALLBACK,
   jwtExpiresIn: env.CAST_JWT_EXPIRES_IN ?? "8h",
 
   /**

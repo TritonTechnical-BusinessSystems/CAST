@@ -133,6 +133,23 @@
 .table tbody tr:hover, .table tr:hover td { background: var(--color-surface-hover); }
 .table th.sortable { cursor: pointer; user-select: none; }
 .table th.sortable:hover { color: var(--color-text); }
+/* A cell holding more than one line (e.g. a name + a description, or a badge
+   + a detail string) — stacks its children on EVERY width, not just mobile
+   (the mobile-only override below adds what's additionally different there).
+   The td itself stays `display: table-cell` (NOT flex) — flexing the cell
+   drops it out of table layout, so its border/vertical-align stop lining up
+   with sibling cells in the same row. Stack via the children instead. */
+.table td.td-stack > * { display: block; }
+.table td.td-stack > * + * { margin-top: var(--space-1); }
+.table td.td-stack > .badge { display: inline-flex; }
+/* Dense data table (many columns, some holding unbreakable mono tokens like
+   image names or ports) — scrolls in `.table-wrap` instead of squeezing every
+   column unreadably thin. */
+.table.table-dense { min-width: 800px; }
+/* Only the truly unbreakable single-token column (e.g. an image name) forces
+   nowrap — a multi-value column like ports should wrap, or the min-width
+   floor above balloons just to fit one long comma-joined line. */
+.table.table-dense td.nowrap-cell { white-space: nowrap; }
 
 /* ===================== Empty state ===================== */
 .empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-12) var(--space-6); text-align: center; color: var(--color-text-muted); }
@@ -210,10 +227,18 @@
 
 /* ===================== Grids ===================== */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }
+/* Smaller floor for grids of small status/probe cards (not form-field or list
+   cards, which need 320px) — scoped modifier, not a change to the shared
+   default, since other pages rely on the wider floor. */
+.card-grid.card-grid-compact { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .kv { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; font-size: var(--text-sm); border-bottom: 1px solid var(--color-border-subtle); }
 .kv:last-child { border-bottom: none; }
 .kv-key { color: var(--color-text-muted); }
 .kv-val { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* A grouped block that needs to stand apart from a flat .kv list — e.g. a
+   live control, not a read-only field. Reusable, not page-specific. */
+.panel { background: var(--color-surface-sunken); border-radius: var(--radius-md); padding: var(--space-4); }
 
 /* ===================== Responsive / mobile ===================== */
 .rail-toggle { display: none; }
@@ -249,6 +274,10 @@
   /* Tables collapse to stacked cards; each cell labeled by its data-label. */
   .table thead { display: none; }
   .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  /* The desktop-only "scroll instead of squeeze" behavior must not force
+     horizontal overflow once the table has collapsed into stacked cards. */
+  .table.table-dense { min-width: 0; }
+  .table.table-dense td.nowrap-cell { white-space: normal; overflow-wrap: anywhere; }
   .table tr {
     border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);
     margin-bottom: var(--space-3); padding: var(--space-1) var(--space-3);
@@ -267,10 +296,26 @@
   .table tbody tr:hover, .table tr:hover td { background: var(--color-surface); }
 
   /* Cells holding a stacked list (e.g. devices) go full-width & left-aligned,
-     not the default right-aligned single value — and let long ids wrap. */
+     not the default right-aligned single value. Mobile's `.table td` above is
+     `display: flex`, so (unlike the base rule) this needs its own
+     flex-direction — the base rule's block-child stacking doesn't apply here. */
   .table td.td-stack { flex-direction: column; align-items: stretch; text-align: left; gap: var(--space-1); }
+  .table td.td-stack > * + * { margin-top: 0; }
   .table td.td-stack .row { min-width: 0; }
   .table td.td-stack .mono { overflow-wrap: anywhere; }
+
+  /* Config/status rows: stack key above value instead of squeezing both onto
+     one line, so long values (a URL, a badge + button) never get clipped. */
+  .kv { flex-direction: column; align-items: stretch; gap: var(--space-1); }
+  .kv-val { text-align: left; overflow-wrap: anywhere; }
+
+  /* A .panel used as a row (label+description beside a control) needs the
+     same stacking, or it re-squeezes exactly what .kv above just fixed. */
+  .panel.row { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+
+  /* A card header with several action-side items (a badge, a timestamp, a
+     button) needs to wrap rather than shred the title into multiple lines. */
+  .card-header { flex-wrap: wrap; row-gap: var(--space-2); }
 }
 
 @media (max-width: 480px) {

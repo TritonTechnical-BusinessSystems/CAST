@@ -68,7 +68,7 @@ function PackagesCard() {
         }
         action={
           <Button size="sm" variant="secondary" onClick={load} disabled={loading}>
-            {loading ? "Checking…" : "Re-check"}
+            {loading ? "Checking…" : "Refresh"}
           </Button>
         }
       />
@@ -187,7 +187,7 @@ function ContainersCard() {
       ) : containers!.length === 0 ? (
         <EmptyState>No containers found.</EmptyState>
       ) : (
-        <Table className="align-top">
+        <Table className="align-top table-dense">
           <thead>
             <tr>
               <th>Container</th>
@@ -198,21 +198,24 @@ function ContainersCard() {
             </tr>
           </thead>
           <tbody>
-            {containers!.map((c) => (
-              <tr key={c.name}>
-                <td data-label="Container" className="td-stack">
-                  <strong className="mono">{c.name}</strong>
-                  <div className="muted text-sm">{c.purpose}</div>
-                </td>
-                <td data-label="Image" className="mono text-sm td-stack">{c.image}</td>
-                <td data-label="Status" className="td-stack">
-                  <Badge tone={containerTone(c)}>{c.health === "none" ? c.state : c.health}</Badge>
-                  <span className="muted text-xs">{c.status}</span>
-                </td>
-                <td data-label="Created" className="text-sm">{ago(c.createdAt)}</td>
-                <td data-label="Ports" className="mono text-sm td-stack">{c.ports.length ? c.ports.join(", ") : "—"}</td>
-              </tr>
-            ))}
+            {containers!.map((c) => {
+              const detail = c.status.replace(/\s*\((healthy|unhealthy|starting)\)\s*$/i, "");
+              return (
+                <tr key={c.name}>
+                  <td data-label="Container" className="td-stack">
+                    <strong className="mono">{c.name}</strong>
+                    <div className="muted text-sm">{c.purpose}</div>
+                  </td>
+                  <td data-label="Image" className="mono text-sm nowrap-cell">{c.image}</td>
+                  <td data-label="Status" className="td-stack">
+                    <Badge tone={containerTone(c)}>{c.health === "none" ? c.state : c.health}</Badge>
+                    {detail !== c.state && <span className="muted text-xs">{detail}</span>}
+                  </td>
+                  <td data-label="Created" className="text-sm">{ago(c.createdAt)}</td>
+                  <td data-label="Ports" className="mono text-sm">{c.ports.length ? c.ports.join(", ") : "—"}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </Table>
       )}
@@ -239,7 +242,7 @@ export function SystemHealth() {
       <PageHeader
         title="System Health"
         subtitle="Live status of CAST's integrations and services."
-        actions={<Button variant="secondary" onClick={load}>Refresh</Button>}
+        actions={<Button variant="secondary" onClick={load}>Refresh status</Button>}
       />
       {err ? (
         <Banner tone="danger">{err}</Banner>
@@ -249,7 +252,7 @@ export function SystemHealth() {
         </div>
       ) : (
         <>
-          <div className="card-grid">
+          <div className="card-grid card-grid-compact">
             <ProbeCard title="ConnectWise API" probe={h.integrations.connectwise} />
             <ProbeCard title="aisstream (AIS feed)" probe={h.integrations.aisstream} />
             <ProbeCard title="Active Directory" probe={h.integrations.activeDirectory} />

@@ -13,22 +13,31 @@ router.get("/config", (_req, res) => {
 });
 
 // AD is the primary path; `mode: "local"` selects the break-glass fallback.
+// try/catch is deliberate: this is the one unauthenticated route that does
+// real work (JWT signing, AD/LDAPS calls) — a thrown error here is an
+// unhandled rejection Express 4 doesn't catch on its own, which takes down
+// the whole process, not just the request (hit live, see config.ts jwtSecret).
 router.post("/login", async (req, res) => {
-  const username = String(req.body?.username ?? "").trim();
-  const password = String(req.body?.password ?? "");
-  const mode = req.body?.mode === "local" ? "local" : "ad";
+  try {
+    const username = String(req.body?.username ?? "").trim();
+    const password = String(req.body?.password ?? "");
+    const mode = req.body?.mode === "local" ? "local" : "ad";
 
-  const result =
-    mode === "local"
-      ? await authenticateLocal(username, password)
-      : await authenticateAD(username, password);
+    const result =
+      mode === "local"
+        ? await authenticateLocal(username, password)
+        : await authenticateAD(username, password);
 
-  if (!result.ok) {
-    res.status(401).json({ error: friendly(result.reason), reason: result.reason });
-    return;
+    if (!result.ok) {
+      res.status(401).json({ error: friendly(result.reason), reason: result.reason });
+      return;
+    }
+    issueSession(res, result.user);
+    res.json({ user: result.user, permissions: permissionsFor(result.user.role) });
+  } catch (e) {
+    console.error("[auth] login failed unexpectedly:", e);
+    res.status(500).json({ error: "Sign-in failed. Please try again." });
   }
-  issueSession(res, result.user);
-  res.json({ user: result.user, permissions: permissionsFor(result.user.role) });
 });
 
 router.post("/logout", (_req, res) => {

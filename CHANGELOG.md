@@ -10,6 +10,14 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.2.1 — build 2608008 — 2026-08-07T23:06:02Z
+
+### Fixed
+- [Security] **API could crash entirely on a bad login attempt.** `config.ts` used `??` for `CAST_JWT_SECRET`, which doesn't fall back on an empty string (only null/undefined) — a blank value in `.env` reached `jwt.sign()`, which throws synchronously inside an async route handler; Express 4 doesn't catch that, so it became an unhandled rejection and took down the whole process, not just the request. Fixed the fallback (`||`) and wrapped the login route in try/catch, matching this codebase's existing per-route error-handling convention. Found live by `ux-designer` mid-review, not something a user hit in production (production's `.env` never had this value blank — the startup fail-fast check would have refused to boot if it had).
+- [Backend] **System Health's "Application" card showed a different version than the rail footer and `version.json`.** `CAST_VERSION`/`CAST_BUILD` env vars were read but never actually set anywhere (not in `docker-compose.yml`, not in either Dockerfile) — silently always reported stale/placeholder values. Now reads `version.json` directly (same approach `vite.config.ts` already uses for the frontend); added the missing `COPY version.json` to `components/api/Dockerfile`'s final stage.
+- [Frontend/Design-System] Second `ux-designer` live-browser pass (using its new permanent browser access from `v0.2.0`) found real desktop layout bugs my first source-only attempt missed: the Docker Containers table's stacked cells didn't actually stack outside the mobile breakpoint, the table squeezed columns unreadably instead of scrolling, the Integrations page clipped long values on mobile, and the confirm modal had no focus trap/restore (a keyboard user could tab past the ConnectWise-writes confirmation into page content behind it). All four fixed and re-verified live (measured DOM, real keypresses) before shipping — see `components/web/src/ui/Modal.tsx` and `components/web/src/styles/components.css` (`.td-stack`, `.table-dense`, `.kv`, `.panel` mobile rules).
+- [UX] The auto-populated ConnectWise connection banner was louder and more permanent than the fact it stated (a full-width green banner duplicating the status dot 8px away); moved the detail to a quiet caption next to the dot, keeping the banner only for actual failures.
+
 ## v0.2.0 — build 2608007 — 2026-08-07T22:32:19Z
 
 ### Added
