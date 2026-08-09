@@ -8,7 +8,7 @@
  * unconfirmed/invalid value.
  */
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requirePermission } from "../middleware/auth";
 import { checkImo, checkMmsi } from "../vessels/identifiers";
 import { registryLinksForImo, registryLinksForName } from "../vessels/registryLinks";
 import { getCwClient } from "../connectwise/client";
@@ -57,9 +57,12 @@ router.get("/", requireAuth, async (_req, res) => {
 /**
  * POST /api/vessel-identity/:id — set a confirmed IMO and/or MMSI on one
  * vessel. Body: { imo?, mmsi? }. Each supplied value is validated server-side;
- * an invalid value is rejected (400) rather than written.
+ * an invalid value is rejected (400) rather than written. Gated on
+ * vessel.reconcile (was only requireAuth — any authenticated viewer could
+ * write, relying solely on the CW_WRITES_ENABLED env gate, not the
+ * permission system. Fixed while adding the quick-entry page below.)
  */
-router.post("/:id", requireAuth, async (req, res) => {
+router.post("/:id", requirePermission("vessel.reconcile"), async (req, res) => {
   const { imo, mmsi } = (req.body ?? {}) as { imo?: string; mmsi?: string };
   if (imo === undefined && mmsi === undefined) {
     return res.status(400).json({ error: "Provide imo and/or mmsi" });

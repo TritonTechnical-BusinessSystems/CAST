@@ -7,6 +7,7 @@ import { Extension } from "./pages/Extension";
 import { VesselTracking } from "./pages/VesselTracking";
 import { Integrations } from "./pages/Integrations";
 import { SystemHealth } from "./pages/SystemHealth";
+import { VesselIdentityQuickEntry } from "./pages/VesselIdentityQuickEntry";
 
 /** Gate the authenticated app; bounce to /login when there's no session. */
 function RequireAuth() {
@@ -43,6 +44,8 @@ export function App() {
         <Route path="/geo-alerts" element={<Navigate to="/vessel-tracking?tab=geo" replace />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/health" element={<SystemHealth />} />
+        {/* TEMPORARY — tear down with the backlog it exists to clear (see the file's own header comment). */}
+        <Route path="/vessel-identity-quick-entry" element={<VesselIdentityQuickEntry />} />
       </Route>
       <Route path="*" element={<RootRedirect />} />
     </Routes>

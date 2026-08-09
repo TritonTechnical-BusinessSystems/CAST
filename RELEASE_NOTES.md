@@ -4,6 +4,20 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.3.0 — August 2026
+
+A fast way to clear the IMO/MMSI backlog, plus a permission gap closed along the way.
+
+## Highlights
+
+- **Vessel Identity Quick Entry** — a temporary page for entering missing or broken IMO/MMSI numbers across many vessels in one sitting, without opening a dialog for each one. Type into a row, hit Save (or fill several and hit "Save all"), and move on. Linked from the existing Vessel Identity tab; it'll be removed once the backlog is cleared.
+
+## For the power users
+
+- Closed a permission gap: writing a vessel's IMO/MMSI was only checking that you were signed in, not that your role was actually allowed to (`vessel.reconcile`) — it was relying entirely on the global ConnectWise-writes safety switch. Both are now enforced.
+
+---
+
 # What's New in v0.2.0 — August 2026
 
 CAST can now watch itself and manage ConnectWise write access — from inside the app, no file edits or redeploys. This is also the first Release Notes CAST has ever published, so it covers everything since the very first build.

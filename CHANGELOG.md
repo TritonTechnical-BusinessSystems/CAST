@@ -10,6 +10,17 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.3.0 — build 2608009 — 2026-08-09T17:00:11Z
+
+### Added
+- [Frontend] **Vessel Identity Quick Entry** (`/vessel-identity-quick-entry`) — a **temporary** tool for powering through the IMO/MMSI backlog: one table, inline-editable fields per row (no modal), per-row Save, and a "Save all" that walks unsaved rows sequentially. Linked from the existing Vessel Identity tab. Built entirely on the existing `GET/POST /api/vessel-identity` routes (`INIT-0014`) — no new backend. Explicitly marked for deletion once the backlog clears (see the file's own header comment).
+
+### Security
+- [Backend] `POST /api/vessel-identity/:id` was gated on `requireAuth` only, not the `vessel.reconcile` permission it was supposed to require — any authenticated viewer could write ConnectWise identifiers, relying solely on the `CW_WRITES_ENABLED` env gate rather than the permission system. Fixed to `requirePermission("vessel.reconcile")` while building the page above. Found reading the route, not reported.
+
+### Fixed
+- [Frontend] Quick Entry prefilled invalid/missing IMO or MMSI values with their existing (broken) content — every untouched invalid field rode along on Save and failed server-side validation, so "Save all" 400'd on nearly every row of exactly the backlog it exists to clear. Now only prefills a field when it's already valid; invalid/missing fields start blank with a badge explaining why (existing value + reason, or "Missing"). Also restored the lookup links (Balticshipping/VesselFinder/web search) that the sibling Vessel Identity tab has and this page initially omitted, and disabled Save/Save-all for users lacking `vessel.reconcile`, not just when CW writes are off. Caught by `ux-designer` before deploy, confirmed against the live API (`POST` with a stale IMO 400'd; verified the fix removes it from the payload).
+
 ## v0.2.1 — build 2608008 — 2026-08-07T23:06:02Z
 
 ### Fixed
