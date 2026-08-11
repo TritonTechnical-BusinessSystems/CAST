@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.8.1 — build 2608017 — 2026-08-11T05:29:56Z
+
+### Fixed
+- [Backend] aisstream's server message envelope uses `Metadata` (only the leading letter capitalized) — `aisListener.ts` read it as `MetaData` (capital D), confirmed by fetching aisstream's actual API docs directly rather than continuing to guess. This wouldn't have caused the "zero messages received" symptom being investigated (the message-count gauges increment before field parsing), but it would have silently dropped every position/voyage update's MMSI once real data does start flowing. Found while diagnosing why a freshly-rotated aisstream API key still showed 0 msg/min in production; the subscribe message format itself was independently confirmed correct against the same docs (field names, nesting, coordinate order — aisstream states coordinate order "has no effect"). No error response (`{"error": "Api Key Is Not Valid"}`, aisstream's own documented shape) was ever received across either key, ruling out an invalid-key explanation — root cause of the zero-message symptom remains open, likely an aisstream-side account/service issue rather than a CAST defect.
+
 ## v0.8.0 — build 2608016 — 2026-08-11T05:19:18Z
 
 ### Added

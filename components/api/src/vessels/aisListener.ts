@@ -57,7 +57,7 @@ export interface AisListenerStatus {
 
 interface AisEnvelope {
   MessageType?: string;
-  MetaData?: { MMSI?: number; ShipName?: string; time_utc?: string };
+  Metadata?: { MMSI?: number; ShipName?: string; time_utc?: string };
   Message?: {
     PositionReport?: AisPositionFields;
     StandardClassBPositionReport?: AisPositionFields;
@@ -183,7 +183,7 @@ class AisConnection {
     this.messageTimestamps = this.messageTimestamps.filter((t) => now - t < 60_000);
     this.state.messagesReceivedLastMinute = this.messageTimestamps.length;
 
-    const mmsi = data.MetaData?.MMSI;
+    const mmsi = data.Metadata?.MMSI;
     const pos = data.Message?.PositionReport ?? data.Message?.StandardClassBPositionReport;
     if (mmsi != null && pos) {
       upsertPosition({
@@ -193,7 +193,7 @@ class AisConnection {
         sog: pos.Sog ?? null,
         cog: pos.Cog ?? null,
         navStatusCode: pos.NavigationalStatus ?? null,
-        lastSeenAt: data.MetaData?.time_utc ?? new Date(now).toISOString(),
+        lastSeenAt: data.Metadata?.time_utc ?? new Date(now).toISOString(),
       });
     }
 
