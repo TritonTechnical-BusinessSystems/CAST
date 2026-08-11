@@ -307,19 +307,32 @@ writer pipeline is built end to end (not just the priority/tier-split half).
   lookups are added later) — not revisited this session, still just
   guidance.
 
-### Still genuinely open
+### Resolved 2026-08-11 (later same day) — every field name confirmed correct
 
-- **`ShipStaticData`'s exact `Destination`/`Eta` field shape is UNVERIFIED
-  against real traffic.** Live-testing (twice, global bounding box, 15s and
-  30s) received **zero messages** — connection handshake succeeds, but no
-  data arrives, which is inconsistent with the documented ~300msg/s global
-  firehose budget. Cause unknown: could be an inactive/invalid API key,
-  could be this dev sandbox's network not sustaining the stream. The parser
-  (`aisEta.ts`) is built defensively from the documented ITU-R M.1371
-  semantics and aisstream's PascalCase field convention, and logs a warning
-  if a `ShipStaticData` message arrives with an unparseable shape — but this
-  needs a real check against production traffic (`trt-cast-01`, where the
-  key and network path both differ from this dev sandbox) before trusting
-  it fully.
-- **Real-world message volume / actual transmit interval** — still only
-  known from the docs, not observed, for the same reason above.
+**Field shapes are no longer a guess.** Cross-checked against three
+independent authoritative sources: aisstream's docs page's literal JSON
+example, their auto-generated OpenAPI models
+(`github.com/aisstream/ais-message-models`, `typescript/aisStream/models/*.ts`
+`baseName` entries — the real wire-format field names, since these are
+generated straight from their backend's schema), and a complete working Go
+reference implementation (`github.com/aisstream/example`,
+`golang/main.go`, using the same shared model package). All three agree on
+every field this code uses: `APIKey`, `BoundingBoxes` (`[[lat,lon],[lat,lon]]`
+order — confirmed by the Go example; a separate, incomplete/broken example
+in the same repo's `typescript/client.ts` uses `[lon,lat]` and `Apikey`, but
+that file's message handler is literally invalid code, so it's not a
+reliable reference), `FiltersShipMMSI`, `FilterMessageTypes`, `MetaData`
+(their prose docs page's own JSON example already showed this casing), and
+`ShipStaticDataEta`'s `Month`/`Day`/`Hour`/`Minute` (used by `aisEta.ts`) —
+also confirmed exactly. **A real mid-session mistake, corrected:** a first
+pass at this cross-check (against only the prose docs page) mis-read the
+casing as `Metadata` and "fixed" `aisListener.ts` to match — that was
+wrong; the auto-generated models and the working Go example both confirm
+`MetaData` was correct all along. Reverted.
+
+**None of this explains the actual symptom under investigation** (zero
+messages received on a live, subscribed connection, even on production with
+a freshly-rotated key) — with the request/response format now conclusively
+ruled out, the remaining explanation is something on aisstream's side
+(account/key provisioning, or a service-side issue) rather than a CAST
+defect. Their support channel: `github.com/aisstream/issues`.

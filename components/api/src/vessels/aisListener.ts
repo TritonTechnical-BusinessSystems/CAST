@@ -22,6 +22,18 @@
  * Global bounding box (confirmed supported, see the architecture note) +
  * the MMSI filter is the whole filtering strategy — clients travel globally,
  * so there's no useful regional box.
+ *
+ * Every field name here (APIKey, BoundingBoxes, FiltersShipMMSI,
+ * FilterMessageTypes, MetaData, Latitude/Longitude/Sog/Cog/
+ * NavigationalStatus, Destination) is verified 2026-08-11 against
+ * aisstream's own auto-generated OpenAPI models
+ * (github.com/aisstream/ais-message-models,
+ * typescript/aisStream/models/*.ts's `baseName` entries) — the
+ * authoritative source, since their prose docs page and JS code sample
+ * disagree with each other on casing in places (their JS sample even uses
+ * "Apikey", contradicting both their own prose docs and this generated
+ * model). Trust the generated models over either doc artifact if they ever
+ * conflict again.
  */
 import { config, aisstreamConfigured } from "../config";
 import { upsertPosition, upsertVoyage } from "./positionStore";
@@ -57,7 +69,7 @@ export interface AisListenerStatus {
 
 interface AisEnvelope {
   MessageType?: string;
-  Metadata?: { MMSI?: number; ShipName?: string; time_utc?: string };
+  MetaData?: { MMSI?: number; ShipName?: string; time_utc?: string };
   Message?: {
     PositionReport?: AisPositionFields;
     StandardClassBPositionReport?: AisPositionFields;
@@ -183,7 +195,7 @@ class AisConnection {
     this.messageTimestamps = this.messageTimestamps.filter((t) => now - t < 60_000);
     this.state.messagesReceivedLastMinute = this.messageTimestamps.length;
 
-    const mmsi = data.Metadata?.MMSI;
+    const mmsi = data.MetaData?.MMSI;
     const pos = data.Message?.PositionReport ?? data.Message?.StandardClassBPositionReport;
     if (mmsi != null && pos) {
       upsertPosition({
@@ -193,7 +205,7 @@ class AisConnection {
         sog: pos.Sog ?? null,
         cog: pos.Cog ?? null,
         navStatusCode: pos.NavigationalStatus ?? null,
-        lastSeenAt: data.Metadata?.time_utc ?? new Date(now).toISOString(),
+        lastSeenAt: data.MetaData?.time_utc ?? new Date(now).toISOString(),
       });
     }
 

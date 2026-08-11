@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.8.2 — build 2608018 — 2026-08-11T05:59:13Z
+
+### Fixed
+- [Backend] **Reverts v0.8.1's `MetaData`→`Metadata` change — that was wrong.** Cross-checked every field name used in `aisListener.ts` against three independent authoritative sources (aisstream's docs page's own JSON example, their auto-generated OpenAPI models at `github.com/aisstream/ais-message-models`, and a complete working Go reference implementation at `github.com/aisstream/example`): all three confirm `MetaData` (capital M and D) was correct all along — the v0.8.1 "fix" was based on a less-authoritative read of the same docs page and introduced a regression. Also confirms every other field name already in use (`APIKey`, `BoundingBoxes` coordinate order, `FiltersShipMMSI`, `FilterMessageTypes`, `Latitude`/`Longitude`/`Sog`/`Cog`/`NavigationalStatus`/`Destination`, and `aisEta.ts`'s `Month`/`Day`/`Hour`/`Minute`) was already exactly correct — none of it needed changing. Full narrative: `knowledge/architecture/vessel-location-updating-aisstream.md` §4. This does not explain the separate zero-messages-received symptom under investigation — with the request/response format now conclusively ruled out, that looks like an aisstream-side account/service issue rather than a CAST defect.
+
 ## v0.8.1 — build 2608017 — 2026-08-11T05:29:56Z
 
 ### Fixed
