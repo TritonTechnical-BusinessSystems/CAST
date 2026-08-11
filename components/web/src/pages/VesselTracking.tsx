@@ -10,16 +10,16 @@ import { GeoAlerts } from "./GeoAlerts";
 // it (mirrors the Extension page's tab pattern). Each panel keeps its own body
 // and fetches on mount.
 const tabs: TabDef[] = [
-  { id: "location", label: "Vessel Location" },
-  { id: "identity", label: "Vessel Identity" },
   { id: "config", label: "Tracking Config" },
+  { id: "identity", label: "Vessel Identity" },
+  { id: "location", label: "Vessel Location" },
   { id: "geo", label: "Geo Alerts" },
 ];
 
 export function VesselTracking() {
   const [active, setActive] = useTabParam(
     tabs.map((t) => t.id),
-    "location",
+    "config",
   );
   return (
     <div>

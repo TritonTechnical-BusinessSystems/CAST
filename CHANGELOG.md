@@ -10,6 +10,14 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.7.0 — build 2608015 — 2026-08-11T04:38:32Z
+
+### Added
+- [Frontend] Tracking Config's Preview card now shows the **full ranked priority list** for both tiers instead of an 8-item sample + "…and N more" — every tracked client, numbered by its overall rank (Tier 1 numbered 1..N, Tier 2 continuing from Tier 1's count + 1), laid out in a 5-column flowing list (`.rank-columns`, responsive fallback to 2 columns at 768px and 1 at 480px). Backend `POST /api/tracking/preview` returns the full ordered vessel list per tier instead of a capped sample (`toList()` replaces `sample()` in `routes/tracking.ts`).
+
+### Changed
+- [UX] Vessel Tracking's tab order changed to **Tracking Config, Vessel Identity, Vessel Location, Geo Alerts** (previously Vessel Location first) — Tracking Config is now the default landing tab.
+
 ## v0.6.1 — build 2608014 — 2026-08-11T04:24:41Z
 
 ### Fixed

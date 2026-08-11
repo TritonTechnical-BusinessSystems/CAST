@@ -103,8 +103,8 @@ router.get("/current-split", requireAuth, (_req, res) => {
   res.json(getSetting("tracking.currentSplit") ?? null);
 });
 
-function sample(vessels: { vesselName: string; companyName: string }[], n = 8) {
-  return vessels.slice(0, n).map((v) => ({ vesselName: v.vesselName, companyName: v.companyName }));
+function toList(vessels: { vesselName: string; companyName: string }[]) {
+  return vessels.map((v) => ({ vesselName: v.vesselName, companyName: v.companyName }));
 }
 
 function matchRule(vessels: VesselCompany[], rule: Rule): VesselCompany[] {
@@ -220,8 +220,8 @@ router.post("/preview", requireAuth, async (req, res) => {
     const { matched, split } = await computeSplit(rule);
     res.json({
       matched: matched.length,
-      tier1: { count: split.tier1.length, sample: sample(split.tier1) },
-      tier2: { count: split.tier2.length, sample: sample(split.tier2) },
+      tier1: { count: split.tier1.length, vessels: toList(split.tier1) },
+      tier2: { count: split.tier2.length, vessels: toList(split.tier2) },
       excludedNoMmsi: split.excluded.filter((e) => e.reason === "no-valid-mmsi").length,
       excludedNoSite: split.excluded.filter((e) => e.reason === "no-vessel-site").length,
       excludedNoEngagement: split.excluded.filter((e) => e.reason === "no-active-engagement").length,

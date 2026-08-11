@@ -247,6 +247,13 @@
    live control, not a read-only field. Reusable, not page-specific. */
 .panel { background: var(--color-surface-sunken); border-radius: var(--radius-md); padding: var(--space-4); }
 
+/* A ranked name list flowed into N newspaper-style columns (item order goes
+   down each column, then across) rather than a grid — avoids computing row
+   counts to keep columns balanced, and reflows naturally at any list length. */
+.rank-columns { column-count: 5; column-gap: var(--space-5); }
+.rank-item { display: flex; gap: var(--space-2); padding-block: var(--space-1); break-inside: avoid; }
+.rank-num { flex: none; min-width: 2.5ch; text-align: right; color: var(--color-text-faint); font-variant-numeric: tabular-nums; }
+
 /* ===================== Responsive / mobile ===================== */
 .rail-toggle { display: none; }
 .rail-backdrop { display: none; }
@@ -270,6 +277,7 @@
   .page-body { padding: var(--space-4) var(--space-3); }
   .page-body-inner { max-width: 100%; }
   .card-grid { grid-template-columns: 1fr; }
+  .rank-columns { column-count: 2; }
   .page-header { flex-direction: column; align-items: stretch; gap: var(--space-3); }
   .modal { max-width: 100%; max-height: 92vh; }
 
@@ -327,6 +335,7 @@
 
 @media (max-width: 480px) {
   .hide-xs { display: none; }
+  .rank-columns { column-count: 1; }
 }
 
 /* ===================== Utilities =====================

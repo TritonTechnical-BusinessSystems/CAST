@@ -4,6 +4,17 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.7.0 — August 2026
+
+You can now see exactly who's ranked where, not just a top-8 sample.
+
+## Highlights
+
+- **The full priority list, not just a preview.** Tracking Config's preview used to show 8 vessels per tier and cut off the rest. Now it shows everyone — every tracked client, numbered by rank, laid out in five columns so the whole list is scannable at a glance instead of scrolling a long single column.
+- **Tracking Config now opens first.** The Vessel Tracking tabs are reordered — Tracking Config, then Vessel Identity, then Vessel Location, then Geo Alerts — and Tracking Config is what you land on now.
+
+---
+
 # What's New in v0.6.0 — August 2026
 
 The AIS vessel-tracking priority engine is now formula-driven end to end — no manual pins or excludes, and the write-target setup that used to need a button click now takes care of itself.

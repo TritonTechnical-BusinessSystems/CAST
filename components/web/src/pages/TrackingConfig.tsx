@@ -11,7 +11,7 @@ interface Rule {
   requireMmsi: boolean;
   autoCreateVesselSite: boolean;
 }
-interface TierPreview { count: number; sample: { vesselName: string; companyName: string }[]; }
+interface TierPreview { count: number; vessels: { vesselName: string; companyName: string }[]; }
 interface Preview {
   matched: number;
   tier1: TierPreview;
@@ -233,8 +233,14 @@ export function TrackingConfig() {
                 aisstream caps a live subscription at 50 vessels. A vessel needs a Vessel Site to write results to —
                 resolved automatically in the background (see Tier refresh above).
               </p>
-              <TierList title="Tier 1 — real-time" hint="dedicated subscription, always on" tone="success" tier={preview.tier1} />
-              <TierList title="Tier 2 — periodic" hint="rotated subscription, best-effort" tone="neutral" tier={preview.tier2} />
+              <TierList title="Tier 1 — real-time" hint="dedicated subscription, always on" tone="success" tier={preview.tier1} startRank={1} />
+              <TierList
+                title="Tier 2 — periodic"
+                hint="rotated subscription, best-effort"
+                tone="neutral"
+                tier={preview.tier2}
+                startRank={preview.tier1.count + 1}
+              />
               {(preview.excludedNoMmsi > 0 || preview.excludedNoSite > 0 || preview.excludedNoEngagement > 0) && (
                 <div className="col gap-1 text-sm muted">
                   {preview.excludedNoMmsi > 0 && <span>{preview.excludedNoMmsi} matched but not AIS-trackable (no valid MMSI)</span>}
@@ -259,11 +265,13 @@ function TierList({
   hint,
   tone,
   tier,
+  startRank,
 }: {
   title: string;
   hint: string;
   tone: "success" | "neutral";
   tier: TierPreview;
+  startRank: number;
 }) {
   return (
     <div className="col gap-2">
@@ -272,15 +280,17 @@ function TierList({
         <strong>{title}</strong>
         <span className="muted text-sm">— {hint}</span>
       </div>
-      {tier.sample.length > 0 && (
-        <div className="col gap-1">
-          {tier.sample.map((v, i) => (
-            <div key={i} className="row gap-2">
-              <span>{v.vesselName}</span>
-              {v.companyName !== v.vesselName && <span className="muted text-sm">{v.companyName}</span>}
+      {tier.vessels.length > 0 && (
+        <div className="rank-columns">
+          {tier.vessels.map((v, i) => (
+            <div key={i} className="rank-item">
+              <span className="rank-num">{startRank + i}</span>
+              <span>
+                {v.vesselName}
+                {v.companyName !== v.vesselName && <span className="muted text-sm"> — {v.companyName}</span>}
+              </span>
             </div>
           ))}
-          {tier.count > tier.sample.length && <span className="muted text-sm">…and {tier.count - tier.sample.length} more</span>}
         </div>
       )}
     </div>
