@@ -266,4 +266,18 @@ export class ManageCwClient implements CwClient {
     );
     return { id: String(created.id), name: created.name, inactive: Boolean(created.inactiveFlag) };
   }
+
+  async updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void> {
+    if (!isCwWritesEnabled()) {
+      throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+    }
+    const ops: { op: "replace"; path: string; value: string }[] = [];
+    if (patch.name !== undefined) ops.push({ op: "replace", path: "/name", value: patch.name });
+    if (patch.addressLine1 !== undefined) ops.push({ op: "replace", path: "/addressLine1", value: patch.addressLine1 });
+    if (ops.length === 0) return;
+    await cwFetch(`/company/companies/${companyId}/sites/${siteId}`, {
+      method: "PATCH",
+      body: JSON.stringify(ops),
+    });
+  }
 }

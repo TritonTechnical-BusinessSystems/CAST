@@ -4,6 +4,23 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.8.0 — August 2026
+
+CAST now actually watches vessels live and writes what it sees back into ConnectWise — the AIS monitor is fully working, not just the plan for one.
+
+## Highlights
+
+- **Live vessel tracking is real.** CAST now keeps a persistent connection open to the AIS network for every vessel in Tier 1 (real-time) and rotates through Tier 2 (periodic) to stay within the 50-vessel-per-connection limit — reconnecting automatically if the connection ever drops.
+- **ConnectWise updates itself.** Each tracked vessel's site record in ConnectWise now shows its actual current status in plain language — "Vessel docked in La Ciotat, France" or "Vessel underway to Barcelona, Spain (ETA: 11 Aug 21:15 UTC)" — and its coordinates, so ConnectWise's own address search drops a pin right on the vessel's real position.
+- **Nearest-port names come from a real, purpose-picked dataset.** Since the fleet is mostly superyachts that anchor at small marinas and coastal towns rather than major shipping ports, CAST uses a broad worldwide port dataset (16,000+ locations) instead of a commercial-shipping-focused one that would have missed most of them.
+- **New System Health monitoring** for the AIS connection itself — is it connected, how many messages is it receiving, is anything falling behind. Answers "is this actually working" without needing to dig through server logs.
+
+## For the power users
+
+- One piece is still unverified: the exact shape of the AIS "destination/ETA" data hasn't been confirmed against real live traffic yet (test connections received no data during development) — worth a check once this is live and receiving real traffic.
+
+---
+
 # What's New in v0.7.0 — August 2026
 
 You can now see exactly who's ranked where, not just a top-8 sample.

@@ -26,6 +26,10 @@ import type { VesselCompany } from "../connectwise/client";
 import { checkImo, checkMmsi } from "../vessels/identifiers";
 import { prioritizeVessels } from "../vessels/priority";
 import { resolveVesselSite } from "../vessels/siteResolution";
+import { formatSiteUpdate } from "../vessels/siteWriter";
+import { getPosition, listPositions } from "../vessels/positionStore";
+import { statusBucket } from "../vessels/navStatus";
+import type { LastKnown } from "../vessels/priority";
 
 interface Rule {
   statuses: string[];
@@ -181,6 +185,51 @@ export async function reconcileVesselSites(rule: Rule): Promise<void> {
   setSetting("tracking.siteMap", siteMap);
 }
 
+/** companyId -> the {name, addressLine1} last actually written to that company's Vessel Site — skips a redundant CW PATCH when nothing's changed. */
+type LastSiteWrite = Record<string, { name: string; addressLine1: string }>;
+
+/**
+ * Writes each Trackable Vessel's current status onto its resolved Vessel
+ * Site (`formatSiteUpdate` in `vessels/siteWriter.ts` — name = friendly
+ * status + place/destination, addressLine1 = raw coordinates; decided
+ * 2026-08-11, user). Only vessels currently in Tier 1 or Tier 2 ever have
+ * position data at all (nothing else has an AIS subscription), so this
+ * naturally only writes for vessels actually being monitored.
+ *
+ * Diffs against the last-written value per site (`tracking.lastSiteWrite`)
+ * and skips the CW call entirely when nothing changed — this runs every
+ * tier-refresh cycle, and most cycles nothing will have changed for most
+ * vessels. `formatSiteUpdate` returns null for stale/no-data vessels, which
+ * are left untouched (see that file's header for why).
+ *
+ * Called only from the scheduled tier-refresh job — a real CW write,
+ * same as reconcileVesselSites, shouldn't be a side effect of `/preview`.
+ */
+export async function writeVesselSites(split: { tier1: { id: string; mmsi: string }[]; tier2: { id: string; mmsi: string }[] }): Promise<void> {
+  const cw = getCwClient();
+  const siteMap = getSetting<SiteMap>("tracking.siteMap") ?? {};
+  const lastWrite = getSetting<LastSiteWrite>("tracking.lastSiteWrite") ?? {};
+  const vessels = [...split.tier1, ...split.tier2];
+
+  await mapWithConcurrency(vessels, 8, async (v) => {
+    const siteId = siteMap[v.id];
+    if (!siteId) return;
+    const update = formatSiteUpdate(getPosition(v.mmsi));
+    if (!update) return;
+    const prev = lastWrite[siteId];
+    if (prev && prev.name === update.name && prev.addressLine1 === update.addressLine1) return;
+
+    try {
+      await cw.updateVesselSite(v.id, siteId, update);
+      lastWrite[siteId] = update;
+    } catch (err) {
+      console.error(`[tracking] Vessel Site write failed for company ${v.id}:`, err);
+    }
+  });
+
+  setSetting("tracking.lastSiteWrite", lastWrite);
+}
+
 /** Shared by the live preview and the scheduled tier-refresh job. */
 export async function computeSplit(rule: Rule) {
   const cw = getCwClient();
@@ -202,13 +251,19 @@ export async function computeSplit(rule: Rule) {
   // from the scheduled job) for what actually populates the cache.
   const noVesselSite = new Set(matched.filter((v) => !siteMap[v.id]).map((v) => v.id));
 
+  // Purely local — the position cache is upserted continuously by the WS
+  // listener (vessels/aisListener.ts), never queried live here.
+  const lastKnownByMmsi: Record<string, LastKnown> = {};
+  for (const p of listPositions()) {
+    lastKnownByMmsi[p.mmsi] = { navStatus: statusBucket(p.navStatusCode, p.lastSeenAt), lastSeenAt: p.lastSeenAt };
+  }
+
   const split = prioritizeVessels({
     candidates: matched,
     projectActivityByCompanyId,
     ticketActivityByCompanyId,
     noVesselSite,
-    // No position cache yet (the AIS monitor listener isn't built) — the
-    // "underway" tiebreaker is a no-op until then, everything else applies.
+    lastKnownByMmsi,
   });
 
   return { matched, split };

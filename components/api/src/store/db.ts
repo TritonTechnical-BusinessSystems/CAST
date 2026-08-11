@@ -34,6 +34,23 @@ db.exec(`
     extension_version TEXT, rules_version TEXT,
     last_check_in TEXT NOT NULL
   );
+  -- Latest-known AIS position per vessel (INIT-0012) -- upserted continuously
+  -- by the WS listener, one row per MMSI. Latest-only, no history: same file
+  -- as everything else, not a separate database (see the architecture note's
+  -- "Position-history volume & storage" decision -- a history/time-series
+  -- store would be a distinct, separate concern, not built here).
+  CREATE TABLE IF NOT EXISTS vessel_positions (
+    mmsi TEXT PRIMARY KEY,
+    lat REAL, lon REAL, sog REAL, cog REAL,
+    nav_status_code INTEGER,
+    last_seen_at TEXT NOT NULL,
+    -- Voyage data (ShipStaticData, not PositionReport) -- a different AIS
+    -- message type on a much slower cadence, but the same one-row-per-MMSI
+    -- cache; destination feeds the "underway to <destination>" site name.
+    destination TEXT,
+    eta_iso TEXT,
+    voyage_updated_at TEXT
+  );
 `);
 
 // Migrate pre-existing checkins tables to add device_name (the human machine name).

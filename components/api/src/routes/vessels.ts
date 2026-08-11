@@ -5,6 +5,7 @@
  */
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
+import { listPositions } from "../vessels/positionStore";
 
 interface Vessel {
   company: string;
@@ -33,6 +34,11 @@ router.get("/", requireAuth, (_req, res) => {
 router.post("/sync", requireAuth, (_req, res) => {
   // TODO(INIT-0012): enqueue the real sync run.
   res.json({ ok: true, queued: vessels.length });
+});
+
+/** Real, live AIS latest-position cache (INIT-0012) — for inspecting what the WS listener is actually receiving, independent of the illustrative stub data above. */
+router.get("/positions", requireAuth, (_req, res) => {
+  res.json({ positions: listPositions() });
 });
 
 export default router;

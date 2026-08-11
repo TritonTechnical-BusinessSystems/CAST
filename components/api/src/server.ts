@@ -11,8 +11,8 @@ import healthRoutes from "./routes/health";
 import geoAlertRoutes from "./routes/geoAlerts";
 import checkinRoutes from "./routes/checkins";
 import extensionRoutes from "./routes/extension";
-import { startVesselSync } from "./jobs/vesselSync";
 import { startTierRefresh, stopTierRefresh } from "./jobs/tierRefresh";
+import { startAisListener, stopAisListener } from "./vessels/aisListener";
 import { seedBreakGlass } from "./auth/local";
 import { db } from "./store/db";
 
@@ -36,8 +36,8 @@ app.use("/api/extension", extensionRoutes);
 const server = app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);
   seedBreakGlass();
-  startVesselSync();
   startTierRefresh();
+  startAisListener();
 });
 
 // better-sqlite3 must finalize its prepared statements before the Node
@@ -47,6 +47,7 @@ const server = app.listen(config.port, () => {
 // RemoveEnvironmentCleanupHook. Closing the db first avoids the race.
 function shutdown() {
   stopTierRefresh();
+  stopAisListener();
   server.close(() => {
     db.close();
     process.exit(0);

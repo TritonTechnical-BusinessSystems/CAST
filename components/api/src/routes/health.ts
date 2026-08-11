@@ -11,6 +11,8 @@ import { resolveCwCreds } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
 import { getPackageManifest } from "../health/packages";
 import { getContainers } from "../health/containers";
+import { getAisStatus } from "../vessels/aisListener";
+import { readEventLoopLag } from "../health/eventLoopLag";
 
 const router = Router();
 
@@ -54,20 +56,58 @@ router.get("/full", requireAuth, async (_req, res) => {
         .catch((e) => ({ state: "down" as const, detail: e instanceof Error ? e.message : "unreachable" }))
     : { state: "warn" as const, detail: "Not configured" };
 
-  const aisstream = aisstreamConfigured()
-    ? { state: "idle" as const, detail: "Key configured; monitor not yet running (INIT-0012)" }
-    : { state: "warn" as const, detail: "No API key" };
-
   const activeDirectory = adConfigured()
     ? { state: "idle" as const, detail: "LDAPS configured" }
     : { state: "warn" as const, detail: "Not configured — local login only" };
 
-  const sync = { state: "idle" as const, detail: `Scheduled ${config.vesselSyncCron} (stub — INIT-0012)` };
+  const ais = getAisStatus();
+  const aisstream = !ais.configured
+    ? { state: "warn" as const, detail: "No API key" }
+    : ais.tier1.connected || ais.tier2.connected
+      ? { state: "ok" as const, detail: "Connected — see Tier 1 / Tier 2 below" }
+      : { state: "down" as const, detail: "Key configured but neither tier is connected" };
+
+  const aisTier1 = !ais.configured
+    ? { state: "warn" as const, detail: "Not configured" }
+    : {
+        state: ais.tier1.connected ? ("ok" as const) : ("down" as const),
+        detail:
+          `${ais.tier1.connected ? "Connected" : "Disconnected"} — ${ais.tier1.subscribedMmsiCount} MMSIs, ` +
+          `${ais.tier1.messagesReceivedLastMinute}/min (avg ${ais.tier1.avgProcessingMs.toFixed(2)}ms/max ${ais.tier1.maxProcessingMs.toFixed(2)}ms to process), ` +
+          `${ais.tier1.reconnectCount} reconnects` +
+          (ais.tier1.lastMessageAt ? `, last message ${ais.tier1.lastMessageAt}` : ", no messages yet"),
+      };
+
+  const aisTier2 = !ais.configured
+    ? { state: "warn" as const, detail: "Not configured" }
+    : {
+        state: ais.tier2.poolSize === 0 ? ("idle" as const) : ais.tier2.connected ? ("ok" as const) : ("down" as const),
+        detail:
+          ais.tier2.poolSize === 0
+            ? "No Tier 2 vessels currently"
+            : `${ais.tier2.connected ? "Connected" : "Disconnected"} — batch ${ais.tier2.batchIndex}/${ais.tier2.batchCount}, ` +
+              `${ais.tier2.poolSize} vessels in rotation, ${ais.tier2.messagesReceivedLastMinute}/min ` +
+              `(avg ${ais.tier2.avgProcessingMs.toFixed(2)}ms/max ${ais.tier2.maxProcessingMs.toFixed(2)}ms to process), ${ais.tier2.reconnectCount} reconnects` +
+              (ais.tier2.lastMessageAt ? `, last message ${ais.tier2.lastMessageAt}` : ", no messages yet"),
+      };
+
+  // "Are we keeping up" gauge — aisstream drops connections whose consumer
+  // falls behind (INIT-0012). Node's real event-loop-delay histogram is a
+  // direct, process-wide measure of that, not just an AIS-specific proxy.
+  // Thresholds are a starting heuristic (our real message volume — ≤50
+  // MMSIs per connection — is far under aisstream's ~300msg/s global-feed
+  // budget, so danger here would mean something else entirely is blocking
+  // the process), not a value aisstream publishes.
+  const lag = readEventLoopLag();
+  const backpressure = {
+    state: lag.meanMs > 50 ? ("down" as const) : lag.meanMs > 10 ? ("warn" as const) : ("ok" as const),
+    detail: `Event-loop lag — mean ${lag.meanMs.toFixed(2)}ms, p99 ${lag.p99Ms.toFixed(2)}ms, max ${lag.maxMs.toFixed(2)}ms (since last check)`,
+  };
 
   res.json({
     app: { version: VERSION, build: BUILD, env: config.nodeEnv },
-    integrations: { connectwise, aisstream, activeDirectory },
-    sync,
+    integrations: { connectwise, aisstream, activeDirectory, aisTier1, aisTier2 },
+    backpressure,
     cwWrites: isCwWritesEnabled(),
   });
 });

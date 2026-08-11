@@ -131,8 +131,8 @@ the design consequences that follow — read before building the pipeline.
      vessels. Keep last-known position + timestamp and carry it over for vessels
      that didn't transmit in their window (moored/anchored transmit slowly).
    - **DECIDED for >50 — a 2-tier priority model (user, 2026-07-23), REVISED
-     to strict priority groups (user, 2026-08-11). The scoring/split half is
-     BUILT; the WS listener consuming it is not yet.** Rather than making
+     to strict priority groups (user, 2026-08-11). Both the scoring/split
+     half AND the WS listener consuming it are built — see §4.** Rather than making
      *all* vessels equally stale under flat rotation, split by business
      importance: **Tier 1 = the priority ≤50** on their own dedicated,
      always-on subscription (global box + those MMSIs) → *continuous/
@@ -198,66 +198,128 @@ the design consequences that follow — read before building the pipeline.
    - The spike should still confirm Class A + the real status field for the actual
      client vessels before we hard-code the status path.
 
-## 4. Still open (decide before building for real)
+## 4. Resolved 2026-08-11 — the full pipeline is now built
 
-- **Position-history volume & storage (decide with the monitor).** The current
-  features need only the **latest position per vessel** (a small upserted cache) —
-  no history — so the app's sqlite is fine at any vessel count. IF we later want
-  full position **history** (analytics / track replay), that's high-volume
-  time-series: keep it in a **separate store** from the operational DB (a dedicated
-  sqlite DB file to start; graduate to a real time-series DB — TimescaleDB /
-  ClickHouse — only if volume + queries demand it), with **retention maintenance**
-  (prune raw beyond N days; roll up older to hourly) via a `node-cron` job.
-  Architect the boundary now so the engine is swappable. NB: vessel *count* affects
-  monitoring (§3.6); data *volume* only bites if we persist history.
+Everything below was "still open" as of the previous revision of this file.
+The user resolved all of it in one session, and the full listener → cache →
+writer pipeline is built end to end (not just the priority/tier-split half).
 
-- Where the IMO↔MMSI mapping lives and how it's seeded (add an MMSI custom field
-  in CW? build from `ShipStaticData`?).
-- The world-ports dataset choice (World Port Index vs UN-LOCODE vs other) and how
-  "nearest" is bounded (a max-distance beyond which we say "at sea", not a port).
-- The exact **nav-status → friendly-label** table (which AIS codes fold into
-  "Under way", and the last-seen threshold that trips the "unknown / dry-docked?"
-  bucket).
-- **CW write target — WHICH RECORD decided 2026-08-11; which fields on it
-  mostly confirmed live.** Not a company custom field, not a location's
-  address field — the record is the **Vessel Site** (naming-lexicon): the
-  tracked company's CW site whose name starts with "Vessel". Resolved once
-  and cached **by site ID in CAST's own local database** — the tier engine
-  and preview read only that local cache, never ConnectWise (2026-08-11,
-  user: *"we'll already have the site IDs locally... keep it local, don't
-  look to ConnectWise unless needed"*). A rename never breaks the mapping;
-  only the site being deleted/inactivated clears the cache.
-  **Self-healing (2026-08-11, user):** with the opt-in "Automatically create
-  a Vessel site..." rule setting on, a client with no active "Vessel…" site
-  gets one **created** (`CwClient.createVesselSite`, isCwWritesEnabled()
-  -gated) rather than staying excluded indefinitely — *"it should CREATE
-  that site for the client if it doesn't exist... then it only fails once,
-  instead of continuing to fail."* With the option off, behavior is
-  detect-only (same hard-requirement exclusion as a missing MMSI).
-  `components/api/src/vessels/siteResolution.ts` +
-  `reconcileVesselSites()` in `routes/tracking.ts`, called only from the
-  scheduled tier-refresh job (never from the interactive preview — creation
-  is a real write and shouldn't be a side effect of adjusting filters).
-  **Field shape confirmed live** (2026-08-11, real "Vessel" site record):
-  `addressLine1` already holds a placeholder — `"(Vessel's current location
-  unknown)"` — strongly suggesting that's the intended field for the
-  friendly place-name/status write, matching this record's existing
-  convention. Still worth a final confirm with the user before the writer
-  ships, but no longer a blind guess.
-- Listener topology: in-process in `@cast/api` vs. a separate worker; and the
-  latest-position cache store (in-memory vs. the same persistence INIT-0008 picks,
-  e.g. better-sqlite3).
-- Which ConnectWise **company status** scopes the client set (the CW-side write,
-  `INIT-0002`) — this *also* sets how many vessels are monitored (§3.6), so pick a
-  status that keeps the active set manageable (ideally ≤50 → one subscription).
-- **API-key strategy (guidance, not a hard decision):** a **second key is worth
-  it for *isolation*, not capacity** — a dedicated key/connection for the
-  steady-state background monitor, separate from a key used for interactive
-  "check this vessel now" ad-hoc lookups, so a burst of ad-hoc requests can't
-  disrupt/throttle the monitor. **Do NOT partition keys by business department
-  (support vs sales)** — that's an org boundary aisstream doesn't see and it
-  drifts as clients move; partition (if at all) by the 50-per-subscription
-  mechanic, or avoid it via rotation.
-- **Unknowns only a live test settles:** the per-user throttle ceiling, whether
-  the MMSI filter is AND-ed with the box, and the vessels' real transmit interval
-  (sets the rotation listening-window). The spike (§5-adjacent) answers the last.
+- **Position storage: no separate database.** Confirmed as originally
+  guessed — latest-position-only, no history, fits the existing shared
+  `cast.db` (better-sqlite3). New `vessel_positions` table (mmsi PK: lat,
+  lon, sog, cog, nav_status_code, last_seen_at, plus voyage columns
+  destination/eta_iso/voyage_updated_at from `ShipStaticData`) —
+  `components/api/src/vessels/positionStore.ts`. Position-*history* (time-
+  series, for analytics/replay) remains a genuinely separate, not-yet-needed
+  concern — the boundary the original note called for.
+- **Listener topology: in-process in `@cast/api`**, matching every other
+  scheduled concern in this app (`jobs/tierRefresh.ts`). Native Node
+  `WebSocket` (stable since Node 22, this app already targets 22 — see the
+  Dockerfile) — no new dependency. `components/api/src/vessels/aisListener.ts`:
+  **two independent connections**, matching the Tier 1/2 design — one
+  dedicated always-on subscription for Tier 1's (≤50) MMSIs, one that
+  **rotates** through Tier 2's pool in batches of ≤50 on its own 60s timer
+  (independent of the 5-minute tier-refresh cadence, since Tier 2 can exceed
+  the 50-MMSI cap regardless of when the pool itself last changed).
+  Reconnects with exponential backoff + jitter (uncapped retries, backoff
+  resets on a clean reconnect).
+- **MMSI filters stay current without polling.** `jobs/tierRefresh.ts` calls
+  `aisListener.applySplit()` the moment it recomputes the Tier 1/2 split
+  (every 5 minutes by default, runtime-adjustable) — the listener itself
+  never polls `tracking.currentSplit` on its own. On process restart, the
+  listener also applies whatever split was last persisted immediately at
+  boot (rather than sitting idle with zero MMSIs for up to 5 minutes waiting
+  for `tierRefresh`'s first cycle).
+- **Health monitoring & backpressure — the user asked directly.** aisstream
+  documents that it drops connections whose consumer falls behind (~300
+  msg/s budget even for the global-feed case) — the user asked for a live
+  gauge of this. Two: (1) per-connection message-processing time (parse +
+  sqlite upsert), tracked as a rolling last-minute avg/max on each
+  connection's state; (2) a genuinely process-wide event-loop-lag histogram
+  (`components/api/src/health/eventLoopLag.ts`, Node's own
+  `perf_hooks.monitorEventLoopDelay` — the standard tool for "are we keeping
+  up," not AIS-specific, so it also covers anything else blocking the
+  process). Both surfaced on System Health (`GET /api/health/full`): AIS
+  Tier 1 / Tier 2 probe cards (connection state, MMSI count, msg/min,
+  reconnect count, processing time) and a "Process backpressure" card
+  (event-loop lag mean/p99/max). Reconnects are never auto-flagged as
+  failures beyond the reconnect counter — a beta API with no SLA will drop
+  connections sometimes; that's expected, not alarming on its own.
+- **Live visibility.** Structured `[ais-listener]` logs on connect/
+  disconnect/reconnect/errors, plus a one-line summary every 60s (msg/min
+  and connection state per tier) — not per-message logging, which could hit
+  ~300/s in theory. For actual data inspection: `GET /api/vessels/positions`
+  (`routes/vessels.ts`) returns the live cache contents directly.
+- **Nearest-port dataset: UN/LOCODE, not NGA World Port Index** (user
+  decision, reasoned from the fleet: predominantly superyachts, which mostly
+  anchor/dock at small marinas and coastal towns, not major commercial
+  shipping ports — NGA's ~3,700 entries are commercial-port-biased and would
+  badly miss those; UN/LOCODE's ~100k+ entries cover far more of the small
+  harbors yachts actually frequent). Bundled dataset:
+  `components/api/src/vessels/ports.csv`, sourced from
+  `cristan/improved-un-locodes`' `code-list-improved.csv` (PDDL/ODbL/CC-0 —
+  UN/LOCODE data is PDDL; coordinate improvements from OSM Nominatim (ODbL)
+  + Wikidata (CC-0)) — filtered from 116,075 rows (all UN/LOCODE function
+  types) down to 16,657 (port/maritime function only, non-deprecated status,
+  valid coordinates). Nearest-neighbor by haversine distance, capped at 50nm
+  ("at sea" beyond that, not a wrong port name) —
+  `components/api/src/vessels/nearestPort.ts`. Regenerate by re-filtering a
+  fresh `code-list-improved.csv` download with the same criteria (see that
+  file's header).
+- **Nav-status → friendly-label table** (`components/api/src/vessels/navStatus.ts`):
+  standard ITU-R M.1371 codes folded into `docked` (moored, 5) / `anchored`
+  (1) / `underway` (0, 2–4, 7, 8 — the vessel isn't stationary, so the same
+  destination-based phrasing applies regardless of exactly why) / `aground`
+  (6) / `unknown` (no signal for 6+ hours, or an unrecognized/reserved
+  code). "Dry-docked" still isn't a real AIS code — it's just the `unknown`
+  bucket, as originally noted.
+- **CW write target — fields confirmed by the user, superseding the
+  live-inspection guess.** The guess (from inspecting a real "Vessel" site)
+  was that `addressLine1` holds the friendly status text. **Wrong** — the
+  user's actual spec: the **site NAME** holds the friendly status +
+  place/destination text (e.g. *"Vessel docked in La Ciotat, France"* /
+  *"Vessel underway to Barcelona, Spain (ETA: 11 Aug 21:15 UTC+1)"*), and
+  **`addressLine1` holds raw decimal coordinates** (`"47.76571188325204,
+  -4.965676791492198"`) so ConnectWise's own address-search/Google-Maps
+  lookup locates the vessel directly. Renaming the site to "Vessel docked
+  in..." still satisfies the `startsWith("vessel")` prefix match used
+  everywhere else, so this doesn't break site resolution. Formatting logic
+  (pure, I/O-free, matching `priority.ts`/`siteResolution.ts`'s style):
+  `components/api/src/vessels/siteWriter.ts`. Stale/no-data vessels are a
+  deliberate no-op, not an overwrite (tolerates AIS gaps, per the original
+  design intent). ETA is shown in UTC, not the destination's local offset
+  (`"UTC+1"` in the user's example) — that would need a destination-name →
+  timezone lookup this doesn't have; flagged to the user as a known
+  simplification, not silently done. Write step:
+  `writeVesselSites()` in `routes/tracking.ts`, called from
+  `jobs/tierRefresh.ts` after `applySplit`, diffed against
+  `tracking.lastSiteWrite` so an unchanged status doesn't re-PATCH every
+  cycle.
+- **IMO↔MMSI mapping: already resolved earlier (§3.7) — MMSI is a CW company
+  custom field** (`INIT-0014`), not something built from `ShipStaticData`.
+  This session's `ShipStaticData` handling captures destination/ETA only,
+  not identity mapping (aisstream can't fill MMSI from IMO anyway — see §3.7).
+- **Which CW company status scopes the client set:** superseded by the
+  Tracking Config UI (`INIT-0015`) — Company Status is one of the
+  interactively-configurable rule criteria, not a fixed env value.
+- **API-key strategy:** unchanged guidance (single key is fine at current
+  scale; a second key would be for isolation, not capacity, if ad-hoc
+  lookups are added later) — not revisited this session, still just
+  guidance.
+
+### Still genuinely open
+
+- **`ShipStaticData`'s exact `Destination`/`Eta` field shape is UNVERIFIED
+  against real traffic.** Live-testing (twice, global bounding box, 15s and
+  30s) received **zero messages** — connection handshake succeeds, but no
+  data arrives, which is inconsistent with the documented ~300msg/s global
+  firehose budget. Cause unknown: could be an inactive/invalid API key,
+  could be this dev sandbox's network not sustaining the stream. The parser
+  (`aisEta.ts`) is built defensively from the documented ITU-R M.1371
+  semantics and aisstream's PascalCase field convention, and logs a warning
+  if a `ShipStaticData` message arrives with an unparseable shape — but this
+  needs a real check against production traffic (`trt-cast-01`, where the
+  key and network path both differ from this dev sandbox) before trusting
+  it fully.
+- **Real-world message volume / actual transmit interval** — still only
+  known from the docs, not observed, for the same reason above.

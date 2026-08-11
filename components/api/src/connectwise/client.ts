@@ -52,6 +52,15 @@ export interface CwClient {
    * like every other CW write.
    */
   createVesselSite(companyId: string): Promise<CwSite>;
+  /**
+   * Write the current status/position onto an already-resolved Vessel Site:
+   * `name` = friendly status + place/destination (e.g. "Vessel docked in La
+   * Ciotat, France"), `addressLine1` = raw "lat, lon" decimal coordinates
+   * (so ConnectWise's own address-search/Google-Maps lookup locates the
+   * vessel directly) — decided 2026-08-11 (user). Gated by
+   * isCwWritesEnabled() like every other CW write.
+   */
+  updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void>;
 }
 
 export interface CwSite {
@@ -138,6 +147,11 @@ export class StubCwClient implements CwClient {
     const site: CwSite = { id: `s${companyId}-created`, name: "Vessel", inactive: false };
     this.sites[companyId] = [...(this.sites[companyId] ?? []), site];
     return { ...site };
+  }
+
+  async updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void> {
+    const site = (this.sites[companyId] ?? []).find((s) => s.id === siteId);
+    if (site && patch.name !== undefined) site.name = patch.name;
   }
 }
 

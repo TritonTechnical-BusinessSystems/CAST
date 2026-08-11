@@ -40,9 +40,6 @@ export const config = {
   /** DN of the "CAST Users" group — membership REQUIRED to sign in. */
   ldapAllowedGroupDN: env.CAST_LDAP_ALLOWED_GROUP_DN ?? "",
 
-  /** Cron expression for the vessel-location sync (INIT-0012). */
-  vesselSyncCron: env.CAST_VESSEL_SYNC_CRON ?? "0 * * * *",
-
   /**
    * Boot-time seed for how often the AIS-monitor Tier 1/2 split recomputes
    * (INIT-0012 §3.6) — cheap (a handful of bulk CW queries, not per-vessel),

@@ -8,8 +8,8 @@ type Health = "ok" | "warn" | "down" | "idle";
 interface Probe { state: Health; detail: string; }
 interface FullHealth {
   app: { version: string; build: string; env: string };
-  integrations: { connectwise: Probe; aisstream: Probe; activeDirectory: Probe };
-  sync: Probe;
+  integrations: { connectwise: Probe; aisstream: Probe; activeDirectory: Probe; aisTier1: Probe; aisTier2: Probe };
+  backpressure: Probe;
   cwWrites: boolean;
 }
 
@@ -255,8 +255,10 @@ export function SystemHealth() {
           <div className="card-grid card-grid-compact">
             <ProbeCard title="ConnectWise API" probe={h.integrations.connectwise} />
             <ProbeCard title="aisstream (AIS feed)" probe={h.integrations.aisstream} />
+            <ProbeCard title="AIS Tier 1 (real-time)" probe={h.integrations.aisTier1} />
+            <ProbeCard title="AIS Tier 2 (rotating)" probe={h.integrations.aisTier2} />
+            <ProbeCard title="Process backpressure" probe={h.backpressure} />
             <ProbeCard title="Active Directory" probe={h.integrations.activeDirectory} />
-            <ProbeCard title="Vessel sync job" probe={h.sync} />
           </div>
           <Card>
             <CardHeader title="Application" />

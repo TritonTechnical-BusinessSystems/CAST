@@ -1,20 +1,23 @@
 /**
  * Scheduled AIS-monitor Tier 1/2 refresh (INIT-0012 §3.6). Recomputes the
  * priority split against the SAVED tracking rule and persists it
- * (`tracking.currentSplit`) so the (not-yet-built) WS listener has a ready
- * MMSI list to subscribe to without recomputing on its own.
+ * (`tracking.currentSplit`) so the WS listener (`vessels/aisListener.ts`)
+ * has a ready MMSI list to subscribe to without recomputing on its own.
  *
  * Self-rescheduling `setTimeout`, not `node-cron` — the interval is
  * runtime-adjustable (`setTierRefreshMinutes`, `PUT /api/tracking/config`'s
  * sibling), and re-reading it fresh before each reschedule means a change
- * takes effect on the next cycle without a restart. Also runs
- * `reconcileVesselSites` first each cycle — the one place Vessel Site
- * lookups/creation happen; everything else (including `computeSplit` right
- * below) reads the resulting cache purely locally.
+ * takes effect on the next cycle without a restart. Runs, in order each
+ * cycle: `reconcileVesselSites` (the one place Vessel Site lookups/creation
+ * happen), `computeSplit` (reads that cache purely locally), `applySplit`
+ * into `aisListener.ts` (keeps the WS listener's MMSI filters current — the
+ * listener itself never polls), then `writeVesselSites` (writes each
+ * tracked vessel's current AIS-derived status onto its Vessel Site).
  */
 import { tierRefreshMinutes } from "../config";
 import { setSetting } from "../store/secretStore";
-import { computeSplit, reconcileVesselSites, getStoredRule } from "../routes/tracking";
+import { computeSplit, reconcileVesselSites, writeVesselSites, getStoredRule } from "../routes/tracking";
+import { applySplit } from "../vessels/aisListener";
 
 export interface CurrentSplit {
   computedAt: string;
@@ -59,5 +62,7 @@ async function runTierRefresh(): Promise<void> {
     tier2: split.tier2.map(toEntry),
   };
   setSetting("tracking.currentSplit", result);
+  applySplit(result);
+  await writeVesselSites(result);
   console.log(`[tier-refresh] tier1=${result.tier1.length} tier2=${result.tier2.length}`);
 }

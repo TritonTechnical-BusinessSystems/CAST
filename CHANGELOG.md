@@ -10,7 +10,25 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
-## v0.7.0 — build 2608015 — 2026-08-11T04:38:32Z
+## v0.8.0 — build 2608016 — 2026-08-11T05:19:18Z
+
+### Added
+- [Backend] **The AIS monitor is live end to end** (`INIT-0012`) — a long-lived WebSocket listener, a latest-position cache, and a scheduled writer that publishes each tracked vessel's current status back into ConnectWise. `components/api/src/vessels/aisListener.ts`: two connections matching the Tier 1/2 design — Tier 1 dedicated and always-on (≤50 MMSIs), Tier 2 rotating through its pool in batches of ≤50 on its own 60s timer. Native Node `WebSocket` (no new dependency), exponential backoff + jitter on disconnect, uncapped retries. `jobs/tierRefresh.ts` pushes its freshly-computed split into the listener the moment it recomputes (every 5 minutes by default) — the listener never polls on its own — and also applies whatever split was last persisted immediately at boot, so a restart doesn't sit idle for a full cycle.
+- [Database] New `vessel_positions` table (mmsi PK: lat, lon, sog, cog, nav-status code, last-seen, plus voyage columns for destination/ETA from `ShipStaticData`) in the same shared `cast.db` — confirmed no separate database is needed for latest-position-only data (history/time-series remains a distinct, not-yet-needed concern). `GET /api/vessels/positions` for live inspection of what's actually being received.
+- [Backend] **ConnectWise write-back**: each tracked vessel's Vessel Site gets its **name** updated to a friendly status + place/destination (e.g. "Vessel docked in La Ciotat, France" / "Vessel underway to Barcelona, Spain (ETA: 11 Aug 21:15 UTC)") and its **addressLine1** updated to raw decimal coordinates for direct Google Maps lookup. New `CwClient.updateVesselSite()`; pure formatter in `vessels/siteWriter.ts`; nav-status codes mapped to friendly buckets in `vessels/navStatus.ts` (docked/anchored/underway/aground/unknown, stale-signal threshold 6h); nearest-port name resolved via a bundled, filtered UN/LOCODE dataset (`vessels/nearestPort.ts` + `ports.csv`, 16,657 ports, haversine nearest-neighbor, 50nm "at sea" cutoff) — chosen over NGA World Port Index because the fleet is predominantly superyachts, which mostly anchor at small marinas and coastal towns NGA's commercial-port-biased list would miss. Writes are diffed against the last-written value per site (`tracking.lastSiteWrite`) so an unchanged status doesn't re-write every cycle; stale/no-data vessels are left untouched rather than overwritten. `prioritizeVessels`'s `lastKnownByMmsi` (present since the priority engine was first built but never wired) is now fed from the real position cache, so the "underway" tiebreaker is live.
+- [Backend] Two backpressure/health gauges, per the user's direct ask about aisstream's documented "keep up or get dropped" behavior: per-connection message-processing time (parse + upsert, rolling last-minute avg/max) and a process-wide event-loop-lag histogram (`health/eventLoopLag.ts`, Node's `perf_hooks.monitorEventLoopDelay`). Surfaced on System Health as AIS Tier 1 / Tier 2 probe cards (connection state, MMSI count, msg/min, reconnect count) and a "Process backpressure" card.
+
+### Removed
+- [Backend] `jobs/vesselSync.ts` — the pre-aisstream `node-cron` stub (referenced superseded concepts: a marine-traffic API, "Target Location") — deleted entirely along with the now-unused `node-cron` dependency, superseded by `aisListener.ts` + the tier-refresh cycle's write step.
+
+### Fixed
+- [Backend] `GET /api/tracking/config`, `POST /api/tracking/config`, and `POST /api/tracking/preview` now merge the stored/posted rule over `DEFAULT_RULE` instead of trusting it as complete — a rule persisted before a future schema addition would otherwise crash every reader that assumes the full shape (the exact class of bug fixed for `projectStatuses`/`autoCreateVesselSite` in v0.6.1).
+- [Backend] `listServiceBoards()`'s Admin-department exclusion now correctly covers all three Admin boards ("Admin", "Ψ Discover Better", "Triton Management") — an earlier pass had only accounted for two.
+
+### Docs
+- [Docs] `knowledge/architecture/vessel-location-updating-aisstream.md` §4 rewritten — nearly every item on the "still open" list from the original design is now resolved and documented; the one genuinely open item (unverified `ShipStaticData` field shape — live-testing twice returned zero messages on a global bounding box, cause unknown) is called out explicitly rather than assumed correct.
+
+
 
 ### Added
 - [Frontend] Tracking Config's Preview card now shows the **full ranked priority list** for both tiers instead of an 8-item sample + "…and N more" — every tracked client, numbered by its overall rank (Tier 1 numbered 1..N, Tier 2 continuing from Tier 1's count + 1), laid out in a 5-column flowing list (`.rank-columns`, responsive fallback to 2 columns at 768px and 1 at 480px). Backend `POST /api/tracking/preview` returns the full ordered vessel list per tier instead of a capped sample (`toList()` replaces `sample()` in `routes/tracking.ts`).
