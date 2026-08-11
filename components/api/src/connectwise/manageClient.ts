@@ -60,44 +60,50 @@ function sortNames(names: string[]): string[] {
   return [...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
+/** Active only — CW marks retired statuses/boards inactiveFlag=true rather than deleting them. */
 export async function listCompanyStatuses(): Promise<string[]> {
-  const rows = await cwFetch<{ name: string }[]>("/company/companies/statuses?pageSize=200&fields=id,name");
-  return sortNames(rows.map((r) => r.name));
+  const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
+    "/company/companies/statuses?pageSize=200&fields=id,name,inactiveFlag",
+  );
+  return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
 }
 
-interface CwBoardRow { name: string; department?: { name?: string } }
+interface CwBoardRow { name: string; department?: { name?: string }; inactiveFlag?: boolean }
 
 async function listAllBoards(): Promise<CwBoardRow[]> {
-  return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department");
+  return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department,inactiveFlag");
 }
 
 /**
- * Service boards, excluding any assigned to the "Admin" department (verified
- * live 2026-08-11: CW boards carry a `department` object, e.g. board "Admin"
- * itself and "Triton Management" are both `department.name === "Admin"`) —
- * internal admin work isn't a vessel-tracking priority signal.
+ * Active, non-Admin-department service boards (verified live 2026-08-11: CW
+ * boards carry a `department` object — e.g. board "Admin" itself and
+ * "Triton Management" are both `department.name === "Admin"` — and an
+ * `inactiveFlag`, currently true for two retired example boards). Internal
+ * admin work and retired boards aren't vessel-tracking priority signals.
  */
 export async function listServiceBoards(): Promise<string[]> {
   const rows = await listAllBoards();
-  return sortNames(rows.filter((r) => r.department?.name !== "Admin").map((r) => r.name));
+  return sortNames(rows.filter((r) => !r.inactiveFlag && r.department?.name !== "Admin").map((r) => r.name));
 }
 
 /**
- * Names of boards assigned to the "Admin" department — used to keep Admin
- * work out of the Project-activity signal too (2026-08-11, user: "Same goes
- * for Project Boards"). A CW Project has its own `board` field (the same
- * Service Board records), verified live; `board/department/name` isn't a
- * recognized condition path (400), but `board/name not in (...)` is.
+ * Names of active boards assigned to the "Admin" department — used to keep
+ * Admin work out of the Project-activity signal too (2026-08-11, user:
+ * "Same goes for Project Boards"). A CW Project has its own `board` field
+ * (the same Service Board records), verified live; `board/department/name`
+ * isn't a recognized condition path (400), but `board/name not in (...)` is.
  */
 async function listAdminBoardNames(): Promise<string[]> {
   const rows = await listAllBoards();
-  return rows.filter((r) => r.department?.name === "Admin").map((r) => r.name);
+  return rows.filter((r) => !r.inactiveFlag && r.department?.name === "Admin").map((r) => r.name);
 }
 
-/** CW Project statuses (e.g. "1: Active", "5: Closed") — parallel to listCompanyStatuses. */
+/** CW Project statuses (e.g. "1: Active", "5: Closed"), active only — parallel to listCompanyStatuses. */
 export async function listProjectStatuses(): Promise<string[]> {
-  const rows = await cwFetch<{ name: string }[]>("/project/statuses?pageSize=200&fields=id,name");
-  return sortNames(rows.map((r) => r.name));
+  const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
+    "/project/statuses?pageSize=200&fields=id,name,inactiveFlag",
+  );
+  return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
 }
 
 /** CW members — the source of truth for who the extension check-ins belong to. */
