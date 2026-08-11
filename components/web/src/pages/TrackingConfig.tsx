@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { PageHeader, Card, CardHeader, CardBody, Checkbox, Button, Badge, Banner, Spinner, useToast } from "../ui";
+import { PageHeader, Card, CardHeader, CardBody, Checkbox, Button, Input, Badge, Banner, Spinner, useToast } from "../ui";
 
-interface Options { statuses: string[]; boards: string[]; }
-interface Rule { statuses: string[]; boards: string[]; requireImo: boolean; requireMmsi: boolean; }
+interface Options { statuses: string[]; boards: string[]; projectStatuses: string[]; }
+interface Rule {
+  statuses: string[];
+  boards: string[];
+  projectStatuses: string[];
+  requireImo: boolean;
+  requireMmsi: boolean;
+  autoCreateVesselSite: boolean;
+}
 interface TierPreview { count: number; sample: { vesselName: string; companyName: string }[]; }
 interface Preview {
   matched: number;
@@ -11,18 +18,16 @@ interface Preview {
   tier2: TierPreview;
   excludedNoMmsi: number;
   excludedNoSite: number;
-  excludedManually: number;
+  excludedNoEngagement: number;
 }
-interface SiteResolveSummary {
-  checked: number;
-  kept: number;
-  resolved: number;
-  cleared: number;
-  none: number;
-  ambiguous: { vesselName: string; companyName: string }[];
-}
-
-const emptyRule: Rule = { statuses: [], boards: [], requireImo: false, requireMmsi: true };
+const emptyRule: Rule = {
+  statuses: [],
+  boards: [],
+  projectStatuses: [],
+  requireImo: false,
+  requireMmsi: true,
+  autoCreateVesselSite: false,
+};
 
 export function TrackingConfig() {
   const toast = useToast();
@@ -31,11 +36,15 @@ export function TrackingConfig() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [resolvingSites, setResolvingSites] = useState(false);
+  const [refreshMinutes, setRefreshMinutes] = useState<number | null>(null);
+  const [savingInterval, setSavingInterval] = useState(false);
+  const [cwWritesEnabled, setCwWritesEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     api.get<Options>("/tracking/options").then(setOpts).catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
     api.get<Rule>("/tracking/config").then(setRule).catch(() => {});
+    api.get<{ minutes: number }>("/tracking/refresh-interval").then((r) => setRefreshMinutes(r.minutes)).catch(() => {});
+    api.get<{ writesEnabled: boolean }>("/integrations/connectwise").then((r) => setCwWritesEnabled(r.writesEnabled)).catch(() => {});
   }, []);
 
   const runPreview = () => api.post<Preview>("/tracking/preview", rule).then(setPreview).catch(() => setPreview(null));
@@ -45,24 +54,7 @@ export function TrackingConfig() {
     return () => clearTimeout(t);
   }, [rule]);
 
-  const resolveSites = async () => {
-    setResolvingSites(true);
-    try {
-      const r = await api.post<SiteResolveSummary>("/tracking/sites/resolve");
-      toast(
-        "success",
-        `Checked ${r.checked}: ${r.kept} unchanged, ${r.resolved} resolved, ${r.cleared} cleared, ${r.none} still without a Vessel site.` +
-          (r.ambiguous.length ? ` ${r.ambiguous.length} had more than one active "Vessel..." site — used the lowest id.` : ""),
-      );
-      await runPreview();
-    } catch (e) {
-      toast("error", e instanceof Error ? e.message : "Site resolution failed");
-    } finally {
-      setResolvingSites(false);
-    }
-  };
-
-  const toggle = (key: "statuses" | "boards", val: string) =>
+  const toggle = (key: "statuses" | "boards" | "projectStatuses", val: string) =>
     setRule((r) => ({ ...r, [key]: r[key].includes(val) ? r[key].filter((x) => x !== val) : [...r[key], val] }));
 
   const save = async () => {
@@ -74,6 +66,19 @@ export function TrackingConfig() {
       toast("error", e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveInterval = async () => {
+    if (!refreshMinutes || refreshMinutes <= 0) return;
+    setSavingInterval(true);
+    try {
+      await api.put("/tracking/refresh-interval", { minutes: refreshMinutes });
+      toast("success", `Tier 1/2 will recompute every ${refreshMinutes} minute${refreshMinutes === 1 ? "" : "s"}.`);
+    } catch (e) {
+      toast("error", e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSavingInterval(false);
     }
   };
 
@@ -100,11 +105,12 @@ export function TrackingConfig() {
       <Banner tone="info">
         <strong>Company Status</strong> and <strong>Identifiers</strong> define which vessels CAST tracks at all (AND
         across groups, OR within a group). A valid MMSI is required to AIS-track, so "Require MMSI" is on by default.{" "}
-        <strong>Open work on board</strong> doesn't affect that set — it decides which already-tracked vessels get
-        real-time coverage vs. periodic (see Preview below).
+        <strong>Open projects</strong> and <strong>open tickets</strong> don't affect that set — together they decide
+        which already-tracked vessels actually get AIS coverage, and how much (see Preview below). A tracked vessel
+        with neither gets none.
       </Banner>
 
-      <div className="card-grid">
+      <div className="card-grid card-grid-pair">
         <Card>
           <CardHeader title="Company Status" />
           <CardBody>
@@ -125,14 +131,33 @@ export function TrackingConfig() {
             </div>
           </CardBody>
         </Card>
+      </div>
 
+      <div className="card-grid card-grid-pair">
         <Card>
-          <CardHeader title="Open work on board" />
+          <CardHeader title="Open projects in status" />
           <CardBody>
             <div className="col gap-3">
               <p className="muted text-sm">
-                Vessels with an open ticket on any checked board get promoted to real-time (Tier 1) coverage in the AIS
-                monitor, ahead of vessels with none. Doesn't remove anyone from tracking.
+                <strong>Top priority.</strong> A vessel with an open project in any checked status always fills a Tier
+                1 slot before any ticket-only vessel does, most-recently-active project first.
+              </p>
+              <div className="col gap-2">
+                {opts.projectStatuses.map((s) => (
+                  <Checkbox key={s} label={s} checked={rule.projectStatuses.includes(s)} onChange={() => toggle("projectStatuses", s)} />
+                ))}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Open tickets on board" />
+          <CardBody>
+            <div className="col gap-3">
+              <p className="muted text-sm">
+                <strong>Second priority.</strong> Once every open-project vessel has a Tier 1 slot, remaining slots go
+                to vessels with an open ticket on any checked board, most-recently-active first.
               </p>
               <div className="col gap-2">
                 {opts.boards.map((b) => (
@@ -145,16 +170,55 @@ export function TrackingConfig() {
       </div>
 
       <Card>
+        <CardHeader title="Tier refresh" />
+        <CardBody>
+          <div className="col gap-4">
+            <div className="col gap-3">
+              <p className="muted text-sm">
+                How often the Tier 1/2 split recomputes in the background. Each cycle also resolves any missing
+                Vessel Site — and, when auto-create is enabled below, creates one for tracked vessels that still
+                don't have it. ConnectWise is only queried for vessels with no Vessel Site cached yet.
+              </p>
+              <div className="row gap-4">
+                <div className="row gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    className="w-num"
+                    aria-label="Tier refresh interval in minutes"
+                    value={refreshMinutes ?? ""}
+                    onChange={(e) => setRefreshMinutes(Number(e.target.value) || null)}
+                  />
+                  <span className="muted text-sm">minutes</span>
+                </div>
+                <Button variant="secondary" onClick={saveInterval} disabled={savingInterval || !refreshMinutes}>
+                  {savingInterval ? "Saving…" : "Save interval"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="col gap-2">
+              <Checkbox
+                label="Automatically create a Vessel Site for any client with an MMSI and Yacht market type"
+                checked={rule.autoCreateVesselSite}
+                onChange={(e) => setRule((r) => ({ ...r, autoCreateVesselSite: e.target.checked }))}
+              />
+              {cwWritesEnabled === false && (
+                <Banner tone="warning">
+                  ConnectWise writes are currently disabled on the Integrations page — this option is saved but won't
+                  create anything until writes are enabled.
+                </Banner>
+              )}
+              <p className="muted text-xs">Applies on the next tier-refresh cycle, not immediately.</p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card>
         <CardHeader
           title="Preview"
-          action={
-            <div className="row wrap gap-2">
-              {preview && <Badge tone="brand">{preview.matched} vessels tracked</Badge>}
-              <Button size="sm" variant="secondary" onClick={resolveSites} disabled={resolvingSites}>
-                {resolvingSites ? "Resolving…" : "Resolve vessel sites"}
-              </Button>
-            </div>
-          }
+          action={preview && <Badge tone="brand">{preview.matched} vessels tracked</Badge>}
         />
         <CardBody>
           {!preview ? (
@@ -166,19 +230,20 @@ export function TrackingConfig() {
               {/* aisstream caps a live subscription at 50 vessels, so the tracked set splits
                   into two tiers — knowledge/architecture/vessel-location-updating-aisstream.md §3.6 */}
               <p className="muted text-sm">
-                aisstream caps a live subscription at 50 vessels, so the tracked set splits into two tiers. A vessel
-                needs a CW site named "Vessel…" to write results to — use <strong>Resolve vessel sites</strong> after
-                changing criteria or CW's sites.
+                aisstream caps a live subscription at 50 vessels. A vessel needs a Vessel Site to write results to —
+                resolved automatically in the background (see Tier refresh above).
               </p>
               <TierList title="Tier 1 — real-time" hint="dedicated subscription, always on" tone="success" tier={preview.tier1} />
               <TierList title="Tier 2 — periodic" hint="rotated subscription, best-effort" tone="neutral" tier={preview.tier2} />
-              {(preview.excludedNoMmsi > 0 || preview.excludedNoSite > 0 || preview.excludedManually > 0) && (
+              {(preview.excludedNoMmsi > 0 || preview.excludedNoSite > 0 || preview.excludedNoEngagement > 0) && (
                 <div className="col gap-1 text-sm muted">
                   {preview.excludedNoMmsi > 0 && <span>{preview.excludedNoMmsi} matched but not AIS-trackable (no valid MMSI)</span>}
                   {preview.excludedNoSite > 0 && (
-                    <span>{preview.excludedNoSite} matched but no Vessel site resolved yet (try Resolve vessel sites)</span>
+                    <span>{preview.excludedNoSite} matched but no Vessel Site resolved yet (picked up on the next tier-refresh cycle)</span>
                   )}
-                  {preview.excludedManually > 0 && <span>{preview.excludedManually} manually excluded</span>}
+                  {preview.excludedNoEngagement > 0 && (
+                    <span>{preview.excludedNoEngagement} trackable but no open project or ticket — no AIS coverage</span>
+                  )}
                 </div>
               )}
             </div>

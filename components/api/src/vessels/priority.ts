@@ -4,8 +4,21 @@
  * best-effort one (Tier 2), out of a followed set that can be much larger
  * than the 50-per-subscription cap aisstream imposes.
  *
- * Pure and I/O-free by design: the caller resolves CW data (open tickets),
- * settings (pins/excludes), and the position cache (last-known nav status);
+ * DECIDED (2026-08-11, user): strict priority groups, not additive scoring —
+ * every vessel with an open Project in a selected status outranks every
+ * vessel with only an open ticket, no exceptions; within each group, most
+ * recent activity wins. A Trackable Vessel in neither group gets NO AIS
+ * coverage at all (not even Tier 2) — only vessels with real, current
+ * business engagement are worth the resource. NO MANUAL OVERRIDE of any kind
+ * — the user rejected "pin" (arbitrary per-person promotion isn't a fair,
+ * formula-driven ranking) and then "exclude" too, on the same principle: if
+ * a vessel shouldn't be tracked, the fix is to remove its MMSI in
+ * ConnectWise (already a hard requirement below), not a CAST-side toggle.
+ * Every exclusion this module produces is a formula outcome, never a
+ * standing manual decision.
+ *
+ * Pure and I/O-free by design: the caller resolves CW data (open tickets and
+ * projects, each as a company→last-activity map) and the position cache;
  * this module only scores and sorts. Keeps it directly unit-testable and
  * decouples it from the CW client / WS listener lifecycles.
  */
@@ -24,91 +37,96 @@ export interface LastKnown {
 export interface PrioritizeInput {
   /** The followed set, already filtered by the Tracking Config rule. */
   candidates: VesselCompany[];
-  /** Company ids with an open ticket on a selected board (auto-promote). */
-  openTicketCompanyIds: Set<string>;
-  /** Manually pinned company ids — always-follow, outranks everything else. */
-  pinned: Set<string>;
-  /** Manually excluded company ids — never-follow, regardless of any signal. */
-  excluded: Set<string>;
+  /** Company id -> ISO timestamp of its most recent open-Project activity (selected statuses only). */
+  projectActivityByCompanyId: Map<string, string>;
+  /** Company id -> ISO timestamp of its most recent open-ticket activity (selected boards only). */
+  ticketActivityByCompanyId: Map<string, string>;
   /**
    * Company ids with no resolved Vessel Site (a CW site named "Vessel...") —
    * hard requirement, same tier as a missing MMSI: no site means nowhere to
    * write the result, so there's no point tracking it. Resolved separately
-   * (`vessels/siteResolution.ts`, `POST /api/tracking/sites/resolve`) — this
-   * only reads the cache, so pass whichever companies are currently uncached.
+   * (`vessels/siteResolution.ts`, `reconcileVesselSites()` in
+   * `routes/tracking.ts`) — this only reads the local cache, so pass
+   * whichever companies are currently uncached.
    */
   noVesselSite: Set<string>;
   /** Latest known position/status per MMSI, from the monitor's cache (may be empty pre-bootstrap). */
   lastKnownByMmsi?: Record<string, LastKnown>;
 }
 
-export type ExclusionReason = "no-valid-mmsi" | "no-vessel-site" | "manually-excluded";
+export type ExclusionReason = "no-valid-mmsi" | "no-vessel-site" | "no-active-engagement";
 
 export interface PrioritizeResult {
   /** ≤50 — the dedicated always-on subscription. */
   tier1: VesselCompany[];
-  /** The rest of the trackable set — the rotated subscription. */
+  /** The rest of the (project-or-ticket) engaged set — the rotated subscription. */
   tier2: VesselCompany[];
   /** Excluded from AIS tracking entirely. */
   excluded: { vessel: VesselCompany; reason: ExclusionReason }[];
 }
 
+type Group = "project" | "ticket";
+
 interface Scored {
   vessel: VesselCompany;
-  pinned: boolean;
-  hasOpenTicket: boolean;
+  group: Group;
+  /** Epoch ms of the group's activity signal — higher (more recent) ranks first within the group. */
+  activity: number;
   underway: boolean;
 }
 
-/** Higher is better. Pinned > open-ticket > neither; underway breaks ties within a group. */
-function rank(s: Scored): number {
-  let n = 0;
-  if (s.hasOpenTicket) n += 1;
-  if (s.underway) n += 0.5; // tiebreaker only — never outranks a whole tier on its own
-  if (s.pinned) n += 10; // always above any non-pinned combination
-  return n;
+/** Project beats ticket, unconditionally; within a group, more recent activity wins;
+ *  "underway" and vessel name are tiebreakers for the (now rare) exact-timestamp tie. */
+function compare(a: Scored, b: Scored): number {
+  if (a.group !== b.group) return a.group === "project" ? -1 : 1;
+  if (a.activity !== b.activity) return b.activity - a.activity;
+  if (a.underway !== b.underway) return a.underway ? -1 : 1;
+  return a.vessel.vesselName.localeCompare(b.vessel.vesselName);
 }
 
 export function prioritizeVessels(input: PrioritizeInput): PrioritizeResult {
-  const { candidates, openTicketCompanyIds, pinned, excluded, noVesselSite, lastKnownByMmsi = {} } = input;
+  const { candidates, projectActivityByCompanyId, ticketActivityByCompanyId, noVesselSite, lastKnownByMmsi = {} } = input;
 
-  const trackable: Scored[] = [];
+  const scored: Scored[] = [];
   const excludedOut: PrioritizeResult["excluded"] = [];
 
   for (const v of candidates) {
-    if (excluded.has(v.id)) {
-      excludedOut.push({ vessel: v, reason: "manually-excluded" });
-      continue;
-    }
     // Hard requirement (INIT-0015): no valid MMSI means aisstream can't
-    // subscribe to it regardless of any other signal — pins included.
+    // subscribe to it regardless of any other signal.
     const mmsiCheck = checkMmsi(v.mmsi);
     if (!mmsiCheck.valid || !mmsiCheck.normalized) {
       excludedOut.push({ vessel: v, reason: "no-valid-mmsi" });
       continue;
     }
-    // Hard requirement: no resolved Vessel Site means nowhere to write the
-    // result — see the field doc above.
+    // Hard requirement: no resolved Vessel Site means nowhere to write the result.
     if (noVesselSite.has(v.id)) {
       excludedOut.push({ vessel: v, reason: "no-vessel-site" });
       continue;
     }
-    trackable.push({
+
+    const projectActivity = projectActivityByCompanyId.get(v.id);
+    const ticketActivity = ticketActivityByCompanyId.get(v.id);
+    const group: Group | null = projectActivity ? "project" : ticketActivity ? "ticket" : null;
+    if (!group) {
+      // Trackable, but no current business engagement — no AIS coverage at
+      // all (2026-08-11 decision), not even Tier 2.
+      excludedOut.push({ vessel: v, reason: "no-active-engagement" });
+      continue;
+    }
+
+    scored.push({
       vessel: v,
-      pinned: pinned.has(v.id),
-      hasOpenTicket: openTicketCompanyIds.has(v.id),
+      group,
+      activity: new Date((group === "project" ? projectActivity : ticketActivity)!).getTime(),
       underway: lastKnownByMmsi[mmsiCheck.normalized]?.navStatus === "underway",
     });
   }
 
-  // Stable, deterministic order: rank descending, then vessel name — so the
-  // Tier 1 set doesn't reshuffle (and force needless resubscribes) between
-  // runs when nothing meaningfully changed.
-  trackable.sort((a, b) => rank(b) - rank(a) || a.vessel.vesselName.localeCompare(b.vessel.vesselName));
+  scored.sort(compare);
 
   return {
-    tier1: trackable.slice(0, TIER1_CAP).map((s) => s.vessel),
-    tier2: trackable.slice(TIER1_CAP).map((s) => s.vessel),
+    tier1: scored.slice(0, TIER1_CAP).map((s) => s.vessel),
+    tier2: scored.slice(TIER1_CAP).map((s) => s.vessel),
     excluded: excludedOut,
   };
 }

@@ -4,6 +4,19 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.6.0 — August 2026
+
+The AIS vessel-tracking priority engine is now formula-driven end to end — no manual pins or excludes, and the write-target setup that used to need a button click now takes care of itself.
+
+## Highlights
+
+- **A clear, fair pecking order for real-time tracking.** With only 50 real-time AIS slots available, CAST now ranks strictly by real business engagement: any vessel with an active ConnectWise Project always gets a slot before a vessel with only an open ticket does, and ties go to whoever's had activity most recently. A vessel with neither doesn't get tracked at all — no more guessing why one vessel got a slot over another.
+- **No more manual pins or excludes.** Earlier builds let anyone pin a vessel to the front of the line or exclude one by hand; both are gone now, on the same principle — every vessel's tracking priority comes from the same formula, for everyone. If a vessel genuinely shouldn't be tracked, remove its MMSI in ConnectWise.
+- **Write-target setup is now automatic.** CAST used to need someone to click "Resolve vessel sites" to find each vessel's ConnectWise write target. That step is gone — it now happens quietly in the background every refresh cycle, and only for vessels that actually need it. There's also a new optional setting to have CAST create that ConnectWise record automatically for a client that doesn't have one yet, instead of leaving it untracked.
+- **Tracking Config's option lists are alphabetized** — company statuses, project statuses, and ticket boards are now easy to scan instead of showing up in ConnectWise's internal order.
+
+---
+
 # What's New in v0.5.0 — August 2026
 
 CAST now knows exactly where each vessel's tracking data should go — and won't lose track of it if that record gets renamed.

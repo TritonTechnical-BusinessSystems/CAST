@@ -12,6 +12,7 @@ import geoAlertRoutes from "./routes/geoAlerts";
 import checkinRoutes from "./routes/checkins";
 import extensionRoutes from "./routes/extension";
 import { startVesselSync } from "./jobs/vesselSync";
+import { startTierRefresh, stopTierRefresh } from "./jobs/tierRefresh";
 import { seedBreakGlass } from "./auth/local";
 import { db } from "./store/db";
 
@@ -36,6 +37,7 @@ const server = app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);
   seedBreakGlass();
   startVesselSync();
+  startTierRefresh();
 });
 
 // better-sqlite3 must finalize its prepared statements before the Node
@@ -44,6 +46,7 @@ const server = app.listen(config.port, () => {
 // removal and crashes with "Assertion failed: (env) != nullptr" in
 // RemoveEnvironmentCleanupHook. Closing the db first avoids the race.
 function shutdown() {
+  stopTierRefresh();
   server.close(() => {
     db.close();
     process.exit(0);

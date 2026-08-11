@@ -44,6 +44,17 @@ export const config = {
   vesselSyncCron: env.CAST_VESSEL_SYNC_CRON ?? "0 * * * *",
 
   /**
+   * Boot-time seed for how often the AIS-monitor Tier 1/2 split recomputes
+   * (INIT-0012 §3.6) — cheap (a handful of bulk CW queries, not per-vessel),
+   * so this can run often. Overridden at runtime by
+   * setTierRefreshIntervalMinutes() below (same env-seed-then-settings-win
+   * precedent as isCwWritesEnabled) so ops can retune it without a redeploy.
+   * Vessel Site reconciliation runs on this same cadence now — see
+   * reconcileVesselSites() in routes/tracking.ts.
+   */
+  tierRefreshMinutesDefault: Number(env.CAST_TRACKING_REFRESH_MINUTES ?? 5),
+
+  /**
    * aisstream.io — AIS data source for Vessel Location Updating (INIT-0012).
    * WebSocket API; the key is a server-side secret. Docs + architecture:
    * knowledge/architecture/vessel-location-updating-aisstream.md.
@@ -117,4 +128,17 @@ export function isCwWritesEnabled(): boolean {
 
 export function setCwWritesEnabled(enabled: boolean): void {
   setSetting(CW_WRITES_SETTING_KEY, enabled);
+}
+
+const TIER_REFRESH_MINUTES_KEY = "tracking.refreshIntervalMinutes";
+
+/** Live cadence check — the in-app value if set, else the env boot default. */
+export function tierRefreshMinutes(): number {
+  const stored = getSetting<number>(TIER_REFRESH_MINUTES_KEY);
+  return stored && stored > 0 ? stored : config.tierRefreshMinutesDefault;
+}
+
+export function setTierRefreshMinutes(minutes: number): void {
+  if (!(minutes > 0)) throw new Error("Refresh interval must be a positive number of minutes");
+  setSetting(TIER_REFRESH_MINUTES_KEY, minutes);
 }

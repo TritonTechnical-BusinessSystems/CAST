@@ -32,22 +32,44 @@ export interface CwClient {
   /** Write back IMO and/or MMSI custom fields for one company. */
   setVesselIdentifiers(id: string, patch: { imo?: string; mmsi?: string }): Promise<VesselCompany>;
   /**
-   * Distinct company ids with an open (unclosed) service ticket on any of the
-   * given boards (INIT-0015's "open work" criterion — verified live against
-   * real CW that project-related work in this instance is tracked via service
-   * tickets on project-named boards, e.g. "🏗️ Projects", not CW's separate
-   * Project module; a real `/project/projects` integration is a possible
-   * future addition, not built here).
+   * Company id -> ISO timestamp of its most recent activity on an open
+   * (unclosed) service ticket on any of the given boards (INIT-0015's "open
+   * work" criterion; INIT-0012's Tier-2 priority signal, ranked by recency).
    */
-  listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>>;
+  listOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>>;
+  /**
+   * Company id -> ISO timestamp of its most recent activity on an open
+   * (non-closed-status) CW Project in any of the given statuses. INIT-0012's
+   * Tier-1 priority signal — unconditionally outranks the ticket signal.
+   */
+  listOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>>;
   /** A company's CW sites — used to resolve its Vessel Site (INIT-0012). */
   getCompanySites(companyId: string): Promise<CwSite[]>;
+  /**
+   * Create the "Vessel" site for a company that doesn't have one yet —
+   * self-heals a missing write target instead of leaving the vessel
+   * permanently excluded from AIS tracking. Gated by isCwWritesEnabled()
+   * like every other CW write.
+   */
+  createVesselSite(companyId: string): Promise<CwSite>;
 }
 
 export interface CwSite {
   id: string;
   name: string;
   inactive: boolean;
+}
+
+/** Merge company->timestamp maps, keeping the most recent per company. */
+function mergeLatest(maps: Record<string, string>[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of maps) {
+    for (const [id, ts] of Object.entries(m)) {
+      const existing = out.get(id);
+      if (!existing || new Date(ts) > new Date(existing)) out.set(id, ts);
+    }
+  }
+  return out;
 }
 
 /**
@@ -79,13 +101,22 @@ export class StubCwClient implements CwClient {
     return { ...row };
   }
 
-  // Illustrative: "Refit" board has open work for two companies; others don't.
-  private openTickets: Record<string, string[]> = { Refit: ["1002", "1006"] };
+  // Illustrative: "Refit" board has open ticket work for two companies;
+  // "Refit 2026" project status has open project work for one (which should
+  // outrank the ticket-only companies once both signals are in play).
+  private openTickets: Record<string, Record<string, string>> = {
+    Refit: { "1002": "2026-08-01T10:00:00Z", "1006": "2026-08-05T14:30:00Z" },
+  };
+  private openProjects: Record<string, Record<string, string>> = {
+    "Refit 2026": { "1004": "2026-08-10T09:00:00Z" },
+  };
 
-  async listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
-    const ids = new Set<string>();
-    for (const b of boardNames) for (const id of this.openTickets[b] ?? []) ids.add(id);
-    return ids;
+  async listOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>> {
+    return mergeLatest(boardNames.map((b) => this.openTickets[b] ?? {}));
+  }
+
+  async listOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
+    return mergeLatest(statusNames.map((s) => this.openProjects[s] ?? {}));
   }
 
   // Illustrative: most have a "Vessel" site; 1005 has none (excludable), 1006
@@ -101,6 +132,12 @@ export class StubCwClient implements CwClient {
 
   async getCompanySites(companyId: string): Promise<CwSite[]> {
     return (this.sites[companyId] ?? []).map((s) => ({ ...s }));
+  }
+
+  async createVesselSite(companyId: string): Promise<CwSite> {
+    const site: CwSite = { id: `s${companyId}-created`, name: "Vessel", inactive: false };
+    this.sites[companyId] = [...(this.sites[companyId] ?? []), site];
+    return { ...site };
   }
 }
 

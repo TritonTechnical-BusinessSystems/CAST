@@ -55,14 +55,33 @@ export async function getSystemInfo(creds?: CwCreds): Promise<{ version: string 
   return cwFetch<{ version: string }>("/system/info", { creds });
 }
 
-export async function listCompanyStatuses(): Promise<string[]> {
-  const rows = await cwFetch<{ name: string }[]>("/company/companies/statuses?pageSize=200&fields=id,name");
-  return rows.map((r) => r.name);
+/** Alphabetical, for the Tracking Config option lists — not CW's native (id) order. */
+function sortNames(names: string[]): string[] {
+  return [...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
+export async function listCompanyStatuses(): Promise<string[]> {
+  const rows = await cwFetch<{ name: string }[]>("/company/companies/statuses?pageSize=200&fields=id,name");
+  return sortNames(rows.map((r) => r.name));
+}
+
+/**
+ * Service boards, excluding any assigned to the "Admin" department (verified
+ * live 2026-08-11: CW boards carry a `department` object, e.g. board "Admin"
+ * itself and "Triton Management" are both `department.name === "Admin"`) —
+ * internal admin work isn't a vessel-tracking priority signal.
+ */
 export async function listServiceBoards(): Promise<string[]> {
-  const rows = await cwFetch<{ name: string }[]>("/service/boards?pageSize=200&fields=id,name");
-  return rows.map((r) => r.name);
+  const rows = await cwFetch<{ name: string; department?: { name?: string } }[]>(
+    "/service/boards?pageSize=200&fields=id,name,department",
+  );
+  return sortNames(rows.filter((r) => r.department?.name !== "Admin").map((r) => r.name));
+}
+
+/** CW Project statuses (e.g. "1: Active", "5: Closed") — parallel to listCompanyStatuses. */
+export async function listProjectStatuses(): Promise<string[]> {
+  const rows = await cwFetch<{ name: string }[]>("/project/statuses?pageSize=200&fields=id,name");
+  return sortNames(rows.map((r) => r.name));
 }
 
 /** CW members — the source of truth for who the extension check-ins belong to. */
@@ -85,28 +104,59 @@ export async function listMembers(): Promise<{ identifier: string; name: string 
   }));
 }
 
-interface CwTicket { company?: { id: number }; }
+interface CwActivityRow { company?: { id: number }; _info?: { lastUpdated?: string } }
+
+/** Merge one page's rows into a company->latest-activity map (keeps the max). */
+function mergeActivity(into: Map<string, string>, rows: CwActivityRow[]): void {
+  for (const r of rows) {
+    const id = r.company?.id;
+    const ts = r._info?.lastUpdated;
+    if (id == null || !ts) continue;
+    const key = String(id);
+    const existing = into.get(key);
+    if (!existing || new Date(ts) > new Date(existing)) into.set(key, ts);
+  }
+}
 
 /**
- * Distinct company ids with an open service ticket on any of the given
- * boards. Verified live against real CW (2026-08): `board/name in (...)`
- * handles special characters (emoji board names) fine; this instance tracks
- * project-related work via service tickets on project-named boards (a
- * "🏗️ Projects" board exists) rather than CW's separate Project module, so a
- * service-ticket query alone covers "open projects/tickets" per INIT-0015.
+ * Company id -> most recent activity timestamp among its open service
+ * tickets on any of the given boards. `board/name in (...)` verified live
+ * against real CW (2026-08) to handle special characters (emoji board names)
+ * fine; `_info.lastUpdated` verified present on every ticket row.
  */
-async function queryOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
-  const ids = new Set<string>();
-  if (boardNames.length === 0) return ids;
+async function queryOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (boardNames.length === 0) return out;
   const boardList = boardNames.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
   const conditions = `board/name in (${boardList}) AND closedFlag=false`;
   for (let page = 1; ; page++) {
-    const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company" });
-    const batch = await cwFetch<CwTicket[]>(`/service/tickets?${params.toString()}`);
-    for (const t of batch) if (t.company?.id != null) ids.add(String(t.company.id));
+    const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company,_info" });
+    const batch = await cwFetch<CwActivityRow[]>(`/service/tickets?${params.toString()}`);
+    mergeActivity(out, batch);
     if (batch.length < 1000) break;
   }
-  return ids;
+  return out;
+}
+
+/**
+ * Company id -> most recent activity timestamp among its open CW Projects
+ * (real Project module, `/project/projects` — confirmed live to exist and
+ * carry `_info.lastUpdated` the same as tickets) in any of the given
+ * statuses. This is the Tier-1 priority signal that unconditionally
+ * outranks the ticket signal above.
+ */
+async function queryOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (statusNames.length === 0) return out;
+  const statusList = statusNames.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",");
+  const conditions = `status/name in (${statusList}) AND closedFlag=false`;
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company,_info" });
+    const batch = await cwFetch<CwActivityRow[]>(`/project/projects?${params.toString()}`);
+    mergeActivity(out, batch);
+    if (batch.length < 1000) break;
+  }
+  return out;
 }
 
 async function queryCompanies(conditions?: string): Promise<CwCompany[]> {
@@ -152,8 +202,12 @@ export class ManageCwClient implements CwClient {
     return toVessel(updated);
   }
 
-  async listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
-    return queryOpenTicketCompanyIds(boardNames);
+  async listOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>> {
+    return queryOpenTicketActivity(boardNames);
+  }
+
+  async listOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
+    return queryOpenProjectActivity(statusNames);
   }
 
   async getCompanySites(companyId: string): Promise<CwSite[]> {
@@ -161,5 +215,27 @@ export class ManageCwClient implements CwClient {
       `/company/companies/${companyId}/sites?pageSize=50&fields=id,name,inactiveFlag`,
     );
     return rows.map((r) => ({ id: String(r.id), name: r.name, inactive: Boolean(r.inactiveFlag) }));
+  }
+
+  /**
+   * Minimal payload verified live (2026-08-11) against a real existing
+   * "Vessel" site record — `addressLine1` is the placeholder copy CW already
+   * uses for a not-yet-located vessel. taxCode/territory/timeZone were
+   * present on the sample but left unset here; if CW rejects an omission as
+   * required, the error surfaces in the tier-refresh job's logs (non-
+   * destructive — it just retries next cycle) and can be added then.
+   */
+  async createVesselSite(companyId: string): Promise<CwSite> {
+    if (!isCwWritesEnabled()) {
+      throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+    }
+    const created = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }>(
+      `/company/companies/${companyId}/sites`,
+      {
+        method: "POST",
+        body: JSON.stringify({ name: "Vessel", addressLine1: "(Vessel's current location unknown)" }),
+      },
+    );
+    return { id: String(created.id), name: created.name, inactive: Boolean(created.inactiveFlag) };
   }
 }

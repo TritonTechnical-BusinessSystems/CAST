@@ -7,8 +7,10 @@
  *
  * Pure and I/O-free: the caller fetches the company's current CW sites
  * (`CwClient.getCompanySites`) and the previously-cached id (settings store);
- * this module only decides the next state. A company with no resolvable
- * Vessel Site is excluded from AIS tracking entirely (see `priority.ts`).
+ * this module only decides the next state. When no site is resolvable, the
+ * caller (`routes/tracking.ts`'s `reconcileVesselSites`) creates one via
+ * `CwClient.createVesselSite` — a company only ever fails to resolve
+ * transiently (one cycle), not permanently.
  */
 import type { CwSite } from "../connectwise/client";
 

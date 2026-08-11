@@ -130,28 +130,48 @@ the design consequences that follow — read before building the pipeline.
      to group 2, …, build the snapshot, then write. One connection/key, unlimited
      vessels. Keep last-known position + timestamp and carry it over for vessels
      that didn't transmit in their window (moored/anchored transmit slowly).
-   - **DECIDED for >50 — a 2-tier priority model (user, 2026-07-23). The
-     scoring/split half is BUILT (2026-08-11); the WS listener consuming it
-     is not yet.** Rather than making *all* vessels equally stale under flat
-     rotation, split by business importance: **Tier 1 = the priority ≤50** on
-     their own dedicated, always-on subscription (global box + those MMSIs)
-     → *continuous/real-time*; **Tier 2 = the rest** on a second socket via
-     rotation → periodic/best-effort. "Priority" is derived, not just manual:
-     auto-promote **vessels with open tickets/projects** (the Tracking-Config
-     board criterion — confirmed live to mean *service* tickets on
-     project-named boards in this CW instance, not the separate `/project/*`
-     module) + manual **pins**, with "underway" as a tiebreaker (moving
-     vessels benefit most from real-time), capped at 50, re-evaluated on a
-     schedule (swap the Tier-1 filter when it changes — cheap). 50 is exactly
-     the subscription cap, so Tier 1 is one clean subscription. Two sockets
-     total (trivial); Tier 2 only spins up when the set exceeds 50.
+   - **DECIDED for >50 — a 2-tier priority model (user, 2026-07-23), REVISED
+     to strict priority groups (user, 2026-08-11). The scoring/split half is
+     BUILT; the WS listener consuming it is not yet.** Rather than making
+     *all* vessels equally stale under flat rotation, split by business
+     importance: **Tier 1 = the priority ≤50** on their own dedicated,
+     always-on subscription (global box + those MMSIs) → *continuous/
+     real-time*; **Tier 2 = the rest of the engaged set** on a second socket
+     via rotation → periodic/best-effort. **A Trackable Vessel (valid MMSI +
+     resolved Vessel Site) with no open Project or ticket gets NEITHER tier —
+     no AIS coverage at all.** Only vessels with real, current business
+     engagement are worth the resource; this is a deliberate, revised
+     narrowing from the original "everyone gets at least Tier 2" design.
+     Ranking is **strict groups, not additive scoring**: every vessel with an
+     **open Project in a selected status** unconditionally outranks every
+     vessel with only an **open ticket on a selected board** — no
+     exceptions — and within a group, **most-recent activity** wins
+     (`_info.lastUpdated`, present on both CW tickets and projects). **No
+     manual override of any kind** — "pin" was rejected first (an arbitrary
+     per-person promotion isn't a fair, formula-driven ranking), then
+     "exclude" too, same day, same principle (user: *"If we want it
+     excluded, we'll remove the MMSI"*) — every Tier 1/2 outcome is a pure
+     formula result over live CW data. 50 is exactly the subscription cap,
+     so Tier 1 is one clean subscription. Two sockets total (trivial); Tier 2
+     only spins up when the engaged set exceeds 50.
      **Implementation:** `components/api/src/vessels/priority.ts`
-     (`prioritizeVessels`, pure/unit-testable) +
-     `CwClient.listOpenTicketCompanyIds()` + `GET/PUT /api/tracking/pins`,
-     wired into `POST /api/tracking/preview`. Verified live against real CW:
-     294 tracked candidates → 201 with a valid MMSI → 99 with open work on
-     the selected boards (already > 50 on its own, confirming this is a real,
-     non-trivial signal, not a rare edge case).
+     (`prioritizeVessels`, pure/unit-tested against 60+-candidate scenarios)
+     + `CwClient.listOpenProjectActivity()` / `listOpenTicketActivity()`
+     (both `Map<companyId, ISO timestamp>`, not boolean sets — confirmed live
+     that this CW instance's real Project module (`/project/projects`) is in
+     active use, separate from tickets on project-named boards), wired into
+     `POST /api/tracking/preview` and the scheduled `jobs/tierRefresh.ts`.
+     Verified live against real CW:
+     294 tracked candidates → 201 with a valid MMSI → 10 with an open Project
+     in "1: Active" → 99 with open ticket work on the selected boards — both
+     real, meaningfully-sized signals, not rare edge cases.
+     **Refresh cadence — DECIDED 2026-08-11 (user):** the Tier 1/2 split
+     recomputes every 5 minutes by default, **runtime-adjustable** without a
+     redeploy (`GET/PUT /api/tracking/refresh-interval`). Vessel Site
+     reconciliation runs in the same cycle, fully automatic — see §4 "CW
+     write target" for the local-first, self-healing design (2026-08-11,
+     user). See `INIT-0012`'s fleshing-out notes for the full design
+     rationale.
      **Confirmed 2026-08-11 (was ambiguous — see `INIT-0015`):** the board
      criterion is priority-only, never a Tracked-Vessel membership gate.
    - **Throttling is per-API-key AND per-user/account** — so **more API keys is
@@ -198,18 +218,32 @@ the design consequences that follow — read before building the pipeline.
 - The exact **nav-status → friendly-label** table (which AIS codes fold into
   "Under way", and the last-seen threshold that trips the "unknown / dry-docked?"
   bucket).
-- **CW write target — WHICH RECORD decided 2026-08-11; which fields on it still
-  open.** Not a company custom field, not a location's address field — the
-  record is the **Vessel Site** (naming-lexicon): the tracked company's CW
-  site whose name starts with "Vessel". Resolved once and cached **by site
-  ID**, so a later rename never breaks the mapping — only the site being
-  deleted/inactivated clears the cache and re-triggers detection. A tracked
-  client with no active "Vessel…" site is excluded from AIS tracking
-  entirely (same hard-requirement tier as a missing MMSI).
-  `components/api/src/vessels/siteResolution.ts` + `POST
-  /api/tracking/sites/resolve`. **Still open:** the exact field/attribute
-  names on that site to hold status + place name — confirm with the user
-  before building the writer.
+- **CW write target — WHICH RECORD decided 2026-08-11; which fields on it
+  mostly confirmed live.** Not a company custom field, not a location's
+  address field — the record is the **Vessel Site** (naming-lexicon): the
+  tracked company's CW site whose name starts with "Vessel". Resolved once
+  and cached **by site ID in CAST's own local database** — the tier engine
+  and preview read only that local cache, never ConnectWise (2026-08-11,
+  user: *"we'll already have the site IDs locally... keep it local, don't
+  look to ConnectWise unless needed"*). A rename never breaks the mapping;
+  only the site being deleted/inactivated clears the cache.
+  **Self-healing (2026-08-11, user):** with the opt-in "Automatically create
+  a Vessel site..." rule setting on, a client with no active "Vessel…" site
+  gets one **created** (`CwClient.createVesselSite`, isCwWritesEnabled()
+  -gated) rather than staying excluded indefinitely — *"it should CREATE
+  that site for the client if it doesn't exist... then it only fails once,
+  instead of continuing to fail."* With the option off, behavior is
+  detect-only (same hard-requirement exclusion as a missing MMSI).
+  `components/api/src/vessels/siteResolution.ts` +
+  `reconcileVesselSites()` in `routes/tracking.ts`, called only from the
+  scheduled tier-refresh job (never from the interactive preview — creation
+  is a real write and shouldn't be a side effect of adjusting filters).
+  **Field shape confirmed live** (2026-08-11, real "Vessel" site record):
+  `addressLine1` already holds a placeholder — `"(Vessel's current location
+  unknown)"` — strongly suggesting that's the intended field for the
+  friendly place-name/status write, matching this record's existing
+  convention. Still worth a final confirm with the user before the writer
+  ships, but no longer a blind guess.
 - Listener topology: in-process in `@cast/api` vs. a separate worker; and the
   latest-position cache store (in-memory vs. the same persistence INIT-0008 picks,
   e.g. better-sqlite3).
