@@ -10,6 +10,17 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.5.0 — build 2608012 — 2026-08-11T02:56:55Z
+
+### Added
+- [Backend] **Vessel Site resolution** (`INIT-0012`) — decides and remembers *which ConnectWise record* each tracked vessel's AIS status/location gets written to: the company's CW site whose name starts with "Vessel". `components/api/src/vessels/siteResolution.ts` (`resolveVesselSite`, pure state machine, smoke-tested against 8 scenarios): resolved once, then **cached by site ID** so a later rename never breaks the mapping; only the site being **deleted or inactivated** clears the cache, which then re-detects the next time an active "Vessel…" site exists for that company. A tracked vessel with no resolvable Vessel Site is **excluded from AIS tracking entirely** — same hard-requirement tier as a missing MMSI.
+- [Integrations] `CwClient.getCompanySites(companyId)` — `GET /company/companies/{id}/sites`, verified live against real CW.
+- [Backend] `POST /api/tracking/sites/resolve` (`tracking.write`-gated, 8-way concurrent) — walks the current tracked set, resolves each company's Vessel Site, and persists the map (`tracking.siteMap`). Explicit/manual for now, not scheduled — matches where the rest of the AIS monitor stands.
+- [Frontend] "Resolve vessel sites" button on Tracking Config, with a result summary (kept/resolved/cleared/still-none, and a flag for any company with more than one candidate site). The Preview card's exclusion breakdown now includes vessels matched but not yet resolvable to a Vessel Site.
+
+### Changed
+- [Docs] Corrected the CW write-target design: earlier notes guessed at two custom fields on the company; the user clarified the record is a specific **CW site** per company (name starts with "Vessel"), with rename-safe ID caching. Updated `INIT-0012`, the architecture doc, and added **Vessel Site** to the naming lexicon (cross-referenced from the already-superseded "Target Location" entry). The exact fields to write *on* that site are still open.
+
 ## v0.4.0 — build 2608011 — 2026-08-11T02:47:43Z
 
 ### Added

@@ -5,7 +5,22 @@ import { PageHeader, Card, CardHeader, CardBody, Checkbox, Button, Badge, Banner
 interface Options { statuses: string[]; boards: string[]; }
 interface Rule { statuses: string[]; boards: string[]; requireImo: boolean; requireMmsi: boolean; }
 interface TierPreview { count: number; sample: { vesselName: string; companyName: string }[]; }
-interface Preview { matched: number; tier1: TierPreview; tier2: TierPreview; excludedNoMmsi: number; excludedManually: number; }
+interface Preview {
+  matched: number;
+  tier1: TierPreview;
+  tier2: TierPreview;
+  excludedNoMmsi: number;
+  excludedNoSite: number;
+  excludedManually: number;
+}
+interface SiteResolveSummary {
+  checked: number;
+  kept: number;
+  resolved: number;
+  cleared: number;
+  none: number;
+  ambiguous: { vesselName: string; companyName: string }[];
+}
 
 const emptyRule: Rule = { statuses: [], boards: [], requireImo: false, requireMmsi: true };
 
@@ -16,18 +31,36 @@ export function TrackingConfig() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [resolvingSites, setResolvingSites] = useState(false);
 
   useEffect(() => {
     api.get<Options>("/tracking/options").then(setOpts).catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
     api.get<Rule>("/tracking/config").then(setRule).catch(() => {});
   }, []);
 
+  const runPreview = () => api.post<Preview>("/tracking/preview", rule).then(setPreview).catch(() => setPreview(null));
+
   useEffect(() => {
-    const t = setTimeout(() => {
-      api.post<Preview>("/tracking/preview", rule).then(setPreview).catch(() => setPreview(null));
-    }, 300);
+    const t = setTimeout(runPreview, 300);
     return () => clearTimeout(t);
   }, [rule]);
+
+  const resolveSites = async () => {
+    setResolvingSites(true);
+    try {
+      const r = await api.post<SiteResolveSummary>("/tracking/sites/resolve");
+      toast(
+        "success",
+        `Checked ${r.checked}: ${r.kept} unchanged, ${r.resolved} resolved, ${r.cleared} cleared, ${r.none} still without a Vessel site.` +
+          (r.ambiguous.length ? ` ${r.ambiguous.length} had more than one active "Vessel..." site — used the lowest id.` : ""),
+      );
+      await runPreview();
+    } catch (e) {
+      toast("error", e instanceof Error ? e.message : "Site resolution failed");
+    } finally {
+      setResolvingSites(false);
+    }
+  };
 
   const toggle = (key: "statuses" | "boards", val: string) =>
     setRule((r) => ({ ...r, [key]: r[key].includes(val) ? r[key].filter((x) => x !== val) : [...r[key], val] }));
@@ -112,7 +145,17 @@ export function TrackingConfig() {
       </div>
 
       <Card>
-        <CardHeader title="Preview" action={preview && <Badge tone="brand">{preview.matched} vessels tracked</Badge>} />
+        <CardHeader
+          title="Preview"
+          action={
+            <div className="row wrap gap-2">
+              {preview && <Badge tone="brand">{preview.matched} vessels tracked</Badge>}
+              <Button size="sm" variant="secondary" onClick={resolveSites} disabled={resolvingSites}>
+                {resolvingSites ? "Resolving…" : "Resolve vessel sites"}
+              </Button>
+            </div>
+          }
+        />
         <CardBody>
           {!preview ? (
             <span className="muted">Adjust criteria to preview…</span>
@@ -123,13 +166,18 @@ export function TrackingConfig() {
               {/* aisstream caps a live subscription at 50 vessels, so the tracked set splits
                   into two tiers — knowledge/architecture/vessel-location-updating-aisstream.md §3.6 */}
               <p className="muted text-sm">
-                aisstream caps a live subscription at 50 vessels, so the tracked set splits into two tiers.
+                aisstream caps a live subscription at 50 vessels, so the tracked set splits into two tiers. A vessel
+                needs a CW site named "Vessel…" to write results to — use <strong>Resolve vessel sites</strong> after
+                changing criteria or CW's sites.
               </p>
               <TierList title="Tier 1 — real-time" hint="dedicated subscription, always on" tone="success" tier={preview.tier1} />
               <TierList title="Tier 2 — periodic" hint="rotated subscription, best-effort" tone="neutral" tier={preview.tier2} />
-              {(preview.excludedNoMmsi > 0 || preview.excludedManually > 0) && (
+              {(preview.excludedNoMmsi > 0 || preview.excludedNoSite > 0 || preview.excludedManually > 0) && (
                 <div className="col gap-1 text-sm muted">
                   {preview.excludedNoMmsi > 0 && <span>{preview.excludedNoMmsi} matched but not AIS-trackable (no valid MMSI)</span>}
+                  {preview.excludedNoSite > 0 && (
+                    <span>{preview.excludedNoSite} matched but no Vessel site resolved yet (try Resolve vessel sites)</span>
+                  )}
                   {preview.excludedManually > 0 && <span>{preview.excludedManually} manually excluded</span>}
                 </div>
               )}

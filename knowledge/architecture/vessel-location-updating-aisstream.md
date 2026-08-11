@@ -198,10 +198,18 @@ the design consequences that follow — read before building the pipeline.
 - The exact **nav-status → friendly-label** table (which AIS codes fold into
   "Under way", and the last-seen threshold that trips the "unknown / dry-docked?"
   bucket).
-- **CW write target — now that it's status + place name, NOT an address:** almost
-  certainly **two custom fields** on the company ("Vessel Status", "Vessel
-  Location") rather than a location record's address field. Confirm with the user
-  (the original "overwrite a location's address field" plan is superseded).
+- **CW write target — WHICH RECORD decided 2026-08-11; which fields on it still
+  open.** Not a company custom field, not a location's address field — the
+  record is the **Vessel Site** (naming-lexicon): the tracked company's CW
+  site whose name starts with "Vessel". Resolved once and cached **by site
+  ID**, so a later rename never breaks the mapping — only the site being
+  deleted/inactivated clears the cache and re-triggers detection. A tracked
+  client with no active "Vessel…" site is excluded from AIS tracking
+  entirely (same hard-requirement tier as a missing MMSI).
+  `components/api/src/vessels/siteResolution.ts` + `POST
+  /api/tracking/sites/resolve`. **Still open:** the exact field/attribute
+  names on that site to hold status + place name — confirm with the user
+  before building the writer.
 - Listener topology: in-process in `@cast/api` vs. a separate worker; and the
   latest-position cache store (in-memory vs. the same persistence INIT-0008 picks,
   e.g. better-sqlite3).

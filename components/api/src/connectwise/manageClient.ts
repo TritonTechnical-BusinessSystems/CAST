@@ -8,7 +8,7 @@
  */
 import { config, isCwWritesEnabled } from "../config";
 import { resolveCwCreds, type CwCreds } from "./creds";
-import type { CwClient, VesselCompany } from "./client";
+import type { CwClient, CwSite, VesselCompany } from "./client";
 
 function authHeaders(c: CwCreds): Record<string, string> {
   const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
@@ -154,5 +154,12 @@ export class ManageCwClient implements CwClient {
 
   async listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
     return queryOpenTicketCompanyIds(boardNames);
+  }
+
+  async getCompanySites(companyId: string): Promise<CwSite[]> {
+    const rows = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }[]>(
+      `/company/companies/${companyId}/sites?pageSize=50&fields=id,name,inactiveFlag`,
+    );
+    return rows.map((r) => ({ id: String(r.id), name: r.name, inactive: Boolean(r.inactiveFlag) }));
   }
 }

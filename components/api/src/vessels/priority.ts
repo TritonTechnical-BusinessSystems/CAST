@@ -30,17 +30,27 @@ export interface PrioritizeInput {
   pinned: Set<string>;
   /** Manually excluded company ids — never-follow, regardless of any signal. */
   excluded: Set<string>;
+  /**
+   * Company ids with no resolved Vessel Site (a CW site named "Vessel...") —
+   * hard requirement, same tier as a missing MMSI: no site means nowhere to
+   * write the result, so there's no point tracking it. Resolved separately
+   * (`vessels/siteResolution.ts`, `POST /api/tracking/sites/resolve`) — this
+   * only reads the cache, so pass whichever companies are currently uncached.
+   */
+  noVesselSite: Set<string>;
   /** Latest known position/status per MMSI, from the monitor's cache (may be empty pre-bootstrap). */
   lastKnownByMmsi?: Record<string, LastKnown>;
 }
+
+export type ExclusionReason = "no-valid-mmsi" | "no-vessel-site" | "manually-excluded";
 
 export interface PrioritizeResult {
   /** ≤50 — the dedicated always-on subscription. */
   tier1: VesselCompany[];
   /** The rest of the trackable set — the rotated subscription. */
   tier2: VesselCompany[];
-  /** Excluded from AIS tracking entirely: no valid MMSI, or manually excluded. */
-  excluded: { vessel: VesselCompany; reason: "no-valid-mmsi" | "manually-excluded" }[];
+  /** Excluded from AIS tracking entirely. */
+  excluded: { vessel: VesselCompany; reason: ExclusionReason }[];
 }
 
 interface Scored {
@@ -60,7 +70,7 @@ function rank(s: Scored): number {
 }
 
 export function prioritizeVessels(input: PrioritizeInput): PrioritizeResult {
-  const { candidates, openTicketCompanyIds, pinned, excluded, lastKnownByMmsi = {} } = input;
+  const { candidates, openTicketCompanyIds, pinned, excluded, noVesselSite, lastKnownByMmsi = {} } = input;
 
   const trackable: Scored[] = [];
   const excludedOut: PrioritizeResult["excluded"] = [];
@@ -75,6 +85,12 @@ export function prioritizeVessels(input: PrioritizeInput): PrioritizeResult {
     const mmsiCheck = checkMmsi(v.mmsi);
     if (!mmsiCheck.valid || !mmsiCheck.normalized) {
       excludedOut.push({ vessel: v, reason: "no-valid-mmsi" });
+      continue;
+    }
+    // Hard requirement: no resolved Vessel Site means nowhere to write the
+    // result — see the field doc above.
+    if (noVesselSite.has(v.id)) {
+      excludedOut.push({ vessel: v, reason: "no-vessel-site" });
       continue;
     }
     trackable.push({

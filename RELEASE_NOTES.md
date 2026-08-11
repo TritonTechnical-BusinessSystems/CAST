@@ -4,6 +4,17 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.5.0 — August 2026
+
+CAST now knows exactly where each vessel's tracking data should go — and won't lose track of it if that record gets renamed.
+
+## Highlights
+
+- **Automatic, rename-safe write-target detection.** Each tracked vessel's ConnectWise company gets a specific site — the one named "Vessel..." — where AIS status and location will be written. CAST detects it once and remembers it by its permanent ID, so renaming that site later never breaks the connection. If the site is ever deleted or deactivated, CAST notices and looks for a replacement automatically.
+- **A vessel with no such site is skipped, not silently guessed at** — you'll see exactly how many in the Tracking Config preview, with a one-click "Resolve vessel sites" action to check for you.
+
+---
+
 # What's New in v0.4.0 — August 2026
 
 The first working piece of the AIS vessel-tracking engine: deciding which vessels matter most right now.

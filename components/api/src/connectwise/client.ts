@@ -40,6 +40,14 @@ export interface CwClient {
    * future addition, not built here).
    */
   listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>>;
+  /** A company's CW sites — used to resolve its Vessel Site (INIT-0012). */
+  getCompanySites(companyId: string): Promise<CwSite[]>;
+}
+
+export interface CwSite {
+  id: string;
+  name: string;
+  inactive: boolean;
 }
 
 /**
@@ -78,6 +86,21 @@ export class StubCwClient implements CwClient {
     const ids = new Set<string>();
     for (const b of boardNames) for (const id of this.openTickets[b] ?? []) ids.add(id);
     return ids;
+  }
+
+  // Illustrative: most have a "Vessel" site; 1005 has none (excludable), 1006
+  // has its "Vessel" site inactive (also excludable until reactivated).
+  private sites: Record<string, CwSite[]> = {
+    "1001": [{ id: "s1001a", name: "Vessel", inactive: false }, { id: "s1001b", name: "Shoreside Office", inactive: false }],
+    "1002": [{ id: "s1002a", name: "Vessel", inactive: false }],
+    "1003": [{ id: "s1003a", name: "Vessel", inactive: false }],
+    "1004": [{ id: "s1004a", name: "Vessel", inactive: false }],
+    "1005": [{ id: "s1005a", name: "Shoreside Office", inactive: false }],
+    "1006": [{ id: "s1006a", name: "Vessel", inactive: true }],
+  };
+
+  async getCompanySites(companyId: string): Promise<CwSite[]> {
+    return (this.sites[companyId] ?? []).map((s) => ({ ...s }));
   }
 }
 
