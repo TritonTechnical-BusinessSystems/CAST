@@ -330,9 +330,23 @@ casing as `Metadata` and "fixed" `aisListener.ts` to match — that was
 wrong; the auto-generated models and the working Go example both confirm
 `MetaData` was correct all along. Reverted.
 
-**None of this explains the actual symptom under investigation** (zero
-messages received on a live, subscribed connection, even on production with
-a freshly-rotated key) — with the request/response format now conclusively
-ruled out, the remaining explanation is something on aisstream's side
-(account/key provisioning, or a service-side issue) rather than a CAST
-defect. Their support channel: `github.com/aisstream/issues`.
+**CONFIRMED 2026-08-11 — a known, ongoing, service-wide aisstream.io outage,
+not a CAST issue.** `github.com/aisstream/issues/issues/257` ("Zero messages
+on global bounding box since 2026-08-05 13:31 UTC") has ~15 completely
+independent developers (different accounts, regions, continents, client
+languages, even keys generated *after* the outage began) all reporting the
+identical symptom, all pinned to the same start time (2026-08-05 13:31 UTC,
+matching to the minute across reporters). Their own control test matches
+ours exactly: an intentionally invalid key is closed immediately (auth still
+works), a valid key stays connected and silent (data delivery specifically
+is broken). Related threads: #259, #261, #269. **Action: none on CAST's
+side** — the full pipeline (listener, position cache, nav-status/nearest-
+port formatting, CW write-back) is built, deployed, and correctly waiting
+for real data; nothing to fix until aisstream resolves this. Re-check
+`vessel_positions` / System Health's AIS Tier 1/2 msg-per-minute once that
+issue closes — if messages are still zero after aisstream confirms a fix, a
+protocol issue would be a live enough possibility to reopen debugging (but
+every angle triple-checked this session — request format, both coordinate
+orders, both key casings, with/without every optional field, even omitting
+the documented-required `BoundingBoxes` entirely, two client libraries, two
+keys — makes that unlikely).
