@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.3.0.1 — build 2608010 — 2026-08-11T02:24:01Z
+
+### Removed
+- [Frontend] **Vessel Identity Quick Entry** (`/vessel-identity-quick-entry`) — the IMO/MMSI backlog is clear, so the temporary tool from `v0.3.0` is torn down exactly as planned: the page, its route, and the link on the Vessel Identity tab. No backend to unwind (it only ever called the existing `/api/vessel-identity` routes) — the `vessel.reconcile` permission fix from the same release stays.
+
 ## v0.3.0 — build 2608009 — 2026-08-09T17:00:11Z
 
 ### Added

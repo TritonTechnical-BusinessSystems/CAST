@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../api";
 import { PageHeader, Card, Table, Badge, Button, Modal, Field, Input, Banner, Spinner, EmptyState, useToast, IconExternal } from "../ui";
 
@@ -32,12 +31,7 @@ export function VesselIdentity() {
         embedded
         title="Vessel Identity"
         subtitle="Ensure every tracked vessel has a valid IMO and MMSI in ConnectWise."
-        actions={
-          <div className="row gap-2">
-            <Link to="/vessel-identity-quick-entry" className="text-sm">Quick entry (temporary) →</Link>
-            <Button variant="secondary" onClick={load}>Refresh</Button>
-          </div>
-        }
+        actions={<Button variant="secondary" onClick={load}>Refresh</Button>}
       />
       {data && (
         <div className="row gap-2 wrap">
