@@ -85,6 +85,30 @@ export async function listMembers(): Promise<{ identifier: string; name: string 
   }));
 }
 
+interface CwTicket { company?: { id: number }; }
+
+/**
+ * Distinct company ids with an open service ticket on any of the given
+ * boards. Verified live against real CW (2026-08): `board/name in (...)`
+ * handles special characters (emoji board names) fine; this instance tracks
+ * project-related work via service tickets on project-named boards (a
+ * "🏗️ Projects" board exists) rather than CW's separate Project module, so a
+ * service-ticket query alone covers "open projects/tickets" per INIT-0015.
+ */
+async function queryOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
+  const ids = new Set<string>();
+  if (boardNames.length === 0) return ids;
+  const boardList = boardNames.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
+  const conditions = `board/name in (${boardList}) AND closedFlag=false`;
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company" });
+    const batch = await cwFetch<CwTicket[]>(`/service/tickets?${params.toString()}`);
+    for (const t of batch) if (t.company?.id != null) ids.add(String(t.company.id));
+    if (batch.length < 1000) break;
+  }
+  return ids;
+}
+
 async function queryCompanies(conditions?: string): Promise<CwCompany[]> {
   const out: CwCompany[] = [];
   for (let page = 1; ; page++) {
@@ -126,5 +150,9 @@ export class ManageCwClient implements CwClient {
       body: JSON.stringify([{ op: "replace", path: "/customFields", value: fields }]),
     });
     return toVessel(updated);
+  }
+
+  async listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
+    return queryOpenTicketCompanyIds(boardNames);
   }
 }

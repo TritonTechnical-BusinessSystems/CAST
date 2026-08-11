@@ -31,6 +31,15 @@ export interface CwClient {
   listTrackedVessels(): Promise<VesselCompany[]>;
   /** Write back IMO and/or MMSI custom fields for one company. */
   setVesselIdentifiers(id: string, patch: { imo?: string; mmsi?: string }): Promise<VesselCompany>;
+  /**
+   * Distinct company ids with an open (unclosed) service ticket on any of the
+   * given boards (INIT-0015's "open work" criterion — verified live against
+   * real CW that project-related work in this instance is tracked via service
+   * tickets on project-named boards, e.g. "🏗️ Projects", not CW's separate
+   * Project module; a real `/project/projects` integration is a possible
+   * future addition, not built here).
+   */
+  listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>>;
 }
 
 /**
@@ -60,6 +69,15 @@ export class StubCwClient implements CwClient {
     if (patch.imo !== undefined) row.imo = patch.imo;
     if (patch.mmsi !== undefined) row.mmsi = patch.mmsi;
     return { ...row };
+  }
+
+  // Illustrative: "Refit" board has open work for two companies; others don't.
+  private openTickets: Record<string, string[]> = { Refit: ["1002", "1006"] };
+
+  async listOpenTicketCompanyIds(boardNames: string[]): Promise<Set<string>> {
+    const ids = new Set<string>();
+    for (const b of boardNames) for (const id of this.openTickets[b] ?? []) ids.add(id);
+    return ids;
   }
 }
 

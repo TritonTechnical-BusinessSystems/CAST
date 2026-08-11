@@ -4,6 +4,28 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.4.0 — August 2026
+
+The first working piece of the AIS vessel-tracking engine: deciding which vessels matter most right now.
+
+## Highlights
+
+- **Smart vessel prioritization for live tracking.** aisstream (our AIS data source) only allows watching 50 vessels in real time at once — with 200+ vessels tracked, CAST now automatically decides which 50 deserve that real-time slot: vessels with active work open on selected boards, plus anyone manually pinned, with underway vessels as a tiebreaker. Everyone else still gets periodic coverage, nobody drops out of tracking.
+- **Tracking Config shows the real breakdown.** The config page now shows exactly which vessels land in real-time coverage vs. periodic, instead of just a flat count.
+
+## Improvements
+
+- Fixed a rendering bug in the shared notice-banner component that could split a longer message into disconnected, unreadable fragments — now fixed everywhere it's used, not just where it was first spotted.
+- Fixed a layout bug where some config cards were stretched with large empty space to match a taller neighbor.
+
+## For the power users
+
+- New API: `GET/PUT /api/tracking/pins` for manually pinning or excluding specific vessels from AIS tracking (no dedicated UI yet — a natural next step).
+- Closed a permission gap: editing the tracking rule only checked you were signed in, not that your role could actually edit it.
+- Cleaned up a stale piece of internal documentation describing an earlier plan (overwriting a location's street address) that was replaced before it was ever built.
+
+---
+
 # What's New in v0.3.0 — August 2026
 
 A fast way to clear the IMO/MMSI backlog, plus a permission gap closed along the way.

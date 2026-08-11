@@ -177,6 +177,10 @@
 
 /* ===================== Banner (inline notice) ===================== */
 .banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-base); }
+/* Content is one flex item, not one-column-per-child-node — otherwise a
+   message with multiple <strong> runs splits into unreadable columns. Leaves
+   .banner's own flex/gap free for a future leading icon. */
+.banner-body { flex: 1; min-width: 0; }
 .banner-info { background: var(--color-info-wash); color: var(--color-info); }
 .banner-warning { background: var(--color-warning-wash); color: var(--color-warning); }
 .banner-danger { background: var(--color-danger-wash); color: var(--color-danger); }
@@ -226,7 +230,7 @@
 .download-signin:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.45); color: #fff; }
 
 /* ===================== Grids ===================== */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
 /* Smaller floor for grids of small status/probe cards (not form-field or list
    cards, which need 320px) — scoped modifier, not a change to the shared
    default, since other pages rely on the wider floor. */

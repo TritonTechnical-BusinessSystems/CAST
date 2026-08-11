@@ -1,8 +1,8 @@
 ---
 status: active
-read-when: Designing or building Vessel Location Updating (INIT-0012) — the AIS data source, the IMO→position pipeline, or the ConnectWise address write-back.
-related: [cast-web-app-mockup.md, cast-web-app-vm-provisioning.md, ../decisions/0002-extension-never-touches-cw-credentials.md]
-updated: 2026-07-22
+read-when: Designing or building Vessel Location Updating (INIT-0012) — the AIS data source, the IMO→position pipeline, the Tier 1/Tier 2 priority split, or the ConnectWise status/location write-back.
+related: [cast-web-app-mockup.md, cast-web-app-vm-provisioning.md, ../decisions/0002-extension-never-touches-cw-credentials.md, ../conventions/naming-lexicon.md]
+updated: 2026-08-11
 ---
 
 # Vessel Location Updating — AIS data source (aisstream.io)
@@ -130,18 +130,30 @@ the design consequences that follow — read before building the pipeline.
      to group 2, …, build the snapshot, then write. One connection/key, unlimited
      vessels. Keep last-known position + timestamp and carry it over for vessels
      that didn't transmit in their window (moored/anchored transmit slowly).
-   - **PREFERRED for >50 — a 2-tier priority model (user, 2026-07-23).** Rather
-     than making *all* vessels equally stale under flat rotation, split by
-     business importance: **Tier 1 = the priority ≤50** on their own dedicated,
-     always-on subscription (global box + those MMSIs) → *continuous/real-time*;
-     **Tier 2 = the rest** on a second socket via rotation → periodic/best-effort.
-     "Priority" is derived, not just manual: auto-promote **vessels with open
-     tickets/projects** (the Tracking-Config board criterion) + manual **pins**,
-     with "underway" as a tiebreaker (moving vessels benefit most from real-time),
-     capped at 50, re-evaluated on a schedule (swap the Tier-1 filter when it
-     changes — cheap). 50 is exactly the subscription cap, so Tier 1 is one clean
-     subscription. Two sockets total (trivial); Tier 2 only spins up when the set
-     exceeds 50.
+   - **DECIDED for >50 — a 2-tier priority model (user, 2026-07-23). The
+     scoring/split half is BUILT (2026-08-11); the WS listener consuming it
+     is not yet.** Rather than making *all* vessels equally stale under flat
+     rotation, split by business importance: **Tier 1 = the priority ≤50** on
+     their own dedicated, always-on subscription (global box + those MMSIs)
+     → *continuous/real-time*; **Tier 2 = the rest** on a second socket via
+     rotation → periodic/best-effort. "Priority" is derived, not just manual:
+     auto-promote **vessels with open tickets/projects** (the Tracking-Config
+     board criterion — confirmed live to mean *service* tickets on
+     project-named boards in this CW instance, not the separate `/project/*`
+     module) + manual **pins**, with "underway" as a tiebreaker (moving
+     vessels benefit most from real-time), capped at 50, re-evaluated on a
+     schedule (swap the Tier-1 filter when it changes — cheap). 50 is exactly
+     the subscription cap, so Tier 1 is one clean subscription. Two sockets
+     total (trivial); Tier 2 only spins up when the set exceeds 50.
+     **Implementation:** `components/api/src/vessels/priority.ts`
+     (`prioritizeVessels`, pure/unit-testable) +
+     `CwClient.listOpenTicketCompanyIds()` + `GET/PUT /api/tracking/pins`,
+     wired into `POST /api/tracking/preview`. Verified live against real CW:
+     294 tracked candidates → 201 with a valid MMSI → 99 with open work on
+     the selected boards (already > 50 on its own, confirming this is a real,
+     non-trivial signal, not a rare edge case).
+     **Confirmed 2026-08-11 (was ambiguous — see `INIT-0015`):** the board
+     criterion is priority-only, never a Tracked-Vessel membership gate.
    - **Throttling is per-API-key AND per-user/account** — so **more API keys is
      NOT a clean capacity multiplier**; the account-level throttle is the real
      (unpublished) ceiling. Don't assume keys stack linearly. Prefer rotation /

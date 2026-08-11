@@ -2,7 +2,7 @@
 status: active
 read-when: Naming anything in code, database, API, or UI.
 related: []
-updated: 2026-07-18
+updated: 2026-08-11
 ---
 
 # Naming lexicon (ubiquitous language)
@@ -19,8 +19,11 @@ updated: 2026-07-18
 | A client (CW company) tracked by vessel position | **Vessel** (`vessel`) | The CW company record itself, not a separate entity — a company *is* a vessel when it carries an IMO number. |
 | The vessel's permanent international identifier, stored in a CW company custom field | **IMO Number** (`imo_number`) | Always "IMO Number," never bare "IMO" in UI copy — collides with the International Maritime Organization. |
 | A vessel's current activity state (underway / moored / anchored / dry docked / docked) | **Navigational Status** (`navigational_status`) | Don't call it "vessel state" or "status" alone — reserve bare "status" for CW company/ticket status. |
-| The specific CW site/location record whose address gets overwritten with a vessel's current position | **Target Location** (`target_location`) | One per vessel-company — never assume "primary site," must be explicit per `INIT-0012`. |
-| The feature pulling vessel position/status and updating Target Location | **Vessel Location Updating** (`vessel_location_updating`) | Canonical feature name — see `INIT-0012`. |
+| ~~The specific CW site/location record whose address gets overwritten~~ | ~~**Target Location**~~ | **Superseded 2026-07-22** — the write target is friendly status + place name on the company record, not a location's street address. Don't use this term; it describes a plan that was replaced before anything was built against it. |
+| The feature pulling vessel position/status and writing it back to ConnectWise | **Vessel Location Updating** (`vessel_location_updating`) | Canonical feature name — see `INIT-0012`. |
+| A vessel matching the saved Tracking Config rule (Company Status + Identifiers) | **Tracked Vessel** (`tracked_vessel`) | Canonical per `INIT-0015`. Avoid "followed," "synced," "monitored" as synonyms. Membership does **not** depend on open work — see Monitoring Tier. |
+| Which of the ≤50-per-subscription real-time slots a Tracked Vessel gets in the AIS monitor | **Monitoring Tier** (`monitoring_tier`) — **Tier 1** (real-time, dedicated subscription) or **Tier 2** (periodic, rotated subscription) | `INIT-0012` §3.6. Promotion to Tier 1 is derived (open ticket on a selected board, or a manual pin) — never confuse with Tracked-Vessel membership itself. |
+| An operator override forcing a vessel always into Tier 1, or out of AIS tracking entirely | **Pinned Vessel** (always Tier 1) / **Excluded Vessel** (never tracked) | `INIT-0015`'s "manual pin/exclude override layer," `components/api/src/vessels/priority.ts`. An Excluded Vessel is dropped regardless of matching the tracking rule. |
 
 > Fill this table as the domain model solidifies. Terms that are easy to conflate should carry an explicit "never interchange" note.
 

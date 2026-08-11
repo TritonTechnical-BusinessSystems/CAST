@@ -10,6 +10,21 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.4.0 — build 2608011 — 2026-08-11T02:47:43Z
+
+### Added
+- [Backend] **AIS monitor priority/tier-split engine** (`INIT-0012` §3.6) — the first real piece of the AIS monitor: given aisstream's ≤50-vessel subscription cap, decides which vessels get **Tier 1** (real-time, dedicated subscription) vs **Tier 2** (rotated, best-effort). `components/api/src/vessels/priority.ts` (`prioritizeVessels`, pure/unit-tested): pinned > open-ticket > neither, "underway" as a same-tier tiebreaker only, hard-excludes anything without a valid MMSI, deterministic tie-break (avoids resubscribe churn between runs when nothing changed).
+- [Integrations] `CwClient.listOpenTicketCompanyIds(boardNames)` — the "open work on board" query `INIT-0015` had flagged but never built. Verified live against real CW: this instance tracks project-related work via service tickets on project-named boards (e.g. "🏗️ Projects"), not CW's separate Project module.
+- [Backend] Manual pin/exclude override layer — `GET/PUT /api/tracking/pins`, `tracking.write`-gated. Pinned always wins Tier 1 (subject to the MMSI requirement); excluded is dropped from AIS tracking regardless of the rule. API-only for now, no dedicated UI yet.
+- [Frontend] `POST /api/tracking/preview` and `TrackingConfig.tsx` now show the real Tier 1 / Tier 2 split (count + sample each) instead of a flat match count, plus counts for matched-but-not-trackable (no valid MMSI) and manually-excluded vessels.
+
+### Changed
+- [Backend] **Resolved a real design ambiguity between two docs:** whether "open work on board" gates *whether* a vessel is tracked at all, or only its *priority* once tracked. Confirmed with the user: **priority only** — Tracked-Vessel membership is Company Status + Identifiers alone; a vessel between engagements still gets baseline Tier-2 coverage instead of dropping out of tracking entirely. Reworded the Tracking Config banner and board-criterion card copy to match; corrected `INIT-0012`/`INIT-0015` and the architecture doc, which had disagreed.
+- [Security] `POST /api/tracking/config` was gated on `requireAuth` only, not `tracking.write` as the permission model intends — any authenticated viewer could edit the tracking rule. Fixed to `requirePermission("tracking.write")`, matching `PUT /api/tracking/pins` and the geo-alerts route's existing pattern.
+- [Design-System] **Fixed a real bug in the shared `Banner` primitive**, found by `ux-designer` mid-review: `.banner`'s `display: flex` treated every top-level child node as its own flex column, so a message with multiple `<strong>` runs split into unreadable disconnected columns (clipped entirely off the right edge on mobile). This was already latent in `GeoAlerts.tsx` and `Vessel.tsx` — just masked by shorter copy. Fixed once in the primitive (`Banner.tsx` wraps children in one flex item) so every consumer is covered, not just the page that surfaced it.
+- [Design-System] `.card-grid` now uses `align-items: start` — content-uniform cards next to a taller card were being stretched to match it, leaving large empty panels (visible for the first time on Tracking Config's three-card layout; audited the other four consumers, all hold uniform-height content already).
+- [Docs] `naming-lexicon.md`'s "Target Location" entry was fully superseded (described overwriting a site's street address; the real design writes friendly status + place name) and never corrected until now — marked superseded, added **Tracked Vessel**, **Monitoring Tier**, **Pinned/Excluded Vessel** as canonical terms.
+
 ## v0.3.0.1 — build 2608010 — 2026-08-11T02:24:01Z
 
 ### Removed
