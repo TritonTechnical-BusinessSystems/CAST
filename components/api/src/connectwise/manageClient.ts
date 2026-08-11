@@ -65,6 +65,12 @@ export async function listCompanyStatuses(): Promise<string[]> {
   return sortNames(rows.map((r) => r.name));
 }
 
+interface CwBoardRow { name: string; department?: { name?: string } }
+
+async function listAllBoards(): Promise<CwBoardRow[]> {
+  return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department");
+}
+
 /**
  * Service boards, excluding any assigned to the "Admin" department (verified
  * live 2026-08-11: CW boards carry a `department` object, e.g. board "Admin"
@@ -72,10 +78,20 @@ export async function listCompanyStatuses(): Promise<string[]> {
  * internal admin work isn't a vessel-tracking priority signal.
  */
 export async function listServiceBoards(): Promise<string[]> {
-  const rows = await cwFetch<{ name: string; department?: { name?: string } }[]>(
-    "/service/boards?pageSize=200&fields=id,name,department",
-  );
+  const rows = await listAllBoards();
   return sortNames(rows.filter((r) => r.department?.name !== "Admin").map((r) => r.name));
+}
+
+/**
+ * Names of boards assigned to the "Admin" department — used to keep Admin
+ * work out of the Project-activity signal too (2026-08-11, user: "Same goes
+ * for Project Boards"). A CW Project has its own `board` field (the same
+ * Service Board records), verified live; `board/department/name` isn't a
+ * recognized condition path (400), but `board/name not in (...)` is.
+ */
+async function listAdminBoardNames(): Promise<string[]> {
+  const rows = await listAllBoards();
+  return rows.filter((r) => r.department?.name === "Admin").map((r) => r.name);
 }
 
 /** CW Project statuses (e.g. "1: Active", "5: Closed") — parallel to listCompanyStatuses. */
@@ -143,13 +159,19 @@ async function queryOpenTicketActivity(boardNames: string[]): Promise<Map<string
  * (real Project module, `/project/projects` — confirmed live to exist and
  * carry `_info.lastUpdated` the same as tickets) in any of the given
  * statuses. This is the Tier-1 priority signal that unconditionally
- * outranks the ticket signal above.
+ * outranks the ticket signal above. Projects on an "Admin"-department board
+ * are excluded, same as Admin boards are excluded from ticket tracking.
  */
 async function queryOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (statusNames.length === 0) return out;
   const statusList = statusNames.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",");
-  const conditions = `status/name in (${statusList}) AND closedFlag=false`;
+  let conditions = `status/name in (${statusList}) AND closedFlag=false`;
+  const adminBoards = await listAdminBoardNames();
+  if (adminBoards.length > 0) {
+    const adminBoardList = adminBoards.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
+    conditions += ` AND board/name not in (${adminBoardList})`;
+  }
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company,_info" });
     const batch = await cwFetch<CwActivityRow[]>(`/project/projects?${params.toString()}`);
