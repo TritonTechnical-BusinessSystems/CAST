@@ -13,25 +13,8 @@
  * below) reads the resulting cache purely locally.
  */
 import { tierRefreshMinutes } from "../config";
-import { getSetting, setSetting } from "../store/secretStore";
-import { computeSplit, reconcileVesselSites } from "../routes/tracking";
-
-interface Rule {
-  statuses: string[];
-  boards: string[];
-  projectStatuses: string[];
-  requireImo: boolean;
-  requireMmsi: boolean;
-  autoCreateVesselSite: boolean;
-}
-const DEFAULT_RULE: Rule = {
-  statuses: [],
-  boards: [],
-  projectStatuses: [],
-  requireImo: false,
-  requireMmsi: true,
-  autoCreateVesselSite: false,
-};
+import { setSetting } from "../store/secretStore";
+import { computeSplit, reconcileVesselSites, getStoredRule } from "../routes/tracking";
 
 export interface CurrentSplit {
   computedAt: string;
@@ -61,7 +44,7 @@ function scheduleNext(): void {
 }
 
 async function runTierRefresh(): Promise<void> {
-  const rule = getSetting<Rule>("tracking.rule") ?? DEFAULT_RULE;
+  const rule = getStoredRule();
   await reconcileVesselSites(rule);
   const { split } = await computeSplit(rule);
   const toEntry = (v: { id: string; vesselName: string; companyName: string; mmsi: string | null }) => ({

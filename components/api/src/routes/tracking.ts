@@ -63,12 +63,25 @@ router.get("/options", requireAuth, async (_req, res) => {
   }
 });
 
+/**
+ * Merges the stored rule (if any) over DEFAULT_RULE rather than trusting it
+ * as a complete Rule — a rule persisted before a schema addition (e.g.
+ * `projectStatuses`/`autoCreateVesselSite`, both added 2026-08-11) is
+ * missing those fields, and every caller here assumes the full shape
+ * (`rule.projectStatuses.length` etc.). Without this, an old stored rule
+ * crashes the tier-refresh job and blanks the Tracking Config page (found
+ * live post-deploy — `TypeError: Cannot read properties of undefined`).
+ */
+export function getStoredRule(): Rule {
+  return { ...DEFAULT_RULE, ...(getSetting<Partial<Rule>>("tracking.rule") ?? {}) };
+}
+
 router.get("/config", requireAuth, (_req, res) => {
-  res.json(getSetting<Rule>("tracking.rule") ?? DEFAULT_RULE);
+  res.json(getStoredRule());
 });
 
 router.post("/config", requirePermission("tracking.write"), (req, res) => {
-  setSetting("tracking.rule", req.body as Rule);
+  setSetting("tracking.rule", { ...DEFAULT_RULE, ...(req.body as Partial<Rule>) });
   res.json({ ok: true });
 });
 
@@ -202,7 +215,7 @@ export async function computeSplit(rule: Rule) {
 }
 
 router.post("/preview", requireAuth, async (req, res) => {
-  const rule = (req.body ?? DEFAULT_RULE) as Rule;
+  const rule: Rule = { ...DEFAULT_RULE, ...(req.body as Partial<Rule>) };
   try {
     const { matched, split } = await computeSplit(rule);
     res.json({

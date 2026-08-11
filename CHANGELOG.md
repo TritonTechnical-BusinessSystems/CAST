@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.6.1 — build 2608014 — 2026-08-11T04:24:41Z
+
+### Fixed
+- [Backend] **Tracking Config blanked to an empty page immediately after the v0.6.0 deploy**, and the scheduled tier-refresh job crashed every cycle (`docker logs cast-api`: `TypeError: Cannot read properties of undefined (reading 'length')` in `computeSplit`). Root cause: the `tracking.rule` setting persisted in production predates the `projectStatuses`/`autoCreateVesselSite` fields added in v0.6.0, so the stored object was missing them entirely — every reader assumed the full `Rule` shape (`rule.projectStatuses.length`, `rule.projectStatuses.includes(...)` in `TrackingConfig.tsx`'s render, which threw and unmounted the whole page). Fixed by merging the stored/posted value over `DEFAULT_RULE` everywhere a `Rule` is read from settings or a request body — new `getStoredRule()` in `routes/tracking.ts` (used by `GET /api/tracking/config` and `jobs/tierRefresh.ts`, which also drops its own now-redundant duplicate `Rule`/`DEFAULT_RULE`), and `POST /api/tracking/config` / `POST /api/tracking/preview` merge their request bodies the same way before use or persistence. Verified against the stub client with a simulated pre-migration rule object.
+
 ## v0.6.0 — build 2608013 — 2026-08-11T03:35:10Z
 
 ### Changed
