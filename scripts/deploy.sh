@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Manual deploy of the current main branch. Run on trt-cast-01.
+# Manual deploy of the current main branch. Run on trt-cast-01 AS tritonadmin
+# — do NOT sudo this script. tritonadmin is already in the `docker` group
+# (no sudo needed for any docker/compose command here), and running as root
+# instead breaks `git fetch`/`pull`: the deploy key + its `github.com-cast`
+# SSH host alias live in tritonadmin's ~/.ssh, not root's, so a sudo'd run
+# fails immediately with "Could not resolve hostname github.com-cast"
+# (confirmed live 2026-08-14).
 # (Unattended GA-only updates are handled by cast-autoupdate.sh + its timer.)
 set -euo pipefail
+if [ "$(id -u)" -eq 0 ]; then
+  echo "Run this as tritonadmin, not root/sudo -- see the comment at the top of this script." >&2
+  exit 1
+fi
 APP_DIR="${APP_DIR:-/opt/cast/app}"
 cd "$APP_DIR"
 echo "== pulling latest main =="

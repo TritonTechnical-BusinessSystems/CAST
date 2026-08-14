@@ -10,6 +10,14 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.9.1.1 — build 2608021 — 2026-08-14T18:11:56Z
+
+### Fixed
+- [Infra] `scripts/deploy.sh` now refuses to run as root — running it via `sudo` (rather than as `tritonadmin` directly) breaks `git fetch`, since the deploy key + its SSH host alias live in `tritonadmin`'s `~/.ssh`, not root's. `tritonadmin` is already in the `docker` group, so sudo was never actually needed for any step in the script.
+
+### Docs
+- [Docs] `knowledge/architecture/cast-web-app-deployment.md` updated for `v0.9.0`'s infra changes it had missed: the API container's non-root entrypoint + Chromium sandbox, the internal-only nginx `:8080` listener, and the `deploy.sh` root-user gotcha above.
+
 ## v0.9.1 — build 2608020 — 2026-08-14T18:09:11Z
 
 ### Fixed
