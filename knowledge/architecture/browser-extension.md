@@ -1,8 +1,8 @@
 ---
 status: active
 read-when: Working on the CAST browser extension, or making a decision from this repo that touches it (shared config hosting, naming, deployment).
-related: [../decisions/0002-extension-never-touches-cw-credentials.md]
-updated: 2026-07-18
+related: [../decisions/0002-extension-never-touches-cw-credentials.md, ../../packages/config-schema/src/index.ts]
+updated: 2026-08-11
 ---
 
 # CAST browser extension — design & decision record
@@ -359,6 +359,116 @@ automatically within minutes, no separate packaging or install path needed.
   it honors the same enterprise force-install/self-hosted-update mechanism
   this design relies on. Not engineered for; a happy accident if it works,
   not a target.
+
+## 8.6 Skin: canonical components + selector registry
+
+Added 2026-08-11, while building the first visual "skin" (full-app restyle,
+modernized after Logistics Coordinator's look — a collaborative, live-iterated
+effort between the user and Claude, not a self-service feature). Independent
+of the hide/show/order/move rule engine (§5): the skin is always-on visual
+restyling, not role/department-scoped structural change, and is applied by
+`applySkin()` in `content.js` on the same debounced re-apply cycle as the
+rule engine (§5's `reapply()`).
+
+**The problem this solves.** ConnectWise has no stable semantic layer for its
+own UI. The exact same visual element — a dashboard "pod" — was found to be
+`div.podborder`, `table.podborder` (class on the `<table>` itself, not a
+wrapping `<div>`), and `.myactivities` (no "pod" substring at all) depending
+on which pod and which screen. Hardcoding CSS per discovery (what the first
+prototyping pass did) doesn't scale: every new screen means re-deriving the
+same "what actually is a pod here" question, and a user-facing customization
+UI would have nowhere sane to point at.
+
+**The fix: canonical component names, each with a selector registry.**
+CAST names each visual element once — `pageBackground`, `pod`, `podHeader`,
+`table`, `link` so far (`SKIN_COMPONENTS` in `content.js`) — and each name
+owns an array of every raw CW selector discovered to resolve to it. Adding a
+newly-discovered selector to a component's array is a one-line change, and
+every existing customization for that component (radius, shadow, color,
+font, whatever's been set) covers the new selector automatically — nothing
+else to touch. A parallel `SKIN_DEFAULT_TOKENS` map gives each component its
+default token values (`background`, `color`, `border`, `borderBottom`,
+`borderRadius`, `boxShadow`, `fontFamily`, `fontWeight`, `fontStretch`);
+`renderSkinCSS()` merges any user-config overrides on top and emits one CSS
+rule per component (selectors joined, tokens turned into `!important`
+declarations — needed to beat ConnectWise's own inline styles and
+`!important` rules, see the `:not(#_)` ID-specificity note below). A handful
+of CW quirks that aren't a customizable "component" (e.g. removing the
+native striping ConnectWise applies via inline `style` on alternating
+`My Activities` table rows) live in a separate `SKIN_QUIRK_CSS` constant,
+not the token system — a user wouldn't toggle those independently.
+
+**Why this shape, specifically:** it mirrors `@cast/config-schema`'s `Skin`
+type field-for-field — `SkinComponentName` (open string, matching
+`ScreenType`'s precedent: CAST controls this vocabulary but it still grows
+over time) → `SkinTokenValues` (partial, all-optional token object). The
+config schema only ever holds the canonical name and token values, **never**
+a raw CW selector — so when the authoring UI (`INIT-0008`) gets built, "Pod"
+in the UI and `pod` in the registry are the same concept already, with no
+translation layer to keep in sync. The selector registry itself stays
+extension-side (`content.js`), since which raw selectors resolve to which
+component is implementation detail the config/UI never needs to see.
+
+**Specificity note (learned empirically):** a stylesheet rule with
+`!important` normally beats an element's inline `style` regardless of
+selector specificity — but ConnectWise's own GWT-compiled CSS also ships
+`!important` rules for some elements (e.g. alternating-row backgrounds), and
+when both sides are `!important`, specificity becomes the tiebreaker again.
+`div.myactivities td:not(#_)` was used to win that fight — `:not()`'s
+specificity equals its argument's, so a `:not(#_)` (an ID that can never
+exist) adds ID-level specificity to a selector that still matches
+everything, without an actual ID hack.
+
+**Font loading:** fonts are loaded via a `<link rel="stylesheet">` injected
+into each document (top + same-origin iframes) pointing at Google Fonts'
+CSS2 API, not assumed to be locally installed. Currently **Inter**
+(`family=Inter:opsz,wght@14..32,300..800`) — a real variable font exposing
+an `opsz` (optical size) axis, 14–32, confirmed via the `fonts.google.com`
+metadata API. `font-optical-sizing: auto` (the CSS default, set explicitly
+so an `!important` elsewhere can't accidentally clobber it) lets the browser
+pick the right optical size for the rendered font-size automatically — no
+manual `font-variation-settings` needed. Previously Google Sans Flex (a
+variable-**width** family, `wdth` 25–151) — the `fontStretch` token (`100%`
+default on `pageBackground`, `70%`/condensed on `table`) was built for that
+axis and is now a harmless no-op with Inter, which has no `wdth` axis; left
+in place rather than ripped out, since browsers silently ignore an
+unsupported `font-stretch` value and it costs nothing to keep for whichever
+font uses it next.
+
+**A second specificity fight, same fix:** ConnectWise also ships
+`span, label, td, a { font-family: roboto !important; }` globally. Unlike
+the myactivities case, this doesn't compete with an inline style — it
+competes with **inheritance**: our `body.bodyFill { font-family: ... }`
+only ever reaches those tags by inheriting down, and a rule that directly
+targets an element always beats an inherited value regardless of the
+ancestor rule's specificity or `!important`. So `renderSkinCSS()` re-asserts
+`fontFamily`/`fontOpticalSizing` a second time, directly on
+`td`/`span`/`label`/`a` wherever a component sets either token, using the
+same `:not(#_)` specificity boost to win the tie against CW's own
+`!important` rule now that both target the same tags directly
+(`SKIN_FONT_OVERRIDE_TAGS` in `content.js`).
+
+**Status badge:** `ensureStatusBadge()` injects a small fixed-position "🟢
+CAST enhancements enabled" readout into the **top document only** (it's
+persistent ConnectWise chrome, not pod content, so it doesn't belong in the
+iframe). Positioned via `right` (not a fixed `x`) so it hugs the true
+browser-window edge regardless of viewport width, at a fixed `top: 87px` —
+the vertical center of the gray strip (`div.main-form-view-center`'s own
+background, viewport y:44–130) that's visible above wherever a screen's
+content (iframe or otherwise) begins. Not yet a skin "component" (no
+customizable tokens, no selector registry) since its content and position
+are fixed by explicit request, not discovered/varying per screen — revisit
+if that changes.
+
+**Same iframe caveat as §5's rule engine applies:** the "Today" dashboard's
+pod content renders inside a same-origin `#ConnectWiseToday` iframe, so
+`applySkin()` injects into the top document *and* every accessible
+same-origin iframe (via `contentDocument`), skipping cross-origin ones (e.g.
+the ITBoost `#overlay` widget) which throw on access — expected, not a bug.
+Not yet confirmed how many of `SKIN_COMPONENTS`' selectors (or the gray
+header strip the status badge anchors to) generalize beyond the Today
+dashboard to other screen types (tickets, companies, service board) —
+untested as of this writing.
 
 ## 9. Open TBDs
 

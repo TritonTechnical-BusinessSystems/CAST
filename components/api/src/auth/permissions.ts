@@ -18,6 +18,8 @@ export const PERMISSIONS = [
   "integrations.write", // enter/update credentials
   "system.read",        // view System Health
   "accounts.manage",    // manage local break-glass accounts
+  "logistics.read",     // view Logistics (INIT-0026)
+  "logistics.write",    // edit Logistics config/data
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -25,8 +27,8 @@ export type Permission = (typeof PERMISSIONS)[number];
 export type Role = "admin" | "operator" | "viewer";
 export const ROLES: Role[] = ["admin", "operator", "viewer"];
 
-const VIEWER: Permission[] = ["extension.read", "vessel.read", "tracking.read", "integrations.read", "system.read"];
-const OPERATOR: Permission[] = [...VIEWER, "extension.write", "vessel.reconcile", "tracking.write"];
+const VIEWER: Permission[] = ["extension.read", "vessel.read", "tracking.read", "integrations.read", "system.read", "logistics.read"];
+const OPERATOR: Permission[] = [...VIEWER, "extension.write", "vessel.reconcile", "tracking.write", "logistics.write"];
 
 /** Role → permissions. `admin` gets everything (incl. future additions). */
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {

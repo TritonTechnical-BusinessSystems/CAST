@@ -1,8 +1,8 @@
 ---
 status: active
-read-when: Building or changing CAST's ConnectWise PSA (Manage) API integration — the credentialed read/write path (INIT-0002 / 0012 / 0014), auth, custom-field read/write, or the ManageCwClient.
-related: [vessel-location-updating-aisstream.md, ../decisions/0002-extension-never-touches-cw-credentials.md]
-updated: 2026-07-23
+read-when: Building or changing CAST's ConnectWise PSA (Manage) API integration — the credentialed read/write path (INIT-0002 / 0012 / 0014 / 0018), auth, custom-field read/write, or the ManageCwClient.
+related: [vessel-location-updating-aisstream.md, shipment-tracking-trackingmore.md, ../decisions/0002-extension-never-touches-cw-credentials.md]
+updated: 2026-08-13
 ---
 
 # ConnectWise PSA (Manage) REST API — integration pattern
@@ -112,3 +112,24 @@ IMO/MMSI now.
 
 Still open: which company **status** = a tracked vessel-client
 (`CW_TRACKED_STATUS`) — `Active` (± `Active /w Special Note`) is the likely pick.
+
+## 8. Two more reusable techniques (found building `INIT-0018`, 2026-08-13)
+
+**Discovering what custom fields exist, and where.** `GET /system/userDefinedFields`
+returns every UDF across every screen in one call — `screenId` (e.g. `sr100` = Ticket,
+`product` = the ticket-side Product/Addition, `cm120` = Company, `purchase_order` = PO
+header), `caption`, `fieldTypeIdentifier`, and (for a picklist field,
+`entryTypeIdentifier: "List"`) the full `options` array. Cheaper and more reliable than
+guessing captions — used to confirm/inspect every custom field referenced in
+`shipment-tracking-trackingmore.md` before building against it.
+
+**Joining across entities that look related but aren't the same record.** Some CW
+entities that *feel* like one thing are actually two rows linked by a many-to-many join
+— e.g. a PO line item (`Purchase_Detail`) and its linked ticket-side Product
+(`IV_Product`) are joined via `IV_Product_Purchase_Detail`, not the same record. CW
+exposes this specific join via a **system report**, not a regular REST resource:
+`GET /system/reports/PurchaseOrderWithLineItems?conditions=Purchase_Header_RecID in (...)`
+— confirmed live by LogisticsCoordinator's own `get_po_line_demand_links()`. Needs the
+**"API Reports"** node under System granted separately from the per-module "Reports"
+node (gates the CW UI's own report runner, not the `/system/reports` REST endpoint) —
+LC hit this exact permission gap first, during its own Receiving Phase 2 work.

@@ -11,6 +11,9 @@ import healthRoutes from "./routes/health";
 import geoAlertRoutes from "./routes/geoAlerts";
 import checkinRoutes from "./routes/checkins";
 import extensionRoutes from "./routes/extension";
+import logisticsRoutes from "./routes/logistics";
+import logisticsShipmentsRoutes from "./routes/logisticsShipments";
+import logisticsDocumentsRoutes from "./routes/logisticsDocuments";
 import { startTierRefresh, stopTierRefresh } from "./jobs/tierRefresh";
 import { startAisListener, stopAisListener } from "./vessels/aisListener";
 import { seedBreakGlass } from "./auth/local";
@@ -32,6 +35,9 @@ app.use("/api/health", healthRoutes);
 app.use("/api/geo-alerts", geoAlertRoutes);
 app.use("/api/checkins", checkinRoutes);
 app.use("/api/extension", extensionRoutes);
+app.use("/api/logistics", logisticsRoutes);
+app.use("/api/logistics", logisticsShipmentsRoutes);
+app.use("/api/logistics", logisticsDocumentsRoutes);
 
 const server = app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);

@@ -25,13 +25,43 @@ declare global {
   }
 }
 
-const COOKIE = "cast_token";
+export const SESSION_COOKIE_NAME = "cast_token";
+const COOKIE = SESSION_COOKIE_NAME;
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "strict" as const,
   secure: config.isProd,
   maxAge: 8 * 3600 * 1000,
 };
+
+/**
+ * A short-lived JWT for the internal Playwright browser that renders CI/PL
+ * PDFs (INIT-0026 Phase 3) — it has no login session of its own, so
+ * `renderShipmentDocument` (`pdf/render.ts`) sets this as a cookie on the
+ * page it navigates to before hitting `/print/ci|pl/:id`, which in turn
+ * fetches the same `requireAuth`-gated data endpoints an interactive user
+ * would. Reuses the exact session JWT shape/secret (no new auth mechanism).
+ *
+ * Deliberately `viewer`, not `admin` — every route the print pages touch
+ * (`invoice-data`, `packing-list-data`, `cw/ticket/:id`) is gated by bare
+ * `requireAuth`, not a specific permission, so `viewer` (which still holds
+ * `logistics.read`) is exactly enough. Scoping this down means that even if
+ * the render browser's navigation were ever redirected to an unintended
+ * endpoint (see the shipment-id validation in `pdf/render.ts`), this token
+ * could never satisfy a `requirePermission("...write")` check — it isn't a
+ * substitute for that validation, but a second, independent layer under it.
+ * `svc: "pdf-renderer"` is a marker for anything inspecting the token/logs
+ * later, not itself enforced. A 2-minute expiry keeps the token useless well
+ * before a render could ever be replayed (renders complete in low
+ * single-digit seconds).
+ */
+export function mintInternalRenderToken(): string {
+  return jwt.sign(
+    { id: "system:pdf-renderer", displayName: "PDF Renderer (internal)", source: "local", role: "viewer", svc: "pdf-renderer" },
+    config.jwtSecret,
+    { expiresIn: "2m" },
+  );
+}
 
 export function issueSession(res: Response, user: AuthedUser): void {
   const token = jwt.sign(

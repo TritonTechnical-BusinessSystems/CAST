@@ -26,6 +26,31 @@ export interface VesselCompany {
   mmsi: string | null;
 }
 
+/** A CW Service or Project ticket that matches the Shipping Request filter (INIT-0026 Phase 2). */
+export interface ShippingRequestTicket {
+  id: number;
+  ticketType: "service" | "project";
+  summary: string;
+  companyId: number | null;
+  companyName: string;
+  statusId: number | null;
+  statusName: string;
+  requiredDate: string | null;
+}
+
+/** The fuller ticket read for the Shipment detail shell's header. */
+export interface ShipmentTicketDetail extends ShippingRequestTicket {
+  boardId: number | null;
+  boardName: string | null;
+  siteName: string | null;
+  estimatedStartDate: string | null;
+}
+
+export interface CwBoardStatus {
+  id: number;
+  name: string;
+}
+
 export interface CwClient {
   /** The vessel-client companies we track (CW status-scoped). */
   listTrackedVessels(): Promise<VesselCompany[]>;
@@ -61,6 +86,29 @@ export interface CwClient {
    * isCwWritesEnabled() like every other CW write.
    */
   updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void>;
+  /**
+   * Active CW Purchase Order statuses (INIT-0026 Phase 1, Logistics
+   * Receiving config) — the live checkbox options for "which PO statuses
+   * count as open," per company (ties to the `procurement/purchaseorderstatuses`
+   * permission grant confirmed during INIT-0018's research).
+   */
+  listPurchaseOrderStatuses(): Promise<string[]>;
+  /**
+   * Live CW Service + Project tickets matching the Shipping Request filter
+   * (INIT-0026 Phase 2's Outbound Shipment list — this IS the list; there is
+   * no local "all shipments" table to page over, mirroring LC's own design).
+   */
+  listShippingRequestTickets(): Promise<ShippingRequestTicket[]>;
+  /** Ticket id -> total product quantity tagged with that Outbound Shipment ID. */
+  getShippingRequestProductCounts(ticketIds: number[]): Promise<Map<number, number>>;
+  /** Full ticket read for the Shipment detail shell's header. Null if not found as either a service or project ticket. */
+  getShipmentTicket(ticketId: number): Promise<ShipmentTicketDetail | null>;
+  /** Active statuses for a board (shared between service/project tickets). */
+  listBoardStatuses(boardId: number): Promise<CwBoardStatus[]>;
+  /** Write the CW ticket's status (not the local shipment record's — see the detail shell's header dropdown). */
+  updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number): Promise<void>;
+  /** "Post to CW" (INIT-0026 Phase 3) — attaches a generated CI/PL PDF to the ticket's Documents tab. Returns the new CW document id. */
+  uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string): Promise<number>;
 }
 
 export interface CwSite {
@@ -153,17 +201,120 @@ export class StubCwClient implements CwClient {
     const site = (this.sites[companyId] ?? []).find((s) => s.id === siteId);
     if (site && patch.name !== undefined) site.name = patch.name;
   }
+
+  async listPurchaseOrderStatuses(): Promise<string[]> {
+    return ["New", "Sent to Vendor", "On Order", "Backordered", "Received In Full", "Cancelled"];
+  }
+
+  // Illustrative shipping-request tickets — one service, one project, so both
+  // merge paths and both status-update ticket types have something to exercise.
+  private shippingTickets: ShipmentTicketDetail[] = [
+    {
+      id: 40021,
+      ticketType: "service",
+      summary: "Refit parts — outbound to M/Y Serene Horizon",
+      companyId: 1001,
+      companyName: "Serene Waters Ltd",
+      statusId: 1,
+      statusName: "New",
+      boardId: 501,
+      boardName: "Logistics",
+      siteName: "Vessel",
+      requiredDate: "2026-08-20T00:00:00Z",
+      estimatedStartDate: "2026-08-18T00:00:00Z",
+    },
+    {
+      id: 40018,
+      ticketType: "project",
+      summary: "Refit 2026 — bulk hardware shipment",
+      companyId: 1004,
+      companyName: "Nautilus Charter Group",
+      statusId: 2,
+      statusName: "In Progress",
+      boardId: 501,
+      boardName: "Logistics",
+      siteName: "Vessel",
+      requiredDate: "2026-08-25T00:00:00Z",
+      estimatedStartDate: null,
+    },
+  ];
+
+  async listShippingRequestTickets(): Promise<ShippingRequestTicket[]> {
+    return this.shippingTickets.map(({ id, ticketType, summary, companyId, companyName, statusId, statusName, requiredDate }) => ({
+      id,
+      ticketType,
+      summary,
+      companyId,
+      companyName,
+      statusId,
+      statusName,
+      requiredDate,
+    }));
+  }
+
+  async getShippingRequestProductCounts(ticketIds: number[]): Promise<Map<number, number>> {
+    const counts = new Map<number, number>([[40021, 12], [40018, 4]]);
+    return new Map(ticketIds.map((id) => [id, counts.get(id) ?? 0]));
+  }
+
+  async getShipmentTicket(ticketId: number): Promise<ShipmentTicketDetail | null> {
+    const t = this.shippingTickets.find((x) => x.id === ticketId);
+    return t ? { ...t } : null;
+  }
+
+  async listBoardStatuses(): Promise<CwBoardStatus[]> {
+    return [
+      { id: 1, name: "New" },
+      { id: 2, name: "In Progress" },
+      { id: 3, name: "Ready to Ship" },
+      { id: 4, name: "Shipped" },
+    ];
+  }
+
+  async updateTicketStatus(ticketId: number, _ticketType: "service" | "project", statusId: number): Promise<void> {
+    const t = this.shippingTickets.find((x) => x.id === ticketId);
+    if (t) {
+      const status = (await this.listBoardStatuses()).find((s) => s.id === statusId);
+      if (status) {
+        t.statusId = status.id;
+        t.statusName = status.name;
+      }
+    }
+  }
+
+  private nextDocId = 9001;
+  async uploadTicketDocument(): Promise<number> {
+    return this.nextDocId++;
+  }
 }
 
 let stub: CwClient | null = null;
 let manage: CwClient | null = null;
+const manageByInstance = new Map<string, CwClient>();
 
 /**
  * The active CW client: the live `ManageCwClient` when credentials resolve (env
  * or the encrypted store), otherwise the in-memory stub. Writes remain gated by
  * isCwWritesEnabled() inside ManageCwClient regardless.
+ *
+ * `getCwClient()` (no args) is untouched — every existing caller (vessel
+ * tracking, tracking sync) keeps today's exact single-instance behavior.
+ * `getCwClient(instanceId)` is INIT-0026's multi-instance addition: one
+ * lazily-created, cached client per instance, each bound to that instance's
+ * own credentials via `ManageCwClient`'s constructor — never the stub
+ * fallback, since an unconfigured named instance should surface as a loud
+ * "not configured" error (from `ManageCwClient.creds()`), not silently
+ * degrade to illustrative stub data the way the legacy no-instance path does.
  */
-export function getCwClient(): CwClient {
+export function getCwClient(instanceId?: string): CwClient {
+  if (instanceId) {
+    let client = manageByInstance.get(instanceId);
+    if (!client) {
+      client = new ManageCwClient(instanceId);
+      manageByInstance.set(instanceId, client);
+    }
+    return client;
+  }
   if (resolveCwCreds().creds) {
     if (!manage) manage = new ManageCwClient();
     return manage;

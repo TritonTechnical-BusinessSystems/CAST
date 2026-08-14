@@ -10,6 +10,31 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.9.0 — build 2608019 — 2026-08-14T16:16:24Z
+
+### Added
+- [UX] **New "Logistics" workspace section** (`INIT-0026`, Phases 0-3 of a native rebuild of the standalone LogisticsCoordinator app into CAST) — a new nav entry, landing on an embed-links page (day-to-day usage is embedding these pages inside ConnectWise via Custom Menu Entry Links, not direct navigation; direct routes remain for dev/test).
+- [Backend] **Multi-instance ConnectWise architecture** — CAST can now hold fully independent, simultaneously-usable Production and Sandbox ConnectWise contexts. Each CW instance gets its own SQLite file (`cast_{instanceId}.db`) and its own encrypted credential slot; every Logistics route is scoped by instance in its URL, and an instance with no credentials configured throws loudly rather than silently falling back to another instance's credentials — a hard safety property, not an oversight.
+- [UX] **Logistics Configuration** — 6 tabs: "Ship As" companies (with logo upload), Carriers, Currencies, Export Statement Presets, CI Flags, and per-instance Receiving settings (which live ConnectWise PO statuses count as open, sync cadence).
+- [UX] **Outbound Shipments** — a live-refreshing list of ConnectWise Shipping Request tickets (Service + Project, merged), with sortable/filterable columns and per-ticket item counts. This is a genuinely live CW query, not a local cache — mirrors how the legacy tool worked.
+- [UX] **Shipment detail** — header (company/summary/site, ship-by/due-by dates, a live CW ticket-status editor) plus a Packing / Pack by Barcode / Documents tab shell (Packing lands in a later phase).
+- [UX] **Commercial Invoice & Packing List generation** — the Documents tab renders a fully editable invoice/packing-list view (shipper, consignee, ship-to, incoterm/carrier/currency, per-line description/HS-code/country-of-origin/pricing overrides, CI flags, export statements) and can Export a PDF or Post it directly to the ConnectWise ticket as an attachment.
+- [Backend] **Playwright as a production dependency** — CAST now generates PDFs by launching a real headless browser against its own app and rendering the same interactive Commercial Invoice / Packing List screen, the same pattern the legacy tool used. A new internal, short-lived service credential lets that headless render reach the app's normal authenticated data endpoints without a real login session.
+- [Integrations] New ConnectWise API capabilities: live Shipping Request ticket queries, per-ticket product-quantity totals, ticket detail/board-status reads, ticket status writes, and document (PDF) uploads to a ticket.
+- [Database] New shared tables (`logistics_companies`, `logistics_carriers`, `logistics_currencies`, `logistics_export_presets`, `logistics_ci_flags`) and a new per-CW-instance schema (`shipments`, `containers`, `container_items`, `catalog_item_cache`, `documents`, plus the receiving/allocation tables Phase 5-6 will use).
+
+### Fixed
+- [Backend] `api.ts`'s shared request helper crashed parsing a 204 No Content response as JSON — this silently broke every DELETE across the app (the request succeeded server-side, but the UI showed an error toast and never refreshed the list). Found while testing the new Documents tab's status-write flow; also affects every Configuration delete button shipped in this same release.
+- [Backend] Two bugs in this release's own new code (not inherited from the legacy tool): `container_items` was missing a plain `description` column entirely (only had the override column), and Commercial Invoice box-placement labels (e.g. "Pallet 1 | Box 3") resolved the wrong container's number when a box's parent pallet itself held no items directly.
+
+### Security
+- [Security] The legacy tool has two known live defects — an invalid enum value sent by its "Reset Field"/"Reset" actions, one of which throws a database error on any shipment with packed items — that are deliberately **not** carried into this rebuild; CAST represents "no override" as a null value that can't produce an invalid state.
+- [Security] **Pre-release security gate findings, fixed before this release shipped** (independent review, `knowledge/conventions/versioning.md`'s MINOR-bump gate): a shipment-update endpoint let a request body's `id` field silently override which record was actually written, independent of the URL; the new PDF-render pipeline built its internal navigation URL from an unvalidated shipment id and minted its internal service credential with full admin privilege rather than the read-only scope it actually needed; the API container ran as root with Chromium's OS sandbox explicitly disabled in the same container that decrypts every stored ConnectWise credential. All four fixed — shipment ids are now validated as numeric CW ticket numbers wherever they flow into the render pipeline, the internal render credential is scoped to read-only, and the API container now runs as an unprivileged user with Chromium's real sandbox enabled (validated with a real local Docker build/run, not just code review). Also added: a concurrency cap on PDF rendering (unbounded concurrent Chromium launches could exhaust the deploy host), `https://`-only validation on ConnectWise credential URLs, baseline nginx security headers (HSTS/CSP/nosniff/frame-ancestors), and the previously-unreachable per-instance ConnectWise credential save endpoint (existed since Phase 0 but no route ever called it).
+- [Infra] New internal-only nginx listener (port 8080, not published to the host) so the API container's headless-browser PDF render can reach the SPA without hitting the public HTTPS certificate (issued for the public hostname, not the internal Docker network name) or the port-80 redirect that would otherwise send it into a certificate mismatch — mirrors the legacy tool's own proven internal-routing pattern.
+
+### Docs
+- [Docs] New `knowledge/architecture/logistics-packing-shipping-behavior-spec.md` — an exact, source-verified behavior spec for the legacy tool's Assembly workspace and Document generation, the reference this rebuild (and its still-pending Phase 4) is validated against.
+
 ## v0.8.2 — build 2608018 — 2026-08-11T05:59:13Z
 
 ### Fixed

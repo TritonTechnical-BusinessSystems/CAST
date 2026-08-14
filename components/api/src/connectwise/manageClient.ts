@@ -7,8 +7,8 @@
  * user gate, toggleable in-app (Integrations page). Reads are always allowed.
  */
 import { config, isCwWritesEnabled } from "../config";
-import { resolveCwCreds, type CwCreds } from "./creds";
-import type { CwClient, CwSite, VesselCompany } from "./client";
+import { resolveCwCreds, resolveCwCredsForInstance, type CwCreds } from "./creds";
+import type { CwClient, CwSite, VesselCompany, ShippingRequestTicket, ShipmentTicketDetail, CwBoardStatus } from "./client";
 
 function authHeaders(c: CwCreds): Record<string, string> {
   const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
@@ -61,17 +61,18 @@ function sortNames(names: string[]): string[] {
 }
 
 /** Active only — CW marks retired statuses/boards inactiveFlag=true rather than deleting them. */
-export async function listCompanyStatuses(): Promise<string[]> {
+export async function listCompanyStatuses(creds?: CwCreds): Promise<string[]> {
   const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
     "/company/companies/statuses?pageSize=200&fields=id,name,inactiveFlag",
+    { creds },
   );
   return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
 }
 
 interface CwBoardRow { name: string; department?: { name?: string }; inactiveFlag?: boolean }
 
-async function listAllBoards(): Promise<CwBoardRow[]> {
-  return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department,inactiveFlag");
+async function listAllBoards(creds?: CwCreds): Promise<CwBoardRow[]> {
+  return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department,inactiveFlag", { creds });
 }
 
 /**
@@ -81,8 +82,8 @@ async function listAllBoards(): Promise<CwBoardRow[]> {
  * `inactiveFlag`, currently true for two retired example boards). Internal
  * admin work and retired boards aren't vessel-tracking priority signals.
  */
-export async function listServiceBoards(): Promise<string[]> {
-  const rows = await listAllBoards();
+export async function listServiceBoards(creds?: CwCreds): Promise<string[]> {
+  const rows = await listAllBoards(creds);
   return sortNames(rows.filter((r) => !r.inactiveFlag && r.department?.name !== "Admin").map((r) => r.name));
 }
 
@@ -93,15 +94,32 @@ export async function listServiceBoards(): Promise<string[]> {
  * (the same Service Board records), verified live; `board/department/name`
  * isn't a recognized condition path (400), but `board/name not in (...)` is.
  */
-async function listAdminBoardNames(): Promise<string[]> {
-  const rows = await listAllBoards();
+async function listAdminBoardNames(creds?: CwCreds): Promise<string[]> {
+  const rows = await listAllBoards(creds);
   return rows.filter((r) => !r.inactiveFlag && r.department?.name === "Admin").map((r) => r.name);
 }
 
 /** CW Project statuses (e.g. "1: Active", "5: Closed"), active only — parallel to listCompanyStatuses. */
-export async function listProjectStatuses(): Promise<string[]> {
+export async function listProjectStatuses(creds?: CwCreds): Promise<string[]> {
   const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
     "/project/statuses?pageSize=200&fields=id,name,inactiveFlag",
+    { creds },
+  );
+  return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
+}
+
+/**
+ * CW Purchase Order statuses (e.g. "🔶 New", "✅ Received In Full"), active
+ * only — INIT-0026 Phase 1's Receiving config. Requires the Procurement →
+ * Purchase Order Statuses security-role grant confirmed during INIT-0018's
+ * research; surfaces as a plain 403 from cwFetch if the API member lacks it
+ * (no special-cased error message here, matching every other list* function
+ * in this file — the route handler can add a friendlier message if needed).
+ */
+export async function listPurchaseOrderStatuses(creds?: CwCreds): Promise<string[]> {
+  const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
+    "/procurement/purchaseorderstatuses?pageSize=200&fields=id,name,inactiveFlag",
+    { creds },
   );
   return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
 }
@@ -115,10 +133,11 @@ export async function listProjectStatuses(): Promise<string[]> {
  * `licenseClass="F"` (verified live: 99 F people vs 15 A API accounts) plus
  * `inactiveFlag=false` to drop disabled accounts.
  */
-export async function listMembers(): Promise<{ identifier: string; name: string }[]> {
+export async function listMembers(creds?: CwCreds): Promise<{ identifier: string; name: string }[]> {
   const rows = await cwFetch<{ id: number; identifier?: string; firstName?: string; lastName?: string }[]>(
     // conditions=inactiveFlag=false AND licenseClass="F" (URL-encoded; cwFetch sends the path raw)
     '/system/members?pageSize=1000&conditions=inactiveFlag%3Dfalse%20AND%20licenseClass%3D%22F%22&fields=id,identifier,firstName,lastName',
+    { creds },
   );
   return rows.map((r) => ({
     identifier: r.identifier ?? String(r.id),
@@ -146,14 +165,14 @@ function mergeActivity(into: Map<string, string>, rows: CwActivityRow[]): void {
  * against real CW (2026-08) to handle special characters (emoji board names)
  * fine; `_info.lastUpdated` verified present on every ticket row.
  */
-async function queryOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>> {
+async function queryOpenTicketActivity(boardNames: string[], creds?: CwCreds): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (boardNames.length === 0) return out;
   const boardList = boardNames.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
   const conditions = `board/name in (${boardList}) AND closedFlag=false`;
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company,_info" });
-    const batch = await cwFetch<CwActivityRow[]>(`/service/tickets?${params.toString()}`);
+    const batch = await cwFetch<CwActivityRow[]>(`/service/tickets?${params.toString()}`, { creds });
     mergeActivity(out, batch);
     if (batch.length < 1000) break;
   }
@@ -168,45 +187,244 @@ async function queryOpenTicketActivity(boardNames: string[]): Promise<Map<string
  * outranks the ticket signal above. Projects on an "Admin"-department board
  * are excluded, same as Admin boards are excluded from ticket tracking.
  */
-async function queryOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
+async function queryOpenProjectActivity(statusNames: string[], creds?: CwCreds): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (statusNames.length === 0) return out;
   const statusList = statusNames.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",");
   let conditions = `status/name in (${statusList}) AND closedFlag=false`;
-  const adminBoards = await listAdminBoardNames();
+  const adminBoards = await listAdminBoardNames(creds);
   if (adminBoards.length > 0) {
     const adminBoardList = adminBoards.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
     conditions += ` AND board/name not in (${adminBoardList})`;
   }
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "1000", page: String(page), conditions, fields: "company,_info" });
-    const batch = await cwFetch<CwActivityRow[]>(`/project/projects?${params.toString()}`);
+    const batch = await cwFetch<CwActivityRow[]>(`/project/projects?${params.toString()}`, { creds });
     mergeActivity(out, batch);
     if (batch.length < 1000) break;
   }
   return out;
 }
 
-async function queryCompanies(conditions?: string): Promise<CwCompany[]> {
+async function queryCompanies(conditions?: string, creds?: CwCreds): Promise<CwCompany[]> {
   const out: CwCompany[] = [];
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "1000", page: String(page), fields: "id,name,identifier,status,customFields" });
     if (conditions) params.set("conditions", conditions);
-    const batch = await cwFetch<CwCompany[]>(`/company/companies?${params.toString()}`);
+    const batch = await cwFetch<CwCompany[]>(`/company/companies?${params.toString()}`, { creds });
     out.push(...batch);
     if (batch.length < 1000) break;
   }
   return out;
 }
 
+/**
+ * Default CW ticket filter for "Outbound Shipments" (INIT-0026 Phase 2),
+ * ported verbatim from LC's own fallback (`ConfigPage.jsx`'s per-instance
+ * `ticket_filter`, else this default). LC lets this be overridden per CW
+ * instance; CAST defers that configurability rather than re-opening Phase 1
+ * — see the Phase 2 review notes.
+ */
+const DEFAULT_SHIPPING_REQUEST_FILTER = 'closedFlag=false AND type/name="Logistics" AND subType/name="Shipping Request"';
+const SHIPPING_REQUEST_FIELDS = "id,summary,company,status,requiredDate";
+
+interface CwTicketRow {
+  id: number;
+  summary: string;
+  company?: { id: number; name: string };
+  status?: { id: number; name: string };
+  board?: { id: number; name: string };
+  site?: { id: number; name: string };
+  requiredDate?: string;
+  estimatedStartDate?: string;
+}
+
+function toShippingTicket(r: CwTicketRow, ticketType: "service" | "project"): ShippingRequestTicket {
+  return {
+    id: r.id,
+    ticketType,
+    summary: r.summary,
+    companyId: r.company?.id ?? null,
+    companyName: r.company?.name ?? "",
+    statusId: r.status?.id ?? null,
+    statusName: r.status?.name ?? "",
+    requiredDate: r.requiredDate ?? null,
+  };
+}
+
+async function queryTickets(path: string, conditions: string, fields: string, creds?: CwCreds): Promise<CwTicketRow[]> {
+  const out: CwTicketRow[] = [];
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({ pageSize: "200", page: String(page), conditions, fields });
+    const batch = await cwFetch<CwTicketRow[]>(`${path}?${params.toString()}`, { creds });
+    out.push(...batch);
+    if (batch.length < 200) break;
+  }
+  return out;
+}
+
+/**
+ * Merged, sorted Service + Project "Shipping Request" tickets — this IS the
+ * Outbound Shipment list (INIT-0026 Phase 2), not a local-DB query; mirrors
+ * LC's `get_shipping_requests()` exactly (two parallel CW calls, merge,
+ * sort by id descending).
+ */
+async function listShippingRequestTickets(creds?: CwCreds): Promise<ShippingRequestTicket[]> {
+  const [service, project] = await Promise.all([
+    queryTickets("/service/tickets", DEFAULT_SHIPPING_REQUEST_FILTER, SHIPPING_REQUEST_FIELDS, creds),
+    queryTickets("/project/tickets", DEFAULT_SHIPPING_REQUEST_FILTER, SHIPPING_REQUEST_FIELDS, creds),
+  ]);
+  const tickets = [...service.map((r) => toShippingTicket(r, "service")), ...project.map((r) => toShippingTicket(r, "project"))];
+  return tickets.sort((a, b) => b.id - a.id);
+}
+
+/**
+ * Ticket id -> summed product quantity, via the `Outbound Shipment ID`
+ * custom field on ticket-side Products (`/procurement/products`) — mirrors
+ * LC's per-ticket-id sum exactly, run concurrently rather than serially
+ * (safe perf improvement, same query shape/semantics per ticket).
+ */
+async function getShippingRequestProductCounts(ticketIds: number[], creds?: CwCreds): Promise<Map<number, number>> {
+  const entries = await Promise.all(
+    ticketIds.map(async (id): Promise<[number, number]> => {
+      let total = 0;
+      for (let page = 1; ; page++) {
+        const params = new URLSearchParams({
+          pageSize: "1000",
+          page: String(page),
+          customFieldConditions: `caption="Outbound Shipment ID" AND value=${id}`,
+          fields: "quantity",
+        });
+        const batch = await cwFetch<{ quantity?: number }[]>(`/procurement/products?${params.toString()}`, { creds });
+        total += batch.reduce((sum, r) => sum + (r.quantity ?? 0), 0);
+        if (batch.length < 1000) break;
+      }
+      return [id, total];
+    }),
+  );
+  return new Map(entries);
+}
+
+async function fetchTicketDetail(path: string, id: number, creds?: CwCreds): Promise<CwTicketRow | null> {
+  try {
+    return await cwFetch<CwTicketRow>(
+      `${path}/${id}?fields=id,summary,company,status,board,site,requiredDate,estimatedStartDate`,
+      { creds },
+    );
+  } catch (e) {
+    if (e instanceof Error && /^CW 404/.test(e.message)) return null;
+    throw e;
+  }
+}
+
+/**
+ * Full ticket read for the Shipment detail shell's header — tries Service
+ * then Project (a shipping-request ticket ID isn't self-describing about
+ * which module it's in), matching how a shipment's local row is looked up
+ * by CW ticket id with no separate type marker stored.
+ */
+async function getShipmentTicket(ticketId: number, creds?: CwCreds): Promise<ShipmentTicketDetail | null> {
+  const service = await fetchTicketDetail("/service/tickets", ticketId, creds);
+  const [row, ticketType] = service ? [service, "service" as const] : [await fetchTicketDetail("/project/tickets", ticketId, creds), "project" as const];
+  if (!row) return null;
+  return {
+    ...toShippingTicket(row, ticketType),
+    boardId: row.board?.id ?? null,
+    boardName: row.board?.name ?? null,
+    siteName: row.site?.name ?? null,
+    estimatedStartDate: row.estimatedStartDate ?? null,
+  };
+}
+
+/** Active statuses for a board — boards are shared between service/project tickets, so one lookup covers both. */
+async function listBoardStatuses(boardId: number, creds?: CwCreds): Promise<CwBoardStatus[]> {
+  const rows = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }[]>(
+    `/service/boards/${boardId}/statuses?pageSize=200&fields=id,name,inactiveFlag`,
+    { creds },
+  );
+  return rows.filter((r) => !r.inactiveFlag).map((r) => ({ id: r.id, name: r.name }));
+}
+
+/**
+ * Attaches a PDF to a CW ticket's Documents tab (`POST /system/documents`,
+ * multipart) — ported from LC's `cw_client.upload_document` exactly (same
+ * `recordId`/`recordType: "Ticket"`/`title`/`isPrivate: "false"` fields).
+ * Doesn't reuse `cwFetch`: that helper always sends `Content-Type:
+ * application/json` and JSON-encodes the body, neither of which applies to
+ * a multipart upload (the browser/runtime must set its own boundary).
+ */
+async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string, creds?: CwCreds): Promise<number> {
+  if (!isCwWritesEnabled()) {
+    throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+  }
+  const c = creds ?? resolveCwCreds().creds;
+  if (!c) throw new Error("ConnectWise is not configured");
+  const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
+  const form = new FormData();
+  form.append("file", new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }), filename);
+  form.append("recordId", String(ticketId));
+  form.append("recordType", "Ticket");
+  form.append("title", title);
+  form.append("isPrivate", "false");
+  const res = await fetch(`${c.baseUrl}/system/documents`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${token}`, clientId: c.clientId, Accept: "application/json" },
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`CW ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const created = (await res.json()) as { id: number };
+  return created.id;
+}
+
+/** Writes the CW ticket's own status (distinct from and unrelated to the local shipment record's `status` column). */
+async function updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number, creds?: CwCreds): Promise<void> {
+  if (!isCwWritesEnabled()) {
+    throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+  }
+  const path = ticketType === "service" ? "/service/tickets" : "/project/tickets";
+  await cwFetch(`${path}/${ticketId}`, {
+    method: "PATCH",
+    body: JSON.stringify([{ op: "replace", path: "/status", value: { id: statusId } }]),
+    creds,
+  });
+}
+
 export class ManageCwClient implements CwClient {
+  /**
+   * `instanceId` unset = legacy/default single-instance behavior, byte-for-
+   * byte unchanged from before multi-instance support existed (every call
+   * below passes `this.creds()`, which returns `undefined` in this case,
+   * and `cwFetch` falls through to its own `resolveCwCreds()` exactly as it
+   * always has — zero behavior change for existing callers like vessel
+   * tracking's `getCwClient()`).
+   *
+   * `instanceId` set = INIT-0026's multi-instance Logistics rebuild. `creds()`
+   * below is the hard safety boundary: an explicitly-requested instance with
+   * no configured credentials throws loudly rather than silently falling
+   * back to the default/legacy creds — the whole point being it must be
+   * structurally impossible for a Sandbox-scoped request to accidentally
+   * read or write Production (or vice versa) because a credential lookup
+   * quietly defaulted to the wrong place.
+   */
+  constructor(private readonly instanceId?: string) {}
+
+  private creds(): CwCreds | undefined {
+    if (!this.instanceId) return undefined;
+    const { creds } = resolveCwCredsForInstance(this.instanceId);
+    if (!creds) throw new Error(`ConnectWise is not configured for instance "${this.instanceId}"`);
+    return creds;
+  }
+
   async listTrackedVessels(): Promise<VesselCompany[]> {
     // A vessel = any company whose Market contains the configured value (e.g.
     // "🛳️ Yacht"), regardless of IMO/MMSI — so vessels missing an identifier
     // still surface for reconciliation. Optional status further scopes it.
     const parts = [`market/name contains "${config.cwVesselMarket}"`];
     if (config.cwTrackedStatus) parts.push(`status/name="${config.cwTrackedStatus}"`);
-    const companies = await queryCompanies(parts.join(" AND "));
+    const companies = await queryCompanies(parts.join(" AND "), this.creds());
     return companies.map(toVessel);
   }
 
@@ -214,8 +432,9 @@ export class ManageCwClient implements CwClient {
     if (!isCwWritesEnabled()) {
       throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
+    const creds = this.creds();
     // CW requires the WHOLE customFields array on PATCH — GET, splice, PATCH back.
-    const company = await cwFetch<CwCompany>(`/company/companies/${id}?fields=id,name,status,customFields`);
+    const company = await cwFetch<CwCompany>(`/company/companies/${id}?fields=id,name,status,customFields`, { creds });
     const fields = (company.customFields ?? []).map((f) => ({ ...f }));
     const setField = (caption: string, value: string) => {
       const f = fields.find((x) => x.caption === caption);
@@ -226,21 +445,23 @@ export class ManageCwClient implements CwClient {
     const updated = await cwFetch<CwCompany>(`/company/companies/${id}`, {
       method: "PATCH",
       body: JSON.stringify([{ op: "replace", path: "/customFields", value: fields }]),
+      creds,
     });
     return toVessel(updated);
   }
 
   async listOpenTicketActivity(boardNames: string[]): Promise<Map<string, string>> {
-    return queryOpenTicketActivity(boardNames);
+    return queryOpenTicketActivity(boardNames, this.creds());
   }
 
   async listOpenProjectActivity(statusNames: string[]): Promise<Map<string, string>> {
-    return queryOpenProjectActivity(statusNames);
+    return queryOpenProjectActivity(statusNames, this.creds());
   }
 
   async getCompanySites(companyId: string): Promise<CwSite[]> {
     const rows = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }[]>(
       `/company/companies/${companyId}/sites?pageSize=50&fields=id,name,inactiveFlag`,
+      { creds: this.creds() },
     );
     return rows.map((r) => ({ id: String(r.id), name: r.name, inactive: Boolean(r.inactiveFlag) }));
   }
@@ -262,6 +483,7 @@ export class ManageCwClient implements CwClient {
       {
         method: "POST",
         body: JSON.stringify({ name: "Vessel", addressLine1: "(Vessel's current location unknown)" }),
+        creds: this.creds(),
       },
     );
     return { id: String(created.id), name: created.name, inactive: Boolean(created.inactiveFlag) };
@@ -278,6 +500,38 @@ export class ManageCwClient implements CwClient {
     await cwFetch(`/company/companies/${companyId}/sites/${siteId}`, {
       method: "PATCH",
       body: JSON.stringify(ops),
+      creds: this.creds(),
     });
+  }
+
+  // Calls the module-level function of the same name above (not a recursive
+  // self-call) — unlike this file's other list*/query* pairs, this one has
+  // no separate module-level name since there's no other caller for it yet.
+  async listPurchaseOrderStatuses(): Promise<string[]> {
+    return listPurchaseOrderStatuses(this.creds());
+  }
+
+  async listShippingRequestTickets(): Promise<ShippingRequestTicket[]> {
+    return listShippingRequestTickets(this.creds());
+  }
+
+  async getShippingRequestProductCounts(ticketIds: number[]): Promise<Map<number, number>> {
+    return getShippingRequestProductCounts(ticketIds, this.creds());
+  }
+
+  async getShipmentTicket(ticketId: number): Promise<ShipmentTicketDetail | null> {
+    return getShipmentTicket(ticketId, this.creds());
+  }
+
+  async listBoardStatuses(boardId: number): Promise<CwBoardStatus[]> {
+    return listBoardStatuses(boardId, this.creds());
+  }
+
+  async updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number): Promise<void> {
+    return updateTicketStatus(ticketId, ticketType, statusId, this.creds());
+  }
+
+  async uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string): Promise<number> {
+    return uploadTicketDocument(ticketId, pdfBytes, filename, title, this.creds());
   }
 }

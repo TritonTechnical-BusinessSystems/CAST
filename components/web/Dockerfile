@@ -23,3 +23,7 @@ FROM nginx:1.27-alpine
 COPY components/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/components/web/dist /usr/share/nginx/html
 EXPOSE 80
+# Internal-only plain-HTTP listener for the api container's Playwright PDF
+# render (nginx.conf's `listen 8080` block) — not published to the host in
+# docker-compose.yml's `ports:`, this only documents intent.
+EXPOSE 8080

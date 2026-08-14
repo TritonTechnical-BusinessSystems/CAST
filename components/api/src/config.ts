@@ -90,6 +90,27 @@ export const config = {
    * unaffected either way.
    */
   cwWritesEnabled: (env.CW_WRITES_ENABLED ?? "false").toLowerCase() === "true",
+
+  /**
+   * TrackingMore — shipment tracking data source (INIT-0018). REST API, the
+   * key is a server-side secret sent as the `Tracking-Api-Key` header.
+   * Docs: https://www.trackingmore.com/docs/trackingmore/.
+   */
+  trackingmoreBaseUrl: env.CAST_TRACKINGMORE_BASE_URL ?? "https://api.trackingmore.com/v4",
+  trackingmoreApiKey: env.CAST_TRACKINGMORE_API_KEY ?? "",
+
+  /**
+   * Where Playwright (PDF generation, INIT-0026 Phase 3) reaches the live
+   * SPA from *inside* this process — mirrors LC's own `pdf_service.py`
+   * pattern exactly, right down to the port: `nginx.conf` has a dedicated
+   * internal-only `listen 8080` block (not published to the host) precisely
+   * because the public port 443 block's certificate is issued for
+   * `cast.tritontechnical.com`, not the internal Docker DNS name `web`, and
+   * port 80 would just redirect into that same certificate mismatch. Override
+   * for local dev, where there's no `web` container — point it at the Vite
+   * dev server (`http://localhost:5173`) instead.
+   */
+  internalWebUrl: env.CAST_INTERNAL_WEB_URL ?? "http://web:8080",
 } as const;
 
 // Fail fast rather than silently signing sessions with a public default secret —
@@ -113,6 +134,10 @@ export function aisstreamConfigured(): boolean {
 
 export function cwConfigured(): boolean {
   return Boolean(config.cwCompany && config.cwPublicKey && config.cwPrivateKey && config.cwClientId);
+}
+
+export function trackingmoreConfigured(): boolean {
+  return Boolean(config.trackingmoreApiKey);
 }
 
 const CW_WRITES_SETTING_KEY = "cwWritesEnabled";

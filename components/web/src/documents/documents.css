@@ -1,0 +1,171 @@
+/**
+ * Standalone print-document styling (INIT-0026 Phase 3) — deliberately NOT
+ * built from CAST's app-chrome design tokens (styles/tokens.css). A
+ * Commercial Invoice / Packing List is a business document representing
+ * Triton to an outside recipient, not a CAST dashboard screen — it needs a
+ * plain, neutral, printable look (black on white), not the app's branded
+ * dark-navy palette. Scoped entirely to `documents/` — never imported by
+ * app-chrome pages.
+ */
+.doc-page {
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.doc-page.doc-zoom {
+  transform-origin: top left;
+}
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 8px;
+}
+.doc-logo {
+  max-height: 48px;
+  max-width: 180px;
+  object-fit: contain;
+}
+.doc-title-block {
+  text-align: right;
+}
+.doc-title {
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+.doc-ref {
+  color: #555;
+  font-size: 10px;
+}
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.doc-card {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+.doc-card-header {
+  font-weight: bold;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.doc-card-body {
+  line-height: 1.4;
+}
+.doc-value {
+  display: inline-block;
+}
+.doc-input {
+  width: 100%;
+  border: 1px solid #bbb;
+  border-radius: 2px;
+  padding: 1px 3px;
+  font: inherit;
+  background: #fffef0;
+}
+.doc-input-multiline {
+  min-height: 3em;
+  resize: vertical;
+}
+.doc-flag-banner {
+  border-left: 4px solid #999;
+  padding: 4px 8px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+.doc-table th {
+  text-align: left;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #555;
+  border-bottom: 1px solid #999;
+  padding: 3px 4px;
+}
+.doc-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 3px 4px;
+  vertical-align: top;
+}
+.doc-table .doc-num {
+  text-align: right;
+  white-space: nowrap;
+}
+.doc-modified {
+  color: #7c3aed;
+}
+.doc-serials {
+  color: #666;
+  font-size: 9px;
+  margin-top: 2px;
+}
+.doc-group-header {
+  font-weight: bold;
+  background: #f3f3f3;
+}
+.doc-group-header.doc-group-sub {
+  padding-left: 16px;
+  font-weight: normal;
+  font-style: italic;
+}
+.doc-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+.doc-footer-row > .doc-export-statement {
+  width: 55%;
+}
+.doc-total {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: right;
+}
+.doc-signature {
+  margin-top: 40px;
+  border-top: 1px solid #333;
+  width: 260px;
+  padding-top: 4px;
+  font-size: 9px;
+  color: #555;
+}
+.doc-address-block {
+  white-space: pre-line;
+}
+.doc-checkbox-label {
+  font-weight: normal;
+  text-transform: none;
+  font-size: 9px;
+}
+.doc-empty-cell {
+  text-align: center;
+  color: #888;
+}
+.doc-error {
+  padding: 40px;
+  text-align: center;
+  color: #b00;
+  font-family: Arial, sans-serif;
+}

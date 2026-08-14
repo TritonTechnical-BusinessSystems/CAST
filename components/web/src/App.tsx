@@ -5,8 +5,14 @@ import { Download } from "./pages/Download";
 import { Login } from "./pages/Login";
 import { Extension } from "./pages/Extension";
 import { VesselTracking } from "./pages/VesselTracking";
+import { Logistics } from "./pages/Logistics";
+import { LogisticsConfig } from "./pages/LogisticsConfig";
+import { LogisticsShipments } from "./pages/LogisticsShipments";
+import { LogisticsShipment } from "./pages/LogisticsShipment";
 import { Integrations } from "./pages/Integrations";
 import { SystemHealth } from "./pages/SystemHealth";
+import { PrintCI } from "./pages/PrintCI";
+import { PrintPL } from "./pages/PrintPL";
 
 /** Gate the authenticated app; bounce to /login when there's no session. */
 function RequireAuth() {
@@ -33,9 +39,18 @@ export function App() {
     <Routes>
       <Route path="/download" element={<Download />} />
       <Route path="/login" element={<Login />} />
+      {/* No Layout/RequireAuth wrapper — reached only by the backend's internal
+          Playwright render (pdf/render.ts), which carries its own short-lived
+          service session cookie rather than an interactive login. */}
+      <Route path="/print/ci/:id" element={<PrintCI />} />
+      <Route path="/print/pl/:id" element={<PrintPL />} />
       <Route element={<RequireAuth />}>
         <Route path="/extension" element={<Extension />} />
         <Route path="/vessel-tracking" element={<VesselTracking />} />
+        <Route path="/logistics" element={<Logistics />} />
+        <Route path="/logistics/config" element={<LogisticsConfig />} />
+        <Route path="/logistics/shipments" element={<LogisticsShipments />} />
+        <Route path="/logistics/shipment/:id" element={<LogisticsShipment />} />
         {/* Legacy per-page paths now live as tabs under /vessel-tracking (keep the tab). */}
         <Route path="/vessel" element={<Navigate to="/vessel-tracking?tab=location" replace />} />
         <Route path="/vessel-identity" element={<Navigate to="/vessel-tracking?tab=identity" replace />} />

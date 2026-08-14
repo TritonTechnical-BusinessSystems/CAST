@@ -22,6 +22,9 @@ export const IconGrid = (p: P) => (
 export const IconShip = (p: P) => (
   <svg {...svg(p)}><path d="M3 15l1.5 5.5a2 2 0 0 0 2 1.5h11a2 2 0 0 0 2-1.5L21 15" /><path d="M5 15V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6" /><path d="M12 3v4M8 15V7M16 15V7" /></svg>
 );
+export const IconPackage = (p: P) => (
+  <svg {...svg(p)}><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></svg>
+);
 export const IconRoute = (p: P) => (
   <svg {...svg(p)}><circle cx="6" cy="19" r="2" /><circle cx="18" cy="5" r="2" /><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6" /></svg>
 );

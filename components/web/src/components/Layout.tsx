@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Button } from "../ui";
-import { IconGrid, IconShip, IconPlug, IconActivity, IconLogout, IconMenu } from "../ui/Icons";
+import { IconGrid, IconShip, IconPackage, IconPlug, IconActivity, IconLogout, IconMenu } from "../ui/Icons";
 
 const groups = [
   {
@@ -10,6 +10,7 @@ const groups = [
     items: [
       { href: "/extension", label: "Browser Extension", icon: IconGrid },
       { href: "/vessel-tracking", label: "Vessel Tracking", icon: IconShip },
+      { href: "/logistics", label: "Logistics", icon: IconPackage },
     ],
   },
   {

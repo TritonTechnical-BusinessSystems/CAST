@@ -65,6 +65,58 @@ export const RoleConfig = z.object({
 export type RoleConfig = z.infer<typeof RoleConfig>;
 
 /**
+ * Canonical, semantic visual-element name (e.g. "pod", "podHeader") — CAST's
+ * own vocabulary for elements of the ConnectWise UI, not ConnectWise's own.
+ * ConnectWise has no stable semantic layer (the same visual "pod" shows up as
+ * `div.podborder`, `table.podborder`, or `.myactivities` depending on the
+ * screen) — the extension's selector registry (content.js) maps each of
+ * these names to every raw CW selector known to resolve to it. This schema
+ * only ever sees the canonical name and its token values, never raw
+ * selectors, so the customization UI (INIT-0008) never has to show CSS.
+ * Left open (not an enum): new components get discovered as more CW screens
+ * are covered — see knowledge/architecture/browser-extension.md §9.
+ */
+export const SkinComponentName = z.string().min(1);
+
+/**
+ * Customizable visual properties for one skin component. All optional —
+ * an unset field falls back to the extension's built-in default for that
+ * component, so a partial override (e.g. just `borderRadius`) is valid.
+ */
+export const SkinTokenValues = z
+  .object({
+    background: z.string(),
+    color: z.string(),
+    border: z.string(),
+    borderBottom: z.string(),
+    borderRadius: z.string(),
+    boxShadow: z.string(),
+    fontFamily: z.string(),
+    fontWeight: z.string(),
+    fontStretch: z.string(),
+    /** CSS `font-optical-sizing` ("auto" | "none") — only meaningful for a
+     * variable font whose axes include `opsz` (e.g. Inter); ignored (not an
+     * error) by fonts that don't expose that axis. */
+    fontOpticalSizing: z.string(),
+  })
+  .partial();
+export type SkinTokenValues = z.infer<typeof SkinTokenValues>;
+
+/**
+ * The full-app visual skin — one token set per canonical component, applied
+ * everywhere that component's selector registry matches. Independent of the
+ * hide/show/order/move rule engine above (`RuleSet`): the skin is always-on
+ * visual restyling, not role/department-scoped structural change.
+ */
+export const Skin = z.object({
+  /** Skin version tag, separate from the rules `version` — a font/color
+   * tweak shouldn't require re-tagging unrelated role rules. */
+  version: z.string().min(1),
+  components: z.record(SkinComponentName, SkinTokenValues).default({}),
+});
+export type Skin = z.infer<typeof Skin>;
+
+/**
  * The complete config the extension fetches and applies.
  * `version` is the settings/rules tag reported in the check-in catalog
  * (extension-telemetry-and-identity.md §3).
@@ -76,6 +128,9 @@ export const CastConfig = z.object({
   departments: z.record(z.string(), ScreenScopedRules).default({}),
   /** Role-specific configuration, keyed by security role name. */
   roles: z.record(z.string(), RoleConfig).default({}),
+  /** Full-app visual skin — optional; the extension falls back to its
+   * built-in defaults for any component (or the whole skin) left unset. */
+  skin: Skin.optional(),
 });
 export type CastConfig = z.infer<typeof CastConfig>;
 

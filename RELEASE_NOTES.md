@@ -4,6 +4,28 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.9.0 — August 2026
+
+CAST gains a new home base: a Logistics section that can generate shipping paperwork, with the ConnectWise Sandbox now fully isolated from Production.
+
+## Highlights
+
+- **Logistics has arrived in CAST.** A new workspace section covers the first phases of bringing the standalone shipping-prep tool natively into CAST: shared configuration (shippers, carriers, currencies, export statements, CI flags), a live list of open ConnectWise Shipping Requests, a shipment detail page, and — the headline piece — generating a Commercial Invoice or Packing List PDF and posting it straight to the ConnectWise ticket.
+- **Production and Sandbox can now be used at the same time, safely.** Every Logistics feature is scoped to a specific ConnectWise instance, and CAST will refuse to touch an instance it doesn't have credentials for rather than ever guessing — so testing against Sandbox can never accidentally reach real Production data.
+- **The invoice/packing-list editor is the same screen as the PDF.** Edit the shipper, consignee, pricing, and line-item details right on screen, and the PDF you export or post to ConnectWise is exactly what you see — no separate template that can drift out of sync.
+
+## Fixes
+
+- A delete button anywhere in the app (Configuration's companies/carriers/currencies/etc.) could silently fail to refresh its list even though the deletion actually went through — fixed.
+- Confirmed a suspected AIS field-naming bug from the previous release was a false alarm and reverted the change — the original field name was correct all along.
+
+## For the power users
+
+- Logistics document generation hasn't been checked against real production ConnectWise yet — it's been verified end-to-end against a stand-in test server, with the real check pending live ConnectWise credentials for the Sandbox instance.
+- The Assembly (drag-and-drop packing) workspace — the piece that actually fills in a shipment's boxes and pallets — is next; today's Documents tab will show "no items packed yet" until that lands.
+
+---
+
 # What's New in v0.8.0 — August 2026
 
 CAST now actually watches vessels live and writes what it sees back into ConnectWise — the AIS monitor is fully working, not just the plan for one.

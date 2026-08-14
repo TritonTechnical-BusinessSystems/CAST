@@ -6,6 +6,7 @@ export { Spinner } from "./Spinner";
 export { Banner } from "./Banner";
 export { Field, Input, Select, Textarea, Checkbox } from "./Field";
 export { Table } from "./Table";
+export { SortableHeaderCell } from "./SortableHeaderCell";
 export { EmptyState } from "./EmptyState";
 export { PageHeader } from "./PageHeader";
 export { Tabs } from "./Tabs";

@@ -48,6 +48,14 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # 8080 is nginx.conf's internal-only plain-HTTP listener (the `api`
+    # container's Playwright PDF render reaches this SPA through it, see
+    # config.ts's internalWebUrl) — deliberately NOT in `ports:` above, so
+    # it's only reachable from other containers on the `internal` network,
+    # never from the host/internet. `expose` is self-documentation only
+    # (Compose's user-defined bridge already allows this without it).
+    expose:
+      - "8080"
     volumes:
       # Certs from the host (acme-dns DNS-01 / self-signed interim), read-only.
       - /etc/letsencrypt:/etc/letsencrypt:ro
