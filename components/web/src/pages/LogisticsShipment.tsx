@@ -4,6 +4,7 @@ import { api } from "../api";
 import { Badge, Banner, Button, EmptyState, IconPackage, Select, Spinner, Tabs, useToast } from "../ui";
 import type { TabDef } from "../ui";
 import { useTabParam } from "../useTabParam";
+import { useLogisticsInstance } from "../useLogisticsInstance";
 import { LogisticsShipmentDocuments } from "./LogisticsShipmentDocuments";
 
 interface ShipmentTicketDetail {
@@ -65,7 +66,9 @@ export function LogisticsShipment() {
     "packing",
   );
 
-  const [instance] = useState<string>(() => localStorage.getItem("cast.logistics.instance") ?? "tritontech");
+  // `?instance=` takes priority (an embed link needs to be self-contained —
+  // see useLogisticsInstance) over whatever this browser last had stored.
+  const [instance] = useLogisticsInstance("tritontech");
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [ticket, setTicket] = useState<ShipmentTicketDetail | null>(null);
   const [notFound, setNotFound] = useState(false);

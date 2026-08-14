@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useLogisticsInstance } from "../useLogisticsInstance";
 import { Card, CardHeader, CardBody, Field, Select, Input, Checkbox, Button, Banner, Spinner, useToast } from "../ui";
 
 interface CwInstance {
@@ -15,19 +16,19 @@ interface ReceivingSettings {
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const INSTANCE_STORAGE_KEY = "cast.logistics.instance";
 
 /**
  * Genuinely per-CW-instance, unlike every other Configuration section — PO
  * statuses are CW-instance-specific data (INIT-0026's hard safety design:
  * the instance is always an explicit, visible selection, never inferred).
- * Shares the same instance-selection localStorage key as the Logistics
- * landing page's toggle, so the choice is consistent across the app.
+ * Shares the same instance-selection mechanism (URL `?instance=` first, then
+ * localStorage) as the Logistics landing page's toggle and the Shipments
+ * list, so a copied embed link deep-linking to `?tab=receiving` works too.
  */
 export function LogisticsConfigReceiving() {
   const toast = useToast();
   const [instances, setInstances] = useState<CwInstance[] | null>(null);
-  const [instance, setInstance] = useState<string>(() => localStorage.getItem(INSTANCE_STORAGE_KEY) ?? "");
+  const [instance, setInstance] = useLogisticsInstance();
   const [settings, setSettings] = useState<ReceivingSettings | null>(null);
   const [poStatuses, setPoStatuses] = useState<string[] | null>(null);
   const [poStatusError, setPoStatusError] = useState<string | null>(null);
@@ -46,7 +47,6 @@ export function LogisticsConfigReceiving() {
 
   useEffect(() => {
     if (!instance) return;
-    localStorage.setItem(INSTANCE_STORAGE_KEY, instance);
     setSettings(null);
     setPoStatuses(null);
     setPoStatusError(null);

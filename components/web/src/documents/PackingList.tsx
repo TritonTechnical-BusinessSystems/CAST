@@ -4,8 +4,6 @@ import { EditField, SelectField, DocCard, PrintModeProvider } from "./DocumentFi
 import { UM_ABBR } from "./types";
 import type { PackingListData, Shipment, Company, CwTicketDetail, PlItem } from "./types";
 
-const INCOTERMS = ["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS", "FOB", "CFR", "CIF"];
-
 function addressBlock(c: Company): string {
   if (c.address_block) return c.address_block;
   return [c.address_line1, c.address_line2, [c.city, c.state, c.zip].filter(Boolean).join(", "), c.country].filter(Boolean).join("\n");
@@ -37,6 +35,7 @@ export function PackingList({
   ticket,
   companies,
   carriers,
+  incoterms,
   onSaveShipment,
   printMode = false,
   zoom = 1,
@@ -46,6 +45,7 @@ export function PackingList({
   ticket: CwTicketDetail | null;
   companies: Company[];
   carriers: string[];
+  incoterms: string[];
   onSaveShipment: (patch: Partial<Shipment>) => void;
   printMode?: boolean;
   zoom?: number;
@@ -149,7 +149,7 @@ export function PackingList({
                 <tr>
                   <td>Incoterm</td>
                   <td>
-                    <SelectField value={shipment.incoterm ?? ""} options={INCOTERMS} onSave={(v) => onSaveShipment({ incoterm: v })} />
+                    <SelectField value={shipment.incoterm ?? ""} options={incoterms} onSave={(v) => onSaveShipment({ incoterm: v })} />
                   </td>
                   <td>Carrier</td>
                   <td>

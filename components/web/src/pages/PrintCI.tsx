@@ -67,6 +67,7 @@ export function PrintCI() {
       companies={[]}
       carriers={[]}
       currencies={[]}
+      incoterms={[]}
       presets={[]}
       onSaveShipment={noop}
       onPatchLineItem={noop}

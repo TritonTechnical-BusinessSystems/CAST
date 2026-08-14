@@ -37,6 +37,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
   const [companies, setCompanies] = useState<Company[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [incoterms, setIncoterms] = useState<string[]>([]);
   const [ciFlags, setCiFlags] = useState<CiFlagOpt[]>([]);
   const [presets, setPresets] = useState<Preset[]>([]);
   const [ledger, setLedger] = useState<DocumentLedgerRow[]>([]);
@@ -47,6 +48,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
     api.get<Company[]>("/logistics/config/companies").then(setCompanies).catch(() => {});
     api.get<Carrier[]>("/logistics/config/carriers").then(setCarriers).catch(() => {});
     api.get<Currency[]>("/logistics/config/currencies").then(setCurrencies).catch(() => {});
+    api.get<string[]>("/logistics/config/incoterms").then(setIncoterms).catch(() => {});
     api.get<CiFlagOpt[]>("/logistics/config/ci-flags").then(setCiFlags).catch(() => {});
     api.get<Preset[]>("/logistics/config/export-presets").then(setPresets).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +209,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
             companies={companies}
             carriers={carriers.map((c) => c.name)}
             currencies={currencies.map((c) => c.code)}
+            incoterms={incoterms}
             presets={presets}
             onSaveShipment={patchShipment}
             onPatchLineItem={patchLineItem}
@@ -216,7 +219,16 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
       ) : !plData ? (
         <Spinner />
       ) : (
-        <PackingList data={plData} shipment={plData.shipment} ticket={ticket} companies={companies} carriers={carriers.map((c) => c.name)} onSaveShipment={patchShipment} zoom={zoom} />
+        <PackingList
+          data={plData}
+          shipment={plData.shipment}
+          ticket={ticket}
+          companies={companies}
+          carriers={carriers.map((c) => c.name)}
+          incoterms={incoterms}
+          onSaveShipment={patchShipment}
+          zoom={zoom}
+        />
       )}
     </div>
   );

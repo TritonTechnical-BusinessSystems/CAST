@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useSortFilter } from "../useSortFilter";
+import { useLogisticsInstance } from "../useLogisticsInstance";
 import { PageHeader, Card, CardBody, Table, SortableHeaderCell, Field, Select, Badge, Banner, Spinner, Button, EmptyState, IconPackage } from "../ui";
 
 interface CwInstance {
@@ -20,8 +21,6 @@ interface ShippingRequestTicket {
   statusName: string;
   requiredDate: string | null;
 }
-
-const INSTANCE_STORAGE_KEY = "cast.logistics.instance";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -42,7 +41,7 @@ function formatDate(iso: string | null): string {
 export function LogisticsShipments() {
   const navigate = useNavigate();
   const [instances, setInstances] = useState<CwInstance[] | null>(null);
-  const [instance, setInstance] = useState<string>(() => localStorage.getItem(INSTANCE_STORAGE_KEY) ?? "");
+  const [instance, setInstance] = useLogisticsInstance();
   const [tickets, setTickets] = useState<ShippingRequestTicket[] | null>(null);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [countsLoading, setCountsLoading] = useState(false);
@@ -62,7 +61,6 @@ export function LogisticsShipments() {
 
   useEffect(() => {
     if (!instance) return;
-    localStorage.setItem(INSTANCE_STORAGE_KEY, instance);
     setLoading(true);
     setError(null);
     setTickets(null);
@@ -159,7 +157,11 @@ export function LogisticsShipments() {
                   </thead>
                   <tbody>
                     {filtered.map((t) => (
-                      <tr key={`${t.ticketType}-${t.id}`} className="row-clickable" onClick={() => navigate(`/logistics/shipment/${t.id}`)}>
+                      <tr
+                        key={`${t.ticketType}-${t.id}`}
+                        className="row-clickable"
+                        onClick={() => navigate(`/logistics/shipment/${t.id}?instance=${encodeURIComponent(instance)}`)}
+                      >
                         <td>{t.id}</td>
                         <td>{t.companyName || <span className="hint">—</span>}</td>
                         <td>{t.summary}</td>

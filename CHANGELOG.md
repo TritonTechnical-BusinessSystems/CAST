@@ -10,6 +10,12 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.9.1 — build 2608020 — 2026-08-14T18:09:11Z
+
+### Fixed
+- [UX] Logistics' "Copy embed link" produced the identical URL regardless of which CW instance (Production/Sandbox) was selected — the link never encoded the instance at all, and none of the destination pages (Outbound Shipments, Shipment Detail, Receiving settings) read it back from the URL either, only from this browser's own `localStorage` — so even a correctly-built link would land on the wrong instance the moment it was opened somewhere without matching local state, which defeats the entire point of an embed link. New shared `useLogisticsInstance` hook (URL `?instance=` takes priority, `localStorage` is the fallback for direct dev/test nav) now backs all four instance-aware Logistics pages; verified live by clearing `localStorage` entirely and opening a copied Sandbox link fresh.
+- [Frontend] The Commercial Invoice and Packing List editors each hardcoded their own independent copy of the Incoterms list instead of using `GET /api/logistics/config/incoterms` (built in Phase 1 specifically to centralize this) — found while auditing for the same "duplicated instead of centralized" pattern as the fix above. Now threaded through as a prop from a real fetch, like every other Configuration-driven option list on those two components.
+
 ## v0.9.0 — build 2608019 — 2026-08-14T16:16:24Z
 
 ### Added

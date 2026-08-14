@@ -48,5 +48,5 @@ export function PrintPL() {
   if (!data) return null;
 
   const noop = () => {};
-  return <PackingList data={data} shipment={data.shipment} ticket={ticket} companies={[]} carriers={[]} onSaveShipment={noop} printMode />;
+  return <PackingList data={data} shipment={data.shipment} ticket={ticket} companies={[]} carriers={[]} incoterms={[]} onSaveShipment={noop} printMode />;
 }

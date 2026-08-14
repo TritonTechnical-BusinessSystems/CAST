@@ -3,8 +3,6 @@ import { EditField, SelectField, DocCard, PrintModeProvider } from "./DocumentFi
 import { UM_ABBR } from "./types";
 import type { InvoiceData, Shipment, Company, CwTicketDetail, CiLineItem } from "./types";
 
-const INCOTERMS = ["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS", "FOB", "CFR", "CIF"];
-
 /** manual→manual_price, catalog_msrp→msrp, catalog_price→catalog_price, avg_sold→avg_unit_price, else (max_sold/default)→max_unit_price ?? unit_price. */
 function getEffectivePrice(item: CiLineItem): number | null {
   switch (item.price_source) {
@@ -40,6 +38,7 @@ export function CommercialInvoice({
   companies,
   carriers,
   currencies,
+  incoterms,
   presets,
   onSaveShipment,
   onPatchLineItem,
@@ -52,6 +51,7 @@ export function CommercialInvoice({
   companies: Company[];
   carriers: string[];
   currencies: string[];
+  incoterms: string[];
   presets: { id: number; name: string; content: string }[];
   onSaveShipment: (patch: Partial<Shipment>) => void;
   onPatchLineItem: (cwProductId: number, patch: Partial<CiLineItem>) => void;
@@ -163,7 +163,7 @@ export function CommercialInvoice({
                 <tr>
                   <td>Incoterm</td>
                   <td>
-                    <SelectField value={shipment.incoterm ?? ""} options={INCOTERMS} onSave={(v) => onSaveShipment({ incoterm: v })} />
+                    <SelectField value={shipment.incoterm ?? ""} options={incoterms} onSave={(v) => onSaveShipment({ incoterm: v })} />
                   </td>
                   <td>Currency</td>
                   <td>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useLogisticsInstance } from "../useLogisticsInstance";
 import { PageHeader, Card, CardHeader, CardBody, Field, Select, Badge, Banner, Spinner, Button, Table, useToast } from "../ui";
 
 interface CwInstance {
@@ -14,8 +15,6 @@ interface EmbeddablePage {
   built: boolean;
   note?: string;
 }
-
-const INSTANCE_STORAGE_KEY = "cast.logistics.instance";
 
 /**
  * Every Logistics view a CW Custom Menu Entry Link can point at. Update this
@@ -46,7 +45,7 @@ export function Logistics() {
   const toast = useToast();
   const [instances, setInstances] = useState<CwInstance[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string>(() => localStorage.getItem(INSTANCE_STORAGE_KEY) ?? "");
+  const [selected, onSelect] = useLogisticsInstance();
 
   useEffect(() => {
     api
@@ -55,20 +54,12 @@ export function Logistics() {
         setInstances(rows);
         if (!selected) {
           const def = rows.find((r) => r.isDefault) ?? rows[0];
-          if (def) {
-            setSelected(def.id);
-            localStorage.setItem(INSTANCE_STORAGE_KEY, def.id);
-          }
+          if (def) onSelect(def.id);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load CW instances"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const onSelect = (id: string) => {
-    setSelected(id);
-    localStorage.setItem(INSTANCE_STORAGE_KEY, id);
-  };
 
   return (
     <div className="col gap-4">
@@ -131,7 +122,7 @@ export function Logistics() {
                         size="sm"
                         disabled={!p.built}
                         onClick={() => {
-                          navigator.clipboard.writeText(`${location.origin}${p.route}?embed=1`);
+                          navigator.clipboard.writeText(`${location.origin}${p.route}?instance=${encodeURIComponent(selected)}&embed=1`);
                           toast("success", `Copied embed link for ${p.label}`);
                         }}
                       >
