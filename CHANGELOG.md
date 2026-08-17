@@ -10,6 +10,18 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.9.2 — build 2608022 — 2026-08-17T21:12:40Z
+
+### Fixed
+- [Backend] **The AIS listener could never read a single message — aisstream sends binary WebSocket frames, and we were parsing them as text.** Node's native `WebSocket` hands a binary frame back as a `Blob`, so `aisListener.ts`'s `JSON.parse(String(ev.data))` was parsing the literal string `"[object Blob]"` and throwing on every message ever received. Now sets `binaryType = "arraybuffer"` and decodes explicitly (still accepting text frames if the server ever sends them). This is a **separate defect from the aisstream outage** that ran 2026-08-05 → mid-August and was blamed for the same symptom: both were real at once, and the outage ended first. Proven before changing any code — `vessel_positions` had **0 rows, ever**, on production (while `checkins` had 5, ruling out the database), and a probe run *inside the production `cast-api` container* returned live `PositionReport`/`ShipStaticData` frames whose `ev.data` was a `Blob` under the container's own Node 22. Verified fixed end to end by running the real listener module against the live feed with the production key and the real 50 Tier 1 MMSIs: 5 frames, 0 parse failures, 5 positions stored with real coordinates and nav status. Note this is *not* a field-name or protocol-format problem — v0.8.2's field-name cross-check was and remains correct; this sits a layer below it, at frame encoding.
+- [Backend] **The message-rate gauges counted only messages that parsed successfully**, which is what let the bug above hide for six days: an unreadable feed and a dead feed rendered byte-for-byte identically (`0 msg/min, connected=true`). Frame counters now increment *before* parsing, so the gauge means "a frame landed", not "a frame parsed". (v0.8.1's changelog claim that "the message-count gauges increment before field parsing" was true of *field* parsing and false of *JSON* parsing — the distinction that mattered.)
+
+### Added
+- [Backend] New `parseFailuresTotal` gauge per AIS connection, surfaced in the 60-second status line as `badFrames=`, with a rate-limited warning (first failure, then every 100th). "Live feed we can't read" is now a distinct, visible state rather than one indistinguishable from an outage — the durable lesson being that a health gauge which only increments on the success path cannot report the failure it exists to catch.
+
+### Docs
+- [Docs] New §5 in `knowledge/architecture/vessel-location-updating-aisstream.md` recording the above, including the diagnostic guidance that follows from it: a *low* msg/min is normal (moored yachts transmit every few minutes — ~5 of 50 vessels reported in a 2-minute window), so read `badFrames` and the `vessel_positions` row count rather than message rate when judging listener health.
+
 ## v0.9.1.1 — build 2608021 — 2026-08-14T18:11:56Z
 
 ### Fixed

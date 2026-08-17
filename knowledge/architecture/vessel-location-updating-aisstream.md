@@ -2,7 +2,7 @@
 status: active
 read-when: Designing or building Vessel Location Updating (INIT-0012) — the AIS data source, the IMO→position pipeline, the Tier 1/Tier 2 priority split, or the ConnectWise status/location write-back.
 related: [cast-web-app-mockup.md, cast-web-app-vm-provisioning.md, ../decisions/0002-extension-never-touches-cw-credentials.md, ../conventions/naming-lexicon.md]
-updated: 2026-08-11
+updated: 2026-08-17
 ---
 
 # Vessel Location Updating — AIS data source (aisstream.io)
@@ -350,3 +350,67 @@ every angle triple-checked this session — request format, both coordinate
 orders, both key casings, with/without every optional field, even omitting
 the documented-required `BoundingBoxes` entirely, two client libraries, two
 keys — makes that unlikely).
+
+## 5. Resolved 2026-08-17 — the outage ended, and it was hiding a real CAST bug
+
+The prediction the previous section closed on ("if messages are still zero
+after aisstream confirms a fix, a protocol issue would be a live enough
+possibility to reopen debugging") is exactly what happened. **aisstream's
+outage was real, and CAST had an independent defect that would have produced
+the identical symptom on its own.** Both were true at once, which is why the
+first was such a convincing explanation for the second.
+
+**aisstream sends its JSON as BINARY WebSocket frames, not text frames.**
+Node's native `WebSocket` hands a binary frame back as a **`Blob`**, so
+`aisListener.ts`'s `JSON.parse(String(ev.data))` was parsing the literal
+string `"[object Blob]"` on every single message — throwing, and hitting the
+`catch { return }` before anything was recorded. **Not a field-name or
+protocol-format problem at all** (§4's field-name cross-check was and remains
+correct); a frame-encoding one, a layer below where all the previous
+debugging looked.
+
+**Why it stayed invisible for six days — the diagnostic was the bug's
+accomplice.** `onMessage` incremented its message counters *after* the
+`JSON.parse`, so an unreadable feed and a dead feed rendered byte-for-byte
+identically: `0 msg/min, connected=true`. (The `v0.8.1` changelog's claim
+that "the message-count gauges increment before field parsing" was true of
+*field* parsing and false of *JSON* parsing — the distinction that mattered.)
+Compounding it: the listener was written **2026-08-11, six days after the
+outage began**, so it never once ran against a working feed. There was no
+"it used to work" signal to contradict the outage explanation.
+
+**Proof it never worked**, gathered before any code changed: `vessel_positions`
+had **0 rows, ever**, on the production host — while `checkins` had 5, ruling
+out the database. And a probe with the production key run *from inside the
+`cast-api` container* returned real `PositionReport`/`ShipStaticData` frames
+whose `ev.data.constructor.name` was `Blob` — same result under the
+container's Node 22 as under Node 24, so this was never a version artifact.
+
+**Fix** (`components/api/src/vessels/aisListener.ts`):
+1. `ws.binaryType = "arraybuffer"` on every connection, then an explicit
+   `TextDecoder` decode (text frames still accepted if the server ever sends
+   one). ArrayBuffer over Blob deliberately: `Blob.text()` is async and would
+   have forced `onMessage` to become async, changing the ordering guarantees
+   of the processing-time gauge for no benefit.
+2. **Frame counters moved *before* the parse.** The gauge now means "a frame
+   landed", not "a frame parsed" — the distinction that cost six days.
+3. New **`parseFailuresTotal`** on `ConnState`, surfaced in the 60s summary
+   line as `badFrames=`, with a rate-limited warn (first failure, then every
+   100th). *Live feed we can't read* is now a distinct, visible state rather
+   than one indistinguishable from an outage. **This is the durable lesson:
+   a health gauge that only increments on the success path can't report the
+   failure it's there to catch.**
+
+**Verified end to end before shipping** — the real module (not a replica) run
+against the live feed in an isolated data dir with the production key and the
+real 50 Tier 1 MMSIs: **5 frames, 0 parse failures, 5 positions stored** with
+real coordinates and `navStatus=5` (moored). Fleet transmission is
+intermittent by nature (~5 of 50 vessels in a ~2-minute window) — moored
+yachts transmit every few minutes, exactly as §3.3's shore-biased-coverage
+note predicts. **Do not read a low msg/min as a fault**; read `badFrames` and
+`vessel_positions` row count instead.
+
+**Voyage-only rows are expected.** A `ShipStaticData`-only vessel creates a
+`vessel_positions` row via `upsertVoyage` with null lat/lon. `formatSiteUpdate`
+already returns null on those (and on the `unknown` bucket), so they cannot
+produce a CW write — checked, not assumed.

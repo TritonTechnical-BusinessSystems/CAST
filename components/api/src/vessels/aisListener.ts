@@ -56,6 +56,8 @@ export interface ConnState {
   messagesReceivedTotal: number;
   messagesReceivedLastMinute: number;
   reconnectCount: number;
+  /** Frames that arrived but could not be decoded/parsed. Non-zero here means the feed is live but we're not reading it — the one state that used to be indistinguishable from an outage. */
+  parseFailuresTotal: number;
   /** Time spent in onMessage (parse + upsert) — a direct "are we keeping up" gauge for this connection specifically. */
   avgProcessingMs: number;
   maxProcessingMs: number;
@@ -106,6 +108,7 @@ class AisConnection {
     messagesReceivedTotal: 0,
     messagesReceivedLastMinute: 0,
     reconnectCount: 0,
+    parseFailuresTotal: 0,
     avgProcessingMs: 0,
     maxProcessingMs: 0,
   };
@@ -141,6 +144,10 @@ class AisConnection {
   private connect(): void {
     if (this.stopped || this.mmsis.length === 0) return;
     const ws = new WebSocket(config.aisstreamWsUrl);
+    // aisstream sends its JSON as BINARY frames. Node's native WebSocket hands
+    // those back as a Blob by default, which only decodes asynchronously;
+    // "arraybuffer" keeps onMessage synchronous (see the decode there).
+    ws.binaryType = "arraybuffer";
     this.ws = ws;
 
     ws.addEventListener("open", () => {
@@ -182,18 +189,43 @@ class AisConnection {
 
   private onMessage(raw: unknown): void {
     const start = performance.now();
-    let data: AisEnvelope;
-    try {
-      data = JSON.parse(String(raw));
-    } catch {
-      return;
-    }
     const now = Date.now();
+
+    // Count the frame BEFORE decoding it. These gauges are the only outward
+    // signal that data is arriving at all, so they must mean "a frame landed",
+    // not "a frame parsed" — counting after the parse made an unreadable feed
+    // look byte-for-byte identical to a dead one (0 msg/min, connected=true),
+    // which is exactly how the binary-frame bug below hid behind an aisstream
+    // outage for days.
     this.state.lastMessageAt = new Date(now).toISOString();
     this.state.messagesReceivedTotal++;
     this.messageTimestamps.push(now);
     this.messageTimestamps = this.messageTimestamps.filter((t) => now - t < 60_000);
     this.state.messagesReceivedLastMinute = this.messageTimestamps.length;
+
+    // Frames are binary (ArrayBuffer, per binaryType in connect()) — String()
+    // on one yields "[object ArrayBuffer]", never JSON. Text frames are still
+    // accepted in case the server ever sends them.
+    let text: string;
+    if (typeof raw === "string") {
+      text = raw;
+    } else if (raw instanceof ArrayBuffer) {
+      text = new TextDecoder().decode(raw);
+    } else if (ArrayBuffer.isView(raw)) {
+      // Respect the view's own window into its buffer, not the whole buffer.
+      text = new TextDecoder().decode(new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength));
+    } else {
+      this.noteParseFailure(`undecodable frame of type ${typeof raw}`);
+      return;
+    }
+
+    let data: AisEnvelope;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      this.noteParseFailure(text.slice(0, 120));
+      return;
+    }
 
     const mmsi = data.MetaData?.MMSI;
     const pos = data.Message?.PositionReport ?? data.Message?.StandardClassBPositionReport;
@@ -227,6 +259,20 @@ class AisConnection {
     const durations = this.processingSamples.map(([, d]) => d);
     this.state.avgProcessingMs = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
     this.state.maxProcessingMs = durations.length ? Math.max(...durations) : 0;
+  }
+
+  /**
+   * Always counted, logged sparingly. A feed we can't read must never be
+   * silent again, but a persistently-broken one shouldn't flood the log
+   * either — so: the first failure, then every 100th.
+   */
+  private noteParseFailure(sample: string): void {
+    this.state.parseFailuresTotal++;
+    if (this.state.parseFailuresTotal === 1 || this.state.parseFailuresTotal % 100 === 0) {
+      console.warn(
+        `[ais-listener:${this.label}] unparseable frame (${this.state.parseFailuresTotal} total): ${sample}`,
+      );
+    }
   }
 }
 
@@ -311,8 +357,8 @@ export function startAisListener(): void {
 
   setInterval(() => {
     console.log(
-      `[ais-listener] tier1: ${tier1.state.messagesReceivedLastMinute} msg/min, ${tier1.state.subscribedMmsiCount} MMSIs, connected=${tier1.state.connected} | ` +
-        `tier2: ${tier2.state.messagesReceivedLastMinute} msg/min, batch ${tier2.state.batchIndex}/${tier2.state.batchCount}, connected=${tier2.state.connected}`,
+      `[ais-listener] tier1: ${tier1.state.messagesReceivedLastMinute} msg/min, ${tier1.state.subscribedMmsiCount} MMSIs, connected=${tier1.state.connected}, badFrames=${tier1.state.parseFailuresTotal} | ` +
+        `tier2: ${tier2.state.messagesReceivedLastMinute} msg/min, batch ${tier2.state.batchIndex}/${tier2.state.batchCount}, connected=${tier2.state.connected}, badFrames=${tier2.state.parseFailuresTotal}`,
     );
   }, 60_000);
 }
