@@ -2,7 +2,7 @@
 status: active
 read-when: Writing or reviewing ANY CAST web UI — a screen, a component, or a style. This is the anti-fragmentation contract.
 related: [../decisions/0007-web-app-design-system.md, cast-web-app-mockup.md]
-updated: 2026-07-23
+updated: 2026-08-17
 ---
 
 # CAST design system — rules + inventory
@@ -43,7 +43,8 @@ classes and 554 inline styles *before* it wrote the rules. We write them first.
 
 ## Primitive inventory (`ui/`)
 `Button` · `Card`(+Header/Body/Footer) · `Badge` · `StatusDot` · `Field`(+Input/Select/Textarea/Checkbox)
-· `Table` · `EmptyState` · `PageHeader` · `Tabs` · `Gauge` · `Modal` · `Toast`(+`useToast`) · `Banner` · `Spinner` · `Icons`.
+· `Table` · `EmptyState` · `PageHeader` · `Tabs` · `Gauge` · `Modal` · `Toast`(+`useToast`) · `Banner` · `Spinner`
+· `Disclosure` (collapsible header/body row, `v0.10.0` — Vessel Location's history tree) · `Icons`.
 
 **Adding a primitive:** class in `components.css` → thin component in `ui/` → export from `ui/index.ts`.
 

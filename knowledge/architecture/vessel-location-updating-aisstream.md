@@ -414,3 +414,38 @@ note predicts. **Do not read a low msg/min as a fault**; read `badFrames` and
 `vessel_positions` row via `upsertVoyage` with null lat/lon. `formatSiteUpdate`
 already returns null on those (and on the `unknown` bucket), so they cannot
 produce a CW write — checked, not assumed.
+
+## 6. Resolved 2026-08-17 (same day) — position history + the real Vessel Location UI (`INIT-0033`)
+
+With the frame-decode fix landing and real data finally flowing, `INIT-0033`'s
+storage/capture side was built the same day: a new insert-only
+`vessel_position_history` table (`components/api/src/store/db.ts`), written
+alongside every existing `vessel_positions` upsert
+(`positionStore.ts`'s `upsertPosition`/`upsertVoyage`) — one row per real
+update received, not a synthetic periodic snapshot (the fleet's actual
+observed delivery rate is sparse enough that this stays cheap indefinitely,
+per `INIT-0033`'s storage estimate).
+
+**The Vessel Location tab (`pages/Vessel.tsx`) is now real**, replacing the
+fully illustrative stub table it showed since scaffolding: a collapsible tree
+(new `Disclosure` primitive), one row per vessel with a Monitoring Tier
+assignment (Tier 1/2 — a Tracked Vessel with neither gets zero AIS coverage
+under the priority engine, so it's excluded here rather than padding the list
+with permanently-empty rows), alphabetical by vessel name. Each row's current
+status is produced by the SAME `formatSiteUpdate()` the real ConnectWise
+write path uses (`GET /api/vessels/tracked`), so the page can never drift
+from what a real write would produce. Expanding a vessel lazily fetches
+`GET /api/vessels/history/:mmsi?limit=N` (default 20, selectable 10/20/50/100)
+— raw per-entry facts (position: lat/lon/nav code/speed; voyage:
+destination/ETA), not reformatted through `formatSiteUpdate`, so a person can
+see exactly what arrived.
+
+**Real bug found and fixed via browser testing before shipping:** history was
+first sorted by insertion order (`id`), reasoned as robust against clock
+skew — but a position row's timestamp is the AIS station's own self-reported
+time, while a voyage row's is CAST's own receipt time, two clocks with no
+shared ordering guarantee. Seeded fixture data reproduced a visibly
+out-of-order row (a voyage entry above a more recent position entry) the
+first time the page was actually opened in a browser. Fixed to sort by the
+displayed `recorded_at` column instead, `id` only as a tiebreak — what's
+shown top-to-bottom is what determines the order a person reads it in.

@@ -35,10 +35,8 @@ db.exec(`
     last_check_in TEXT NOT NULL
   );
   -- Latest-known AIS position per vessel (INIT-0012) -- upserted continuously
-  -- by the WS listener, one row per MMSI. Latest-only, no history: same file
-  -- as everything else, not a separate database (see the architecture note's
-  -- "Position-history volume & storage" decision -- a history/time-series
-  -- store would be a distinct, separate concern, not built here).
+  -- by the WS listener, one row per MMSI. Same file as everything else, not a
+  -- separate database.
   CREATE TABLE IF NOT EXISTS vessel_positions (
     mmsi TEXT PRIMARY KEY,
     lat REAL, lon REAL, sog REAL, cog REAL,
@@ -51,6 +49,28 @@ db.exec(`
     eta_iso TEXT,
     voyage_updated_at TEXT
   );
+  -- One row per real AIS update received (INIT-0033) -- written alongside
+  -- every vessel_positions upsert, never overwritten. The kind column
+  -- distinguishes a PositionReport ("position": lat/lon/sog/cog/nav status)
+  -- from a ShipStaticData ("voyage": destination/ETA) -- the two arrive on
+  -- very different cadences and populate disjoint columns. This is real
+  -- received-message history, not synthetic periodic snapshots. NOT
+  -- unbounded: positionStore.ts's recordHistory() caps each MMSI at
+  -- HISTORY_ROWS_PER_MMSI, pruned periodically -- this table lives in the
+  -- same file as the encrypted secrets table, so its growth can't depend
+  -- solely on today's observed sparse AIS delivery rate (flagged in the
+  -- v0.10.0 security review).
+  CREATE TABLE IF NOT EXISTS vessel_position_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mmsi TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    lat REAL, lon REAL, sog REAL, cog REAL,
+    nav_status_code INTEGER,
+    destination TEXT,
+    eta_iso TEXT,
+    recorded_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_vessel_position_history_mmsi ON vessel_position_history(mmsi, id DESC);
   -- CW-instance registry (multi-instance support, INIT-0026's Logistics rebuild).
   -- Credentials are NOT stored here -- they live in the encrypted secrets table,
   -- keyed "connectwise:{id}" (see connectwise/creds.ts). This table is just the

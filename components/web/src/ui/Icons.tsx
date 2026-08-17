@@ -61,3 +61,6 @@ export const IconPin = (p: P) => (
 export const IconDownload = (p: P) => (
   <svg {...svg(p)}><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
 );
+export const IconChevronRight = (p: P) => (
+  <svg {...svg(p)}><path d="M9 6l6 6-6 6" /></svg>
+);

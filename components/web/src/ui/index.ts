@@ -13,5 +13,6 @@ export { Tabs } from "./Tabs";
 export type { TabDef } from "./Tabs";
 export { Gauge } from "./Gauge";
 export { Modal } from "./Modal";
+export { Disclosure } from "./Disclosure";
 export { ToastProvider, useToast } from "./Toast";
 export * from "./Icons";

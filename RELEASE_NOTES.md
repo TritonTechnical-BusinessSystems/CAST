@@ -4,6 +4,24 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.10.0 — August 2026
+
+Vessel Location finally shows real ships, not the sample data it's shown since day one — and the AIS pipeline underneath it turned out to have been silently broken since it was built.
+
+## Highlights
+
+- **Vessel Location is live.** Every vessel CAST is actively watching now shows up as a collapsible row — current status, current position in plain language ("Vessel docked in Antibes, France"), and an expandable history of everything received for it, most recent first. This is exactly the same text that would go into ConnectWise if writes were turned on, so it doubles as a preview before flipping that switch.
+- **CAST now remembers what it's seen.** Every real AIS update received is kept, not just the latest one — the foundation for answering "how long was this yacht actually in refit" and "which yards does this client keep coming back to," questions the live view alone can't answer.
+- **A six-day-old bug is fixed: the AIS feed was never actually being read.** aisstream.io sends its data as binary WebSocket frames; CAST was parsing them as text, so every single message failed silently since the listener was built. This looked identical to the well-documented aisstream service outage running at the same time — both were real, and the outage ending is what exposed the second problem. Confirmed fixed against live production traffic before anything shipped.
+
+## For the power users
+
+- ConnectWise writes remain switched off in production while the newly-fixed pipeline accumulates a track record — flip the switch in Integrations when ready.
+- Vessel Location currently shows only vessels with active AIS coverage (Monitoring Tier 1/2, roughly 60 at a time) — a Tracked Vessel with no open project or ticket work gets no AIS coverage at all under the existing priority engine, so it would only ever show an empty row.
+- A pre-release security check caught the new history table growing without limit on the same file as CAST's encrypted credential store — fixed before this shipped, no impact to any user.
+
+---
+
 # What's New in v0.9.0 — August 2026
 
 CAST gains a new home base: a Logistics section that can generate shipping paperwork, with the ConnectWise Sandbox now fully isolated from Production.

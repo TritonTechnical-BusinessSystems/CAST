@@ -10,6 +10,20 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.10.0 — build 2608023 — 2026-08-17T22:09:18Z
+
+### Added
+- [UX] **Vessel Location tab is now real** (`INIT-0012`, `INIT-0033`) — a collapsible tree, one row per vessel with live AIS coverage (Monitoring Tier 1/2), alphabetical by vessel name. Each row shows Tier, Navigational Status, and the exact text that would be written to that vessel's ConnectWise Vessel Site if writes were enabled (`formatSiteUpdate` — same function the real write path uses, so this page can never drift from what CW would actually see). Expanding a vessel lazily loads its most recent received updates (position and voyage messages, newest first); a "History per vessel" selector controls how many (10/20/50/100). Replaces the fully illustrative stub table this tab has shown since scaffolding — the old "Target Location" column header is gone (superseded terminology, `naming-lexicon.md`).
+- [Backend] **`vessel_position_history` table** (`INIT-0033`) — insert-only, one row per real AIS update received (not a synthetic periodic snapshot), written alongside every existing `vessel_positions` upsert. This is the first version of the fleet-history capture scoped in `INIT-0033`; nothing before this deploy is backfilled, since no history existed to backfill (the AIS listener only started successfully parsing messages this same day, `v0.9.2`).
+- [API] Two new endpoints: `GET /api/vessels/tracked` (every Tier 1/2 vessel with its current formatted status) and `GET /api/vessels/history/:mmsi?limit=N` (that vessel's most recent received updates, newest first).
+- [Design-System] New `Disclosure` primitive (`ui/Disclosure.tsx`) — a collapsible header/body row, the first reusable expand/collapse pattern in the app.
+
+### Fixed
+- [Backend] History rows initially sorted by insertion order (`id`), which could show an earlier-timestamped row above a later one — a position row's timestamp is the AIS station's own self-reported time, while a voyage row's is CAST's receipt time, two clocks with no shared ordering guarantee. Found live-testing the new Vessel Location tree in a browser before shipping (seeded fixture data reproduced it directly). Now sorts by the displayed `recorded_at` timestamp, with `id` only as a tiebreak.
+
+### Security
+- [Security] **Pre-release security gate findings, fixed before this release shipped** (independent review, `knowledge/conventions/versioning.md`'s MINOR-bump gate — verdict PASS, these were Medium/Low): `vessel_position_history` had no retention or row cap, growing unbounded on the same SQLite file as the encrypted secrets table and local accounts — a third party's message rate, not CAST's own code, would have decided that table's size. Now capped at 5,000 rows per MMSI, pruned periodically via the existing `(mmsi, id DESC)` index rather than a new scan. The two new read routes (`GET /vessels/tracked`, `GET /vessels/history/:mmsi`) and the two pre-existing ones in the same file used bare `requireAuth` where a `vessel.read` permission already exists elsewhere in the app — switched to `requirePermission("vessel.read")` for consistency (no behavior change for any current role, all of which already hold it; closes the gap for a future role that might not). The MMSI route param now requires exactly 9 digits (the real ITU-R M.1371 format), not just any digit string.
+
 ## v0.9.2 — build 2608022 — 2026-08-17T21:12:40Z
 
 ### Fixed

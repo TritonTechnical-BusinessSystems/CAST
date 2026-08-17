@@ -165,6 +165,16 @@
    floor above balloons just to fit one long comma-joined line. */
 .table.table-dense td.nowrap-cell { white-space: nowrap; }
 
+/* ===================== Disclosure (collapsible row, e.g. Vessel Location's history tree) ===================== */
+.disclosure { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.disclosure + .disclosure { margin-top: var(--space-2); }
+.disclosure-header { display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: var(--space-3) var(--space-4); border: none; background: none; cursor: pointer; text-align: left; font: inherit; color: inherit; border-radius: var(--radius-md); }
+.disclosure-header:hover { background: var(--color-surface-hover); }
+.disclosure-header-content { flex: 1; min-width: 0; }
+.disclosure-chevron { flex-shrink: 0; color: var(--color-text-muted); transition: transform var(--ease-fast); }
+.disclosure-chevron.open { transform: rotate(90deg); }
+.disclosure-body { padding: 0 var(--space-4) var(--space-4); border-top: 1px solid var(--color-border-subtle); }
+
 /* ===================== Empty state ===================== */
 .empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-12) var(--space-6); text-align: center; color: var(--color-text-muted); }
 .empty svg { width: 32px; height: 32px; opacity: 0.5; }
