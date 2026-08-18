@@ -1,140 +1,64 @@
-import { useEffect, useState } from "react";
-import { api } from "../api";
-import { useLogisticsInstance } from "../useLogisticsInstance";
-import { PageHeader, Card, CardHeader, CardBody, Field, Select, Badge, Banner, Spinner, Button, Table, useToast } from "../ui";
+import { PageHeader, Tabs } from "../ui";
+import type { TabDef } from "../ui";
+import { useTabParam } from "../useTabParam";
+import { LogisticsConfigBranding } from "./LogisticsConfigBranding";
+import { LogisticsConfigCarriers } from "./LogisticsConfigCarriers";
+import { LogisticsConfigCurrencies } from "./LogisticsConfigCurrencies";
+import { LogisticsConfigExportPresets } from "./LogisticsConfigExportPresets";
+import { LogisticsConfigCiFlags } from "./LogisticsConfigCiFlags";
+import { LogisticsConfigReceiving } from "./LogisticsConfigReceiving";
+import { LogisticsConfigEmbedLinks } from "./LogisticsConfigEmbedLinks";
 
-interface CwInstance {
-  id: string;
-  name: string;
-  isDefault: boolean;
-}
-
-interface EmbeddablePage {
-  label: string;
-  route: string;
-  built: boolean;
-  note?: string;
-}
-
-/**
- * Every Logistics view a CW Custom Menu Entry Link can point at. Update this
- * list's `built` flag as each rebuild phase lands a real route — this page
- * is the source of truth for what's embeddable today, not aspirational.
- */
-const EMBEDDABLE_PAGES: EmbeddablePage[] = [
-  { label: "Outbound Shipments", route: "/logistics/shipments", built: true },
-  { label: "Shipment Detail", route: "/logistics/shipment/:id", built: true, note: "Documents built; Packing is Phase 4" },
-  { label: "Receiving", route: "/logistics/receiving", built: false, note: "Phase 5" },
-  { label: "PO Drilldown", route: "/logistics/receiving/:poId", built: false, note: "Phase 6" },
-  { label: "Configuration", route: "/logistics/config", built: true },
+// Incoterms (LC's other config section) has no dedicated tab here — it's a
+// static 11-value reference list with nothing to configure, consumed
+// directly by shipment/document forms in later phases (`GET
+// /api/logistics/config/incoterms`), not a page a human visits.
+const tabs: TabDef[] = [
+  { id: "branding", label: "Ship As Companies" },
+  { id: "carriers", label: "Carriers" },
+  { id: "currencies", label: "Currencies" },
+  { id: "export-presets", label: "Export Presets" },
+  { id: "ci-flags", label: "CI Flags" },
+  { id: "receiving", label: "Receiving" },
+  { id: "embed-links", label: "Embed Links" },
 ];
 
 /**
- * Logistics landing page (INIT-0026's native rebuild of LogisticsCoordinator).
- *
- * Reframed 2026-08-14: day-to-day access to Logistics is via embedding these
- * pages inside ConnectWise (Custom Menu Entry Links), not direct navigation
- * — so this page's job is generating/copying those embed links, not being a
- * dashboard itself. Direct links to the underlying pages exist for dev/test
- * only, listed here alongside their embed counterparts.
- *
- * Embed-link generation depends on Phase 8's URL-secret-key auth mechanism,
- * not yet built — until then, "Copy embed link" is disabled per page.
+ * Logistics main page (INIT-0026's native rebuild of LogisticsCoordinator).
+ * Configuration is the default landing content — day-to-day *use* of
+ * Logistics (Outbound Shipments, Receiving once built) happens embedded
+ * inside ConnectWise via Custom Menu Entry Links, not by browsing here, so
+ * this page's job is configuring that shared setup + generating those embed
+ * links (the "Embed Links" tab), reorganized 2026-08-18 (was a standalone
+ * "/logistics/config" page one click away from the actual landing page —
+ * see the "/logistics/config" redirect in App.tsx for the old route).
  */
 export function Logistics() {
-  const toast = useToast();
-  const [instances, setInstances] = useState<CwInstance[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [selected, onSelect] = useLogisticsInstance();
-
-  useEffect(() => {
-    api
-      .get<CwInstance[]>("/logistics/instances")
-      .then((rows) => {
-        setInstances(rows);
-        if (!selected) {
-          const def = rows.find((r) => r.isDefault) ?? rows[0];
-          if (def) onSelect(def.id);
-        }
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load CW instances"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  const [active, setActive] = useTabParam(
+    tabs.map((t) => t.id),
+    "branding",
+  );
   return (
     <div className="col gap-4">
       <PageHeader
         title="Logistics"
-        subtitle="Embedded inside ConnectWise via Custom Menu Entry Links — this page generates those links. Direct access below is for development/testing only."
+        subtitle="Shared configuration for Outbound Shipments, Documents, and Receiving, plus ConnectWise embed links. Also reachable embedded from ConnectWise."
       />
-
-      {error && <Banner tone="danger">{error}</Banner>}
-
-      {!instances && !error && (
-        <Card>
-          <CardBody>
-            <Spinner /> Loading…
-          </CardBody>
-        </Card>
-      )}
-
-      {instances && (
-        <Card>
-          <CardHeader
-            title="Embed links"
-            action={
-              <Field label="Generate links for">
-                <Select value={selected} onChange={(e) => onSelect(e.target.value)}>
-                  {instances.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            }
-          />
-          <CardBody>
-            <Table>
-              <thead>
-                <tr>
-                  <th>Page</th>
-                  <th>Status</th>
-                  <th>Direct link (dev/test)</th>
-                  <th>Embed link</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EMBEDDABLE_PAGES.map((p) => (
-                  <tr key={p.route}>
-                    <td>{p.label}</td>
-                    <td>
-                      {p.built ? (
-                        <Badge tone="success">Built</Badge>
-                      ) : (
-                        <Badge tone="neutral">Not built yet{p.note ? ` — ${p.note}` : ""}</Badge>
-                      )}
-                    </td>
-                    <td>{p.built ? <a href={p.route}>{p.route}</a> : <span className="hint">{p.route}</span>}</td>
-                    <td>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={!p.built}
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${location.origin}${p.route}?instance=${encodeURIComponent(selected)}&embed=1`);
-                          toast("success", `Copied embed link for ${p.label}`);
-                        }}
-                      >
-                        Copy embed link
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </CardBody>
-        </Card>
+      <Tabs tabs={tabs} active={active} onChange={setActive} />
+      {active === "branding" ? (
+        <LogisticsConfigBranding />
+      ) : active === "carriers" ? (
+        <LogisticsConfigCarriers />
+      ) : active === "currencies" ? (
+        <LogisticsConfigCurrencies />
+      ) : active === "export-presets" ? (
+        <LogisticsConfigExportPresets />
+      ) : active === "ci-flags" ? (
+        <LogisticsConfigCiFlags />
+      ) : active === "receiving" ? (
+        <LogisticsConfigReceiving />
+      ) : (
+        <LogisticsConfigEmbedLinks />
       )}
     </div>
   );

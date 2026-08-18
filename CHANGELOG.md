@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.2 — build 2608028 — 2026-08-18T23:18:13Z
+
+### Changed
+- [UX] **Logistics Configuration is now the main `/logistics` page itself**, not a separate page one click away — reorganized on direct request. The old landing page's embed-link generator becomes a new "Embed Links" tab alongside Ship As Companies/Carriers/Currencies/Export Presets/CI Flags/Receiving; the old `/logistics/config` route now redirects to `/logistics?tab=branding` rather than 404ing for any old bookmark or embed link.
+
 ## v0.13.1 — build 2608027 — 2026-08-18T23:05:50Z
 
 ### Changed

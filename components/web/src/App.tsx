@@ -6,7 +6,6 @@ import { Login } from "./pages/Login";
 import { Extension } from "./pages/Extension";
 import { VesselTracking } from "./pages/VesselTracking";
 import { Logistics } from "./pages/Logistics";
-import { LogisticsConfig } from "./pages/LogisticsConfig";
 import { LogisticsShipments } from "./pages/LogisticsShipments";
 import { LogisticsShipment } from "./pages/LogisticsShipment";
 import { Integrations } from "./pages/Integrations";
@@ -48,7 +47,9 @@ export function App() {
         <Route path="/extension" element={<Extension />} />
         <Route path="/vessel-tracking" element={<VesselTracking />} />
         <Route path="/logistics" element={<Logistics />} />
-        <Route path="/logistics/config" element={<LogisticsConfig />} />
+        {/* Configuration is now the main /logistics page itself (embed links
+            moved to a tab within it), not a separate page one click away. */}
+        <Route path="/logistics/config" element={<Navigate to="/logistics?tab=branding" replace />} />
         <Route path="/logistics/shipments" element={<LogisticsShipments />} />
         <Route path="/logistics/shipment/:id" element={<LogisticsShipment />} />
         {/* Legacy per-page paths now live as tabs under /vessel-tracking (keep the tab). */}
