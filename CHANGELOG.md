@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.3 — build 2608029 — 2026-08-18T23:26:58Z
+
+### Fixed
+- [Backend] **Logistics' Production instance ("tritontech") now reuses CAST's existing ConnectWise credentials** instead of requiring a duplicate entry — reported live: Outbound Shipments failed to load with "ConnectWise is not configured for instance 'tritontech'" even though CAST's main CW integration is already connected. `resolveCwCredsForInstance()` now falls back to the legacy single-instance credential resolution, but **only for the registered default instance** — Sandbox (`tritontech_cs1`) and any other non-default instance still throw loudly if unconfigured, preserving the deliberate safety property that a misconfigured instance can never silently read/write the wrong ConnectWise environment. This was already the recorded plan (`INIT-0026`, 2026-08-14 — "reuse the existing production keys for tritontech") but had never actually been wired up.
+
 ## v0.13.2 — build 2608028 — 2026-08-18T23:18:13Z
 
 ### Changed

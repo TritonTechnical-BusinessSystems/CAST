@@ -5,6 +5,7 @@
  */
 import { config } from "../config";
 import { getSecret, setSecret } from "../store/secretStore";
+import { getDefaultCwInstanceId } from "./instances";
 
 export interface CwCreds {
   baseUrl: string;
@@ -86,7 +87,7 @@ export function mask(s: string): string {
  * every existing caller (vessel tracking, shipment tracking) -- this is
  * additive, not a replacement.
  */
-export function resolveCwCredsForInstance(instanceId: string): { creds: CwCreds | null; source: "store" | "none" } {
+export function resolveCwCredsForInstance(instanceId: string): { creds: CwCreds | null; source: "store" | "env" | "none" } {
   const stored = getSecret(`connectwise:${instanceId}`);
   if (stored) {
     try {
@@ -95,8 +96,22 @@ export function resolveCwCredsForInstance(instanceId: string): { creds: CwCreds 
         return { creds: { ...c, baseUrl: c.baseUrl || config.cwBaseUrl }, source: "store" };
       }
     } catch {
-      /* fall through to none */
+      /* fall through */
     }
+  }
+  // The DEFAULT instance ("tritontech"/Production) IS the same ConnectWise
+  // company CAST's original single-instance integration already talks to —
+  // reuse those already-configured creds (env or the main encrypted store)
+  // rather than requiring a duplicate entry via the Logistics Integrations
+  // UI (user, 2026-08-19; the plan to do exactly this was recorded back in
+  // INIT-0026's 2026-08-14 notes but never wired up). Deliberately NOT a
+  // general fallback for every instance — Sandbox ("tritontech_cs1") and any
+  // other non-default instance still throws loudly if unconfigured, so a
+  // mistake can never silently read/write Production instead of Sandbox
+  // (the safety property `ManageCwClient.creds()` above depends on).
+  if (instanceId === getDefaultCwInstanceId()) {
+    const legacy = resolveCwCreds();
+    if (legacy.creds) return { creds: legacy.creds, source: legacy.source };
   }
   return { creds: null, source: "none" };
 }
