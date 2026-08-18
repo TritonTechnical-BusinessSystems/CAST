@@ -489,19 +489,53 @@ export class ManageCwClient implements CwClient {
     return { id: String(created.id), name: created.name, inactive: Boolean(created.inactiveFlag) };
   }
 
-  async updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void> {
+  async updateVesselSite(
+    companyId: string,
+    siteId: string,
+    patch: { name?: string; addressLine1?: string; timeZoneSetupId?: number; lastAisUpdateText?: string },
+  ): Promise<void> {
     if (!isCwWritesEnabled()) {
       throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
-    const ops: { op: "replace"; path: string; value: string }[] = [];
+    const creds = this.creds();
+    const ops: { op: "replace"; path: string; value: unknown }[] = [];
     if (patch.name !== undefined) ops.push({ op: "replace", path: "/name", value: patch.name });
     if (patch.addressLine1 !== undefined) ops.push({ op: "replace", path: "/addressLine1", value: patch.addressLine1 });
-    if (ops.length === 0) return;
-    await cwFetch(`/company/companies/${companyId}/sites/${siteId}`, {
-      method: "PATCH",
-      body: JSON.stringify(ops),
-      creds: this.creds(),
-    });
+    if (patch.timeZoneSetupId !== undefined) ops.push({ op: "replace", path: "/timeZone", value: { id: patch.timeZoneSetupId } });
+    if (ops.length > 0) {
+      await cwFetch(`/company/companies/${companyId}/sites/${siteId}`, {
+        method: "PATCH",
+        body: JSON.stringify(ops),
+        creds,
+      });
+    }
+
+    // Custom field, so it needs its own GET-splice-PATCH round trip — same
+    // pattern as setVesselIdentifiers's company customFields write, just
+    // scoped to the Site's own (much smaller) customFields array.
+    if (patch.lastAisUpdateText !== undefined) {
+      const site = await cwFetch<{ customFields?: CwCustomField[] }>(
+        `/company/companies/${companyId}/sites/${siteId}?fields=customFields`,
+        { creds },
+      );
+      const fields = (site.customFields ?? []).map((f) => ({ ...f }));
+      const field = fields.find((f) => f.caption === config.cwLastAisUpdateFieldCaption);
+      if (field) {
+        field.value = patch.lastAisUpdateText;
+        await cwFetch(`/company/companies/${companyId}/sites/${siteId}`, {
+          method: "PATCH",
+          body: JSON.stringify([{ op: "replace", path: "/customFields", value: fields }]),
+          creds,
+        });
+      } else {
+        // Was a silent no-op — if the CW field ever gets renamed, freshness
+        // reporting would stop with nothing to notice it by (flagged in the
+        // v0.11.0 security review as an operational blind spot).
+        console.warn(
+          `[connectwise] Site ${siteId} (company ${companyId}) has no custom field captioned "${config.cwLastAisUpdateFieldCaption}" — "Last AIS Data Update" write skipped.`,
+        );
+      }
+    }
   }
 
   // Calls the module-level function of the same name above (not a recursive

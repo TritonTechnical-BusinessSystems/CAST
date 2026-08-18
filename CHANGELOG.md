@@ -10,6 +10,32 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.11.0 — build 2608024 — 2026-08-18T02:11:08Z
+
+### Added
+- [UX] **Confidence-tiered Vessel Site writes** (`INIT-0012`) — replaces the flat 6-hour staleness cutoff entirely. Every write is now colored by how much CAST still trusts it: 🟢 current (≤2h), 🔵 presumed (a stationary vessel persists indefinitely; an underway vessel with a destination+ETA persists through ETA+48h), 🟠 stale (no reasoning basis left — underway with no destination, aground, or an unrecognized nav-status code — but still shown, never silenced). Past a configurable fallback (default 90 days, runtime-adjustable without a redeploy) with nothing fresher at all, the site name reverts to a bare, unstatused "Vessel" rather than keep aging a guess. Aground deliberately does NOT get the same indefinite persistence as docked/anchored — it's an incident, not a resting state; real alerting on it belongs to `INIT-0017`, not this color scheme.
+- [Backend] **A new "Last AIS Data Update" custom field on the Vessel Site** (Text type, user-created live) now carries the true last-confirmed timestamp in every tier, including once the name has reverted to a bare "Vessel" — so staleness stays honestly visible even when the status text itself can no longer say anything specific.
+- [Integrations] **The Vessel Site's Time Zone is now resolved and written automatically from the vessel's coordinates** — a real ConnectWise `timeZoneSetups` reference (a fixed 94-entry list using Windows-era city labels, not IANA names — verified live against the real API, distinct from the differently-named `/system/timeZones` endpoint). Coordinates → IANA zone via `tz-lookup` (covers open ocean too) → the closest CW entry by live-computed current UTC offset, with geographic distance as an explicit tiebreak among the many entries that share an offset. Falls back to the vessel's resolved current place (never `destination` — that's where it's headed, not where it is) only if the coordinate lookup itself fails.
+- [UX] **The Vessel Location tab now previews the exact write**, not just a description of it — each vessel's always-visible area gained a "Will write: …" line plus a Position / Destination / ETA / Last-confirmed table, both driven by the identical function that produces the real ConnectWise write.
+- [Design-System] `Disclosure` gained a second, always-visible `subheader` zone, separate from the clickable header — needed because the new write-preview table can't legally live inside a `<button>`.
+
+### Changed
+- [Backend] Vessel Site `addressLine1` drops the space after the comma (`43.58741,7.131405`, not `43.58741, 7.131405`) — coordinates were already written at native feed precision before this release (no rounding in either version); this only changes the separator.
+- [Backend] `addressLine1` and the resolved Time Zone are now omitted (left untouched, not cleared) once a vessel's confidence has fully expired — consistent with the name reverting to "Vessel": no current confidence in a position means not asserting one anywhere.
+
+### Fixed
+- [Backend] **Real bug found live-testing against real production position data before shipping:** the Time Zone matcher's first pass picked whichever CW entry came first in the list among several sharing the same current UTC offset — a Greek vessel resolved to "Amman" over the obviously-correct "Athens, Bucharest, Istanbul" entry, since both currently sit at +3 (Jordan dropped DST in 2022). Fixed by adding geographic distance as an explicit tiebreak.
+- [Backend] Aground was initially implemented with the same indefinite-persistence treatment as docked/anchored — a mismatch against what was actually specified (aground should decay like underway-with-no-destination, given it's an incident state, not a resting one). Corrected before shipping.
+
+### Performance
+- [Backend] The Time Zone matcher recomputed all 94 CW `timeZoneSetups` entries' current UTC offsets (each a real `Intl.DateTimeFormat` construction) for every vessel, even though that table only depends on the current time, not which vessel — up to ~5,600 redundant Intl calls per 5-minute tier-refresh cycle. Found answering a direct question about this feature's load before shipping; now cached per real-world minute, so a whole batch shares one computation. Measured, not estimated: a simulated full 60-vessel batch runs in ~550ms total (~9ms/vessel) after the fix, dominated by the pre-existing nearest-port lookup, not this code.
+
+### Security
+- [Security] **Pre-release security gate findings, fixed before this release shipped** (independent review, `knowledge/conventions/versioning.md`'s MINOR-bump gate — verdict PASS, both Medium/Low): the AIS listener had no runtime numeric validation on `Latitude`/`Longitude`/`Sog`/`Cog`/`NavigationalStatus` — a malformed or non-numeric value from the feed would have flowed straight through to a live ConnectWise write (`addressLine1`) or thrown in the frontend's history table (`.toFixed()` on a non-number). Now coerced to `null` (the existing, already-tolerated "no data" case) unless genuinely finite. The raw AIS `destination` field (unauthenticated, crew-entered, spoofable by design) had no length cap before landing in a ConnectWise Site name — capped at 20 characters, the real ITU-R M.1371 protocol limit for that field. A malformed `CAST_VESSEL_STATUS_FALLBACK_DAYS` env value would have silently produced `NaN`, which fails the expiry check OPEN rather than closed (a stale status could never expire) — now validated, falling back to the documented default. The "Last AIS Data Update" custom-field write silently no-op'd if the CW field caption ever stopped matching, with no way to notice — now logs a warning.
+
+### Docs
+- [Docs] `knowledge/architecture/vessel-location-updating-aisstream.md` §7, `naming-lexicon.md`'s new **Confidence Tier** entry, and `Initiatives-Open.md`'s `INIT-0012` updated with the full redesign — including a considered-and-declined note on MMSI→flag-country lookup (would sit alongside fields that represent current location, and flag state isn't one) and what the AIS feed carries but CAST still doesn't parse (`ImoNumber`, vessel dimensions, heading, and more — feeds a future `INIT-0014` pass if pursued).
+
 ## v0.10.0 — build 2608023 — 2026-08-17T22:09:18Z
 
 ### Added

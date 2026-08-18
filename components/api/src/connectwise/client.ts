@@ -78,14 +78,21 @@ export interface CwClient {
    */
   createVesselSite(companyId: string): Promise<CwSite>;
   /**
-   * Write the current status/position onto an already-resolved Vessel Site:
-   * `name` = friendly status + place/destination (e.g. "Vessel docked in La
-   * Ciotat, France"), `addressLine1` = raw "lat, lon" decimal coordinates
-   * (so ConnectWise's own address-search/Google-Maps lookup locates the
-   * vessel directly) — decided 2026-08-11 (user). Gated by
+   * Write the current status/position onto an already-resolved Vessel Site
+   * (redesigned 2026-08-17 — see vessels/siteWriter.ts for the full field
+   * spec): `name` = confidence-colored friendly status + place/destination
+   * (e.g. "🟢 Vessel docked in La Ciotat, France"), `addressLine1` = raw
+   * comma-joined decimal coordinates, `timeZoneSetupId` = a
+   * `/system/timeZoneSetups` reference id, `lastAisUpdateText` = the "Last
+   * AIS Data Update" custom field. `addressLine1`/`timeZoneSetupId` omitted
+   * (not overwritten) once confidence has fully expired. Gated by
    * isCwWritesEnabled() like every other CW write.
    */
-  updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void>;
+  updateVesselSite(
+    companyId: string,
+    siteId: string,
+    patch: { name?: string; addressLine1?: string; timeZoneSetupId?: number; lastAisUpdateText?: string },
+  ): Promise<void>;
   /**
    * Active CW Purchase Order statuses (INIT-0026 Phase 1, Logistics
    * Receiving config) — the live checkbox options for "which PO statuses
@@ -197,7 +204,11 @@ export class StubCwClient implements CwClient {
     return { ...site };
   }
 
-  async updateVesselSite(companyId: string, siteId: string, patch: { name?: string; addressLine1?: string }): Promise<void> {
+  async updateVesselSite(
+    companyId: string,
+    siteId: string,
+    patch: { name?: string; addressLine1?: string; timeZoneSetupId?: number; lastAisUpdateText?: string },
+  ): Promise<void> {
     const site = (this.sites[companyId] ?? []).find((s) => s.id === siteId);
     if (site && patch.name !== undefined) site.name = patch.name;
   }

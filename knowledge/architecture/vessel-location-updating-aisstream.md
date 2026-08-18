@@ -2,7 +2,7 @@
 status: active
 read-when: Designing or building Vessel Location Updating (INIT-0012) — the AIS data source, the IMO→position pipeline, the Tier 1/Tier 2 priority split, or the ConnectWise status/location write-back.
 related: [cast-web-app-mockup.md, cast-web-app-vm-provisioning.md, ../decisions/0002-extension-never-touches-cw-credentials.md, ../conventions/naming-lexicon.md]
-updated: 2026-08-17
+updated: 2026-08-18
 ---
 
 # Vessel Location Updating — AIS data source (aisstream.io)
@@ -449,3 +449,143 @@ out-of-order row (a voyage entry above a more recent position entry) the
 first time the page was actually opened in a browser. Fixed to sort by the
 displayed `recorded_at` column instead, `id` only as a tiebreak — what's
 shown top-to-bottom is what determines the order a person reads it in.
+
+## 7. Resolved 2026-08-18 — confidence-tiered CW write + Time Zone + the Vessel Location "will write" preview
+
+The single flat 6-hour staleness clock proposed in §"Proposed 2026-08-17" (now
+superseded) was replaced with a real, shipped design — decided directly with
+the user, colors specified by them, thresholds proposed by CAST and
+confirmed. Full rationale for *why* per-bucket persistence beats a flat
+timeout is unchanged from that proposal; this section records what actually
+shipped, which differs in specifics (a third "still show it, just distrust
+it" tier the original proposal didn't have).
+
+**Three confidence tiers, not two** (`components/api/src/vessels/confidence.ts`):
+- 🟢 **current** — ≤2h old (`FRESH_WINDOW_MS`).
+- 🔵 **presumed** — older, but a reasoned-safe guess: a **stationary** vessel
+  (docked/anchored — NOT aground, see below) persists indefinitely; an
+  **underway** vessel with a stated destination + ETA persists through
+  ETA + 48h (`ETA_GRACE_MS`).
+- 🟠 **stale** — no reasoning basis left, but still a real last-known fact —
+  shown with distrust rather than gone silent. Applies to underway-with-no-
+  destination, aground, and any unrecognized/reserved nav-status code, as
+  soon as they're not fresh.
+- Past `vesselStatusFallbackDays()` (default 90, runtime-adjustable,
+  `config.ts` — the user asked CAST to pick the number directly) with
+  nothing fresher at all, confidence in ANYTHING runs out — the name reverts
+  to a bare, unstatused **"Vessel"**, and `addressLine1`/`timeZoneSetupId`
+  are omitted from the write entirely (left untouched, not cleared) rather
+  than keep asserting a position/zone with zero confidence behind it.
+
+**Aground is deliberately NOT stationary** (user, 2026-08-17, asked directly
+what "aground" means first): it's AIS nav-status code 6, set manually by the
+crew's transponder — an incident, not a resting state. Groundings typically
+resolve in hours to days, so letting it persist silently for weeks the way a
+genuine shipyard stay does would be actively misleading almost always. It
+gets the same short-fresh-then-stale tiering as underway-with-no-destination.
+Proactive alerting on a real grounding (rather than a passive color change)
+belongs to `INIT-0017` (Geo Alerts), not this scheme — not built.
+
+**Site name text now emoji-prefixed** — "🟢 Vessel docked in Napoli, Italy" /
+"🔵 Vessel underway to Sundneset (ETA: 17 Aug 23:00 UTC)". `siteWriter.ts`'s
+`formatSiteUpdate()` now always returns *something* once any update has ever
+been received (previously: null/no-op once stale) — the "always write, never
+freeze silently" principle from the original proposal, realized.
+
+**Coordinates: native feed precision, no rounding, no space** — decided
+2026-08-17 (user: "we'll allow what the feed gives... I don't want to force
+it"). `addressLine1` is `${lat},${lon}` via plain JS number-to-string, not
+`.toFixed(N)` — different AIS sources have different natural precision, and
+forcing a fixed decimal count would sometimes pad zeros that were never
+really there.
+
+**"Last AIS Data Update" — a new custom field, replacing an earlier "Site
+Notes" plan mid-design** (user created it live, 2026-08-17: *"I want to use
+a new 'Last AIS Data Update' custom field instead... For the date
+updated... not the status."*). A plain `Text`-type custom field on the
+**Site** (not the Company — verified live, id 73, `podId: "company_site"`),
+written the same GET-splice-PATCH way IMO/MMSI already are on companies.
+Caption configurable (`config.cwLastAisUpdateFieldCaption`, default
+`"Last AIS Data Update"`), matching the existing IMO/MMSI caption pattern.
+Written in **every** tier including "expired" — the whole point of the field
+is showing exactly how stale things are, even once the name itself has
+reverted to a bare "Vessel".
+
+**Time Zone — a real, writable reference field, resolved from coordinates.**
+Verified live (read-only) against a real Vessel site: `timeZone` is
+`{id, name}`, referencing `/system/timeZoneSetups` — a fixed, 94-entry list
+with **Windows-era city labels** ("GMT-5/Eastern Time: US & Canada",
+"GMT+1/Amsterdam, Berlin, Bern"), NOT IANA names. This is a *different*
+endpoint from `/system/timeZones` (Windows "Standard Time" names with their
+own offset/DST fields) — an early check against the wrong one, corrected
+same session. CW's list exposes no offset/DST data of its own, so matching
+can't be a name lookup:
+- `components/api/src/vessels/timezone.ts` hand-maps each of the 94 entries
+  to one representative real IANA zone **plus approximate coordinates**
+  (built from the live list, 2026-08-17).
+- At request time: `tz-lookup` (npm, ~150KB, no deps, covers the whole globe
+  including open ocean via longitude-banded nautical zones) resolves the
+  vessel's coordinates to an IANA zone. Each candidate CW entry's CURRENT
+  real UTC offset is computed live via `Intl.DateTimeFormat` — correct for
+  today's actual DST state, so a label 20+ years stale (e.g. entry 46 groups
+  Minsk with Kyiv/Sofia at "GMT+2", though Minsk has been a fixed +3 for
+  years) still resolves correctly, since the label text is never trusted.
+- Ranked by **(offset difference, then geographic distance)** — the distance
+  tiebreak matters because many entries share a current offset (six separate
+  GMT+1 European entries alone). **Real bug found live-testing against real
+  production position data before shipping:** a Greek vessel at 37.98°N
+  resolved to entry 39 ("Amman") over entry 40 ("Athens, Bucharest,
+  Istanbul") purely because 39 came first in the array — both currently sit
+  at +3 (Jordan dropped DST in 2022, landing it on the same real offset as
+  Greece's summer EEST) — but Athens is the obviously correct match. Fixed
+  by adding geographic distance as an explicit tiebreak among offset ties.
+- **Priority 1: always coordinates.** **Priority 2 (rare — only if the
+  coordinate lookup itself throws): the vessel's resolved CURRENT place's
+  country**, via a small hand-built country→IANA table. Deliberately never
+  falls back to `destination` (user, asked directly: *"not destination, of
+  course"*) — that's where the vessel is headed, not where it is, and would
+  assign the wrong zone for anything still underway.
+- Omitted from the write (left untouched) whenever `addressLine1` is, for
+  the same "no current confidence, don't assert a stale one" reason.
+
+**Flag-country (MMSI → country of registration) — considered, explicitly
+NOT built.** The user asked directly, then reconsidered before any code was
+written: auto-writing it into the Site's Country field would sit alongside
+fields that all represent *current location* (addressLine1, Time Zone) while
+flag state is a *vessel* property, not a location one — "that could get
+confusing... whereas everything else in the Site does [represent current
+location]." Decided to record flag state elsewhere in CW manually if wanted,
+not via CAST. If revisited: AIS itself never transmits flag state as a
+field — it would have to be derived from the MMSI's first 3 digits (the
+ITU-allocated "MID"), a lookup CAST doesn't have.
+
+**The AIS feed carries substantially more than CAST parses today** — worth
+knowing before assuming a data gap needs a new data *source* rather than
+just reading more of the one already flowing. `PositionReport`/
+`StandardClassBPositionReport`/`ExtendedClassBPositionReport` also carry
+`TrueHeading` (bow direction, distinct from `Cog`/course-over-ground),
+`RateOfTurn`, `PositionAccuracy`/`Raim` (GPS quality flags), and the
+message's own onboard `Timestamp` — all currently discarded. `ShipStaticData`
+also carries `ImoNumber` (broadcast directly by the ship — feeds `INIT-0014`
+reconciliation for free, for any vessel whose transponder has it
+programmed), `CallSign`, `Name`, `Type` (ship-type code), `Dimension`
+(A/B/C/D — computable length-overall/beam), `FixType`, and
+`MaximumStaticDraught` — also all discarded today. **One real caveat:**
+`ImoNumber` is a **Class A-only** field in the AIS spec — Class B's own
+static-data message (`StaticDataReport`, not currently subscribed to at
+all) has no IMO slot whatsoever, only name/type/dimension/call sign. Smaller
+yachts commonly run Class B, so IMO-via-AIS availability depends entirely on
+which class a given vessel's transponder is. Not built; captured here in
+case `INIT-0014` or a future initiative wants to pull on this thread.
+
+**Vessel Location tab is now a real preview of the write, not just a
+description of it** (`components/web/src/pages/Vessel.tsx`) — restructured
+into three zones per vessel: a clickable header (name, Tier badge, status
+badge), an always-visible-when-collapsed "Will write: …" line plus a
+Position/Destination/ETA/Last-confirmed table (both driven by the same
+`GET /api/vessels/tracked` response `formatSiteUpdate()` produces), and the
+expandable history below. The write-preview table could not live inside the
+`Disclosure` primitive's original single `header` slot — a `<table>` isn't
+valid content inside a `<button>` — so `Disclosure` gained a second,
+non-clickable `subheader` zone (`components/web/src/ui/Disclosure.tsx`) for
+exactly this case: always-visible content that isn't part of the toggle.

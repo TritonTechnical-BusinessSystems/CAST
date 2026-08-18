@@ -1,9 +1,10 @@
 /**
  * AIS navigational-status codes (ITU-R M.1371) -> friendly buckets for the
- * Vessel Site writer. The architecture note already decided the shape
- * (Moored / At anchor / Under way, plus a stale/unknown bucket keyed on
- * last-seen — "dry-docked" isn't a real AIS code, a powered-down vessel just
- * stops transmitting).
+ * Vessel Site writer. Pure code->bucket mapping only — staleness/confidence
+ * (how much we still trust a bucket given its age) is a separate concern,
+ * `confidence.ts` (split out 2026-08-17 so the age-based "unknown" cutoff
+ * that used to live here doesn't collapse "what did the vessel last report"
+ * and "how much do we trust that report is still true" into one function).
  */
 export type StatusBucket = "docked" | "anchored" | "underway" | "aground" | "unknown";
 
@@ -20,11 +21,7 @@ const CODE_TO_BUCKET: Record<number, StatusBucket> = {
   // 9-14: reserved/special-craft codes, 15: undefined — all fall through to "unknown" below.
 };
 
-/** How long without a message before we stop trusting the last-known status and call it unknown instead. */
-export const STALE_THRESHOLD_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-export function statusBucket(navStatusCode: number | null, lastSeenAt: string | null): StatusBucket {
-  if (!lastSeenAt || Date.now() - new Date(lastSeenAt).getTime() > STALE_THRESHOLD_MS) return "unknown";
+export function statusBucket(navStatusCode: number | null): StatusBucket {
   if (navStatusCode == null) return "unknown";
   return CODE_TO_BUCKET[navStatusCode] ?? "unknown";
 }

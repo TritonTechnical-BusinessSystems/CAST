@@ -83,7 +83,7 @@ router.get("/tracked", requirePermission("vessel.read"), (_req, res) => {
         companyName: v.companyName,
         mmsi: v.mmsi,
         tier: v.tier,
-        navigationalStatus: position ? statusBucket(position.navStatusCode, position.lastSeenAt) : "unknown",
+        navigationalStatus: position ? statusBucket(position.navStatusCode) : "unknown",
         summary: update?.name ?? null,
         addressLine1: update?.addressLine1 ?? null,
         lastSeenAt: position?.lastSeenAt ?? null,

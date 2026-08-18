@@ -52,6 +52,27 @@ export const config = {
   tierRefreshMinutesDefault: Number(env.CAST_TRACKING_REFRESH_MINUTES ?? 5),
 
   /**
+   * How many days a Vessel Site write keeps presuming/distrusting a stale
+   * status before giving up and reverting to a bare "Vessel" (confidence.ts,
+   * INIT-0012, decided 2026-08-17 — user asked for CAST's own recommendation
+   * on the exact number). 90 days: generous enough to cover a genuinely long
+   * refit without falsely reverting (the whole point of the 🔵 tier is that a
+   * silent, stationary vessel is still almost certainly there), short enough
+   * that a vessel that's been sold, renamed, or gone permanently dark doesn't
+   * display a year-old ghost status forever. Overridden at runtime by
+   * setVesselStatusFallbackDays() below (same env-seed-then-settings-win
+   * precedent as tierRefreshMinutesDefault). A malformed env value silently
+   * falling through to NaN here would fail OPEN, not closed — `age > NaN`
+   * is always false, so a vessel would never expire and could show a
+   * confident-looking guess forever — so this validates rather than trusts
+   * `Number()`'s coercion (flagged in the v0.11.0 security review).
+   */
+  vesselStatusFallbackDaysDefault: (() => {
+    const n = Number(env.CAST_VESSEL_STATUS_FALLBACK_DAYS);
+    return Number.isFinite(n) && n > 0 ? n : 90;
+  })(),
+
+  /**
    * aisstream.io — AIS data source for Vessel Location Updating (INIT-0012).
    * WebSocket API; the key is a server-side secret. Docs + architecture:
    * knowledge/architecture/vessel-location-updating-aisstream.md.
@@ -73,6 +94,8 @@ export const config = {
   /** Company custom-field captions holding the vessel IMO / MMSI (INIT-0014). */
   cwImoFieldCaption: env.CW_IMO_FIELD_CAPTION ?? "Vessel IMO",
   cwMmsiFieldCaption: env.CW_MMSI_FIELD_CAPTION ?? "Vessel MMSI",
+  /** Site custom-field caption holding the confidence-tiered write's timestamp (user-created 2026-08-17, a "Text" type field on the Site, not the Company). */
+  cwLastAisUpdateFieldCaption: env.CW_LAST_AIS_UPDATE_FIELD_CAPTION ?? "Last AIS Data Update",
   /** CW company status that further scopes tracking (optional; INIT-0015). */
   cwTrackedStatus: env.CW_TRACKED_STATUS ?? "",
   /**
@@ -163,4 +186,17 @@ export function tierRefreshMinutes(): number {
 export function setTierRefreshMinutes(minutes: number): void {
   if (!(minutes > 0)) throw new Error("Refresh interval must be a positive number of minutes");
   setSetting(TIER_REFRESH_MINUTES_KEY, minutes);
+}
+
+const VESSEL_STATUS_FALLBACK_DAYS_KEY = "tracking.vesselStatusFallbackDays";
+
+/** Live check — the in-app value if set, else the env boot default. */
+export function vesselStatusFallbackDays(): number {
+  const stored = getSetting<number>(VESSEL_STATUS_FALLBACK_DAYS_KEY);
+  return stored && stored > 0 ? stored : config.vesselStatusFallbackDaysDefault;
+}
+
+export function setVesselStatusFallbackDays(days: number): void {
+  if (!(days > 0)) throw new Error("Fallback duration must be a positive number of days");
+  setSetting(VESSEL_STATUS_FALLBACK_DAYS_KEY, days);
 }

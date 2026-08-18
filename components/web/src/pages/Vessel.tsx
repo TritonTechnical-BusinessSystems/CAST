@@ -162,10 +162,32 @@ export function Vessel() {
                     <strong>{v.vesselName}</strong>
                     <Badge tone="brand">Tier {v.tier}</Badge>
                     <Badge tone={STATUS_TONE[v.navigationalStatus]}>{STATUS_LABEL[v.navigationalStatus]}</Badge>
-                    <span className="muted">
-                      {v.summary ?? "No signal received yet"}
-                      {v.lastSeenAt ? ` · last seen ${formatTimestamp(v.lastSeenAt)}` : ""}
-                    </span>
+                  </div>
+                }
+                subheader={
+                  <div className="col gap-2">
+                    <div>
+                      <span className="muted">Will write: </span>
+                      {v.summary ?? <span className="muted">No signal received yet</span>}
+                    </div>
+                    <Table>
+                      <thead>
+                        <tr>
+                          <th>Position</th>
+                          <th>Destination</th>
+                          <th>ETA</th>
+                          <th>Last confirmed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td data-label="Position" className="mono muted">{v.addressLine1 ?? "—"}</td>
+                          <td data-label="Destination" className="muted">{v.destination ?? "—"}</td>
+                          <td data-label="ETA" className="mono muted">{formatTimestamp(v.etaIso)}</td>
+                          <td data-label="Last confirmed" className="mono muted">{formatTimestamp(v.lastSeenAt)}</td>
+                        </tr>
+                      </tbody>
+                    </Table>
                   </div>
                 }
               >

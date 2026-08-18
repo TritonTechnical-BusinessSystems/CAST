@@ -185,8 +185,8 @@ export async function reconcileVesselSites(rule: Rule): Promise<void> {
   setSetting("tracking.siteMap", siteMap);
 }
 
-/** companyId -> the {name, addressLine1} last actually written to that company's Vessel Site — skips a redundant CW PATCH when nothing's changed. */
-type LastSiteWrite = Record<string, { name: string; addressLine1: string }>;
+/** companyId -> the site fields last actually written — skips a redundant CW PATCH when nothing's changed. `lastAisUpdateText` legitimately changes on every fresh AIS message even when the displayed status text doesn't, by design — that field exists specifically to track true freshness. */
+type LastSiteWrite = Record<string, { name: string; addressLine1?: string; timeZoneSetupId?: number; lastAisUpdateText: string }>;
 
 /**
  * Writes each Trackable Vessel's current status onto its resolved Vessel
@@ -217,7 +217,15 @@ export async function writeVesselSites(split: { tier1: { id: string; mmsi: strin
     const update = formatSiteUpdate(getPosition(v.mmsi));
     if (!update) return;
     const prev = lastWrite[siteId];
-    if (prev && prev.name === update.name && prev.addressLine1 === update.addressLine1) return;
+    if (
+      prev &&
+      prev.name === update.name &&
+      prev.addressLine1 === update.addressLine1 &&
+      prev.timeZoneSetupId === update.timeZoneSetupId &&
+      prev.lastAisUpdateText === update.lastAisUpdateText
+    ) {
+      return;
+    }
 
     try {
       await cw.updateVesselSite(v.id, siteId, update);
@@ -255,7 +263,7 @@ export async function computeSplit(rule: Rule) {
   // listener (vessels/aisListener.ts), never queried live here.
   const lastKnownByMmsi: Record<string, LastKnown> = {};
   for (const p of listPositions()) {
-    lastKnownByMmsi[p.mmsi] = { navStatus: statusBucket(p.navStatusCode, p.lastSeenAt), lastSeenAt: p.lastSeenAt };
+    lastKnownByMmsi[p.mmsi] = { navStatus: statusBucket(p.navStatusCode), lastSeenAt: p.lastSeenAt };
   }
 
   const split = prioritizeVessels({

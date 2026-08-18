@@ -4,6 +4,25 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.11.0 — August 2026
+
+Vessel Site updates now come with a color: how sure CAST is that what you're reading is still true.
+
+## Highlights
+
+- **Every Vessel Site status now says how confident CAST is.** 🟢 means current — confirmed within the last two hours. 🔵 means CAST is still confident even though it hasn't heard from the vessel recently — a docked or anchored yacht doesn't move without transmitting somewhere, so a quiet week in a shipyard shows the same status the whole time. 🟠 means the last known fact is genuinely getting old and should be double-checked, not silently trusted. After an extended period with nothing fresh at all, the status simply reverts to a bare "Vessel" rather than keep aging a guess.
+- **A new field tracks exactly how current the data is.** "Last AIS Data Update" on the Vessel Site now shows the true last-confirmed time, in every case — including once the status itself has stepped back to a bare "Vessel."
+- **Time zones are now set automatically.** Every Vessel Site's Time Zone field updates itself from the vessel's real position, so the record always reflects local time for wherever the vessel actually is.
+- **The Vessel Location tab now shows exactly what would be sent to ConnectWise**, not just a summary of it — a "Will write" line plus the underlying position, destination, ETA, and last-confirmed data, side by side, before anything goes out.
+
+## For the power users
+
+- Flag/country-of-registration lookup (from the vessel's MMSI) was considered and deliberately not built — it would sit alongside fields that all represent current *location*, and a vessel's flag isn't a location. If it's wanted, it'll be recorded in ConnectWise separately.
+- The AIS feed carries meaningfully more than CAST reads today — including the vessel's own broadcast IMO number, on transponders that support it. Worth a look next time vessel-identity matching (`INIT-0014`) comes up.
+- A pre-release security check caught a handful of real hardening gaps — missing validation on incoming feed data, an unbounded field, a silent-failure edge case — all fixed before this shipped, no impact to any user.
+
+---
+
 # What's New in v0.10.0 — August 2026
 
 Vessel Location finally shows real ships, not the sample data it's shown since day one — and the AIS pipeline underneath it turned out to have been silently broken since it was built.

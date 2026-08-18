@@ -90,6 +90,20 @@ interface AisShipStaticFields {
   Eta?: unknown;
 }
 
+/**
+ * `AisPositionFields`' `number` types are a compile-time-only promise —
+ * aisstream's JSON is parsed with no runtime schema validation, so a
+ * malformed or unexpected value (wrong type, NaN, Infinity) would otherwise
+ * flow straight through to a live ConnectWise write (`addressLine1`) or a
+ * frontend `.toFixed()` call. Treated the same as a genuinely missing value
+ * (null) rather than risk either — CAST already tolerates missing
+ * lat/lon/sog/cog everywhere downstream (`formatSiteUpdate`, history
+ * display).
+ */
+function finiteOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 /** One managed WS connection: connects, subscribes, reconnects with backoff, parses positions in. */
 class AisConnection {
   private ws: WebSocket | null = null;
@@ -232,11 +246,11 @@ class AisConnection {
     if (mmsi != null && pos) {
       upsertPosition({
         mmsi: String(mmsi),
-        lat: pos.Latitude ?? null,
-        lon: pos.Longitude ?? null,
-        sog: pos.Sog ?? null,
-        cog: pos.Cog ?? null,
-        navStatusCode: pos.NavigationalStatus ?? null,
+        lat: finiteOrNull(pos.Latitude),
+        lon: finiteOrNull(pos.Longitude),
+        sog: finiteOrNull(pos.Sog),
+        cog: finiteOrNull(pos.Cog),
+        navStatusCode: finiteOrNull(pos.NavigationalStatus),
         lastSeenAt: data.MetaData?.time_utc ?? new Date(now).toISOString(),
       });
     }
