@@ -167,8 +167,8 @@ export function Vessel() {
                 subheader={
                   <div className="col gap-2">
                     <div>
-                      <span className="muted">Will write: </span>
-                      {v.summary ?? <span className="muted">No signal received yet</span>}
+                      <span className="muted">CW Site Name set to: </span>
+                      {v.summary ?? "Vessel"}
                     </div>
                     <Table>
                       <thead>
