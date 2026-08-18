@@ -4,6 +4,24 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.13.0 — August 2026
+
+System Health went from a page of status dots to a real operations dashboard.
+
+## Highlights
+
+- **CPU, memory, storage, and network — with real charts, not just numbers.** Gauges for what's true right now, and six live time-series charts (CPU, memory, event-loop lag, disk I/O, network I/O, storage) so you can see whether something's a blip or a trend. Hover any chart for the exact value at that moment; every chart also has a plain table view.
+- **The Docker Containers table now shows live resource use per container**, not just up/down status — CPU and memory bars, plus disk throughput, right in the row.
+- **Two new checks that used to require SSHing into the server:** TLS certificate expiry (so a renewal problem shows up here first, not as a browser warning) and backup freshness (so a broken nightly backup doesn't go unnoticed for weeks).
+- **ConnectWise and AIS now have their own performance charts** — response latency for CW, message-processing latency for the AIS feed — so a slowdown in either shows up as a trend on this page instead of only being noticeable when something actually breaks.
+
+## For the power users
+
+- Shipment tracking (TrackingMore) doesn't get a latency chart — it's a metered third-party API with no existing periodic call to piggyback on, so a dedicated poll loop just for this dashboard wasn't worth the added usage against the account.
+- Everything on this page is built from real data the app was already collecting or already calling — the CW and AIS latency charts, for instance, time calls this page was already making every 15 seconds, so nothing new was added to CW's or AIS's actual load.
+
+---
+
 # What's New in v0.12.0 — August 2026
 
 Real ConnectWise writes can now be turned on for a handful of vessels at a time, not all-or-nothing.

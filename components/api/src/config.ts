@@ -134,6 +134,32 @@ export const config = {
    * dev server (`http://localhost:5173`) instead.
    */
   internalWebUrl: env.CAST_INTERNAL_WEB_URL ?? "http://web:8080",
+
+  /**
+   * System Health infra probes (INIT-0016 follow-on, 2026-08-18) — TLS cert
+   * expiry + backup freshness.
+   *
+   * TLS: NOT a file read. Verified live against trt-cast-01: certbot hardens
+   * `/etc/letsencrypt/archive/<domain>` to `0700 root:root` — the `live/`
+   * symlink `fullchain.pem` points INTO that directory, so an unprivileged
+   * reader (`castapi`, uid 10001) gets EACCES resolving it despite the
+   * symlink itself being world-readable. Mounting `/etc/letsencrypt` into
+   * `api` would therefore ship a probe that never actually works. Instead
+   * `health/certExpiry.ts` does a real TLS handshake to `web:443` (the SAME
+   * cert nginx actually serves, over the container-to-container bridge —
+   * no new mount, no permission dependency, and it catches a cert/config
+   * mismatch a file read never would).
+   *
+   * Backups: still a file read — verified live that `/opt/cast/backups` is
+   * `0755 root:root` (world-searchable/listable) while each tarball inside
+   * is `0600 root:root` (owner-read-only). `stat()` only needs directory
+   * search permission, not read access to the file itself, so `castapi` can
+   * see name/size/mtime but never open a tarball's contents — this one
+   * actually works as designed.
+   */
+  tlsDomain: env.CAST_TLS_DOMAIN ?? "cast.tritontechnical.com",
+  tlsProbeHost: env.CAST_TLS_PROBE_HOST ?? "web",
+  backupDir: env.CAST_BACKUP_DIR ?? "/opt/cast/backups",
 } as const;
 
 // Fail fast rather than silently signing sessions with a public default secret —

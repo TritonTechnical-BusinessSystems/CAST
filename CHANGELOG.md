@@ -10,6 +10,30 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.0 — build 2608026 — 2026-08-18T22:47:03Z
+
+### Added
+- [UX] **System Health redesigned around real resource-usage visualization** (`INIT-0016`, dataviz skill) — radial gauges for CPU/memory/storage, an event-loop-lag stat tile, and six time-series charts (CPU, memory, event-loop lag, disk I/O, network I/O, storage), each with hover crosshair+tooltip, direct end-labels, and a table-view fallback so every value stays reachable without hovering.
+- [Backend] New `GET /api/health/metrics` (`health/metrics.ts`) — a 15s-interval in-memory sampler (3h ring buffer) reading real per-container CPU/memory/disk-IO/network from docker-proxy's `STATS` endpoint (deliberately not `os.totalmem()`/`loadavg()`, which report the *host's* raw numbers even from inside a container) and storage via `fs.statfs` on the data bind mount.
+- [UX] The Docker Containers table gained inline per-container CPU/memory bars and disk-IO throughput; the Application card gained API process uptime and database file size.
+- [UX] Two new System Health probes: **TLS certificate expiry** (danger under 7 days left, warn under 21) and **backup freshness** (danger past 48h stale, warn past 30h). Backup freshness reads a new read-only `api` mount of `/opt/cast/backups` (`stat()` only — name/size/mtime, the root-600 archives themselves stay unreadable). TLS expiry deliberately does NOT mount `/etc/letsencrypt` — live verification on `trt-cast-01` found certbot hardens its archive dir to `0700 root:root`, so a file-read approach would have silently never worked; it does a real TLS handshake to `web:443` over the internal Docker bridge instead, reading the exact cert nginx actually serves.
+- [Backend] New `GET /api/health/integration-metrics` (`health/integrationMetrics.ts`) — ConnectWise response latency and AIS Tier 1/2 message-processing latency, charted over time. Reuses calls System Health already makes every ~15s rather than adding new polling load; TrackingMore deliberately excluded (no existing periodic call to piggyback on, and it's metered).
+- [Design-System] New `RadialGauge` and `TimeSeriesChart` primitives, plus validated chart-color tokens (`--chart-series-1`/`-2`) — `--chart-series-2` passes the dataviz skill's CVD-safety validator against both the light and dark surfaces, reused identically across every 2-series chart on the page.
+
+### Changed
+- [Infra] `docker-proxy`'s allow-list gained `STATS` (read-only per-container resource counters) alongside the existing `CONTAINERS`.
+- [Backend] `/api/health/full`'s event-loop-lag reading now comes from the metrics sampler instead of resetting the histogram directly in the route — the route and the sampler both reading it independently would have each only seen a fraction of the real window.
+
+### Fixed
+- [Frontend] Card content now wraps long unbroken strings (e.g. a filesystem path in an error message) instead of overflowing the card boundary into whatever sits next to it.
+- [Frontend] A duplicate React key in `TimeSeriesChart`'s x-axis labels when a chart has exactly one sample (both the "first" and "last" tick resolved to index 0) — caught live via a real single-sample chart, not by inspection.
+
+### Security
+- [Security] **Pre-release security gate PASSed and found one real gap, fixed before shipping** (independent review, `knowledge/conventions/versioning.md`'s MINOR-bump gate): all five `/api/health/*` routes were gated on bare `requireAuth` instead of the `system.read` permission the codebase already declares for exactly this purpose (`auth/permissions.ts`) — no practical exposure today (every role holds `system.read`), but the routes would have kept serving silently after any future narrowing of that permission. Now uses `requirePermission("system.read")`, matching every other route file's convention. Two lower-severity infra notes (an unpinned `docker-proxy:latest` tag; the metrics endpoint returning its full ring buffer with no range param) were reviewed and deliberately deferred — logged in `INIT-0016`.
+
+### Docs
+- [Docs] `design-system.md`, `cast-web-app-deployment.md`, root `CLAUDE.md`, and `INIT-0016` (`Initiatives-Open.md`) updated to reflect all of the above.
+
 ## v0.12.0 — build 2608025 — 2026-08-18T02:45:45Z
 
 ### Added

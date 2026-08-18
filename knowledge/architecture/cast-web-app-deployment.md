@@ -2,7 +2,7 @@
 status: active
 read-when: Deploying CAST to trt-cast-01, or changing container topology, nginx, TLS, or the auto-update mechanism.
 related: [cast-web-app-vm-provisioning.md, connectwise-api-integration.md, ../decisions/0006-web-app-stack-vite-react-express.md]
-updated: 2026-08-14
+updated: 2026-08-18
 ---
 
 # CAST web app — deployment
@@ -14,13 +14,27 @@ mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
 
 ## Topology (`docker-compose.yml`)
 - **docker-proxy** (`tecnativa/docker-socket-proxy`) — read-only view of the Docker
-  daemon for System Health's container inventory (`INIT-0016`). `api` talks to
-  this, never the raw socket — only `CONTAINERS` (GET) is allow-listed, and it's
-  never published to the host, only reachable from `api` on the internal network.
+  daemon for System Health's container inventory (`INIT-0016`) and per-container
+  resource-usage metrics (`components/api/src/health/metrics.ts` — CPU/memory/disk-IO/
+  network charts, dataviz skill). `api` talks to this, never the raw socket — only
+  `CONTAINERS` and `STATS` (both GET) are allow-listed, and it's never published to
+  the host, only reachable from `api` on the internal network.
 - **api** (`@cast/api`, Express via tsx, multi-stage build) — internal only;
   encrypted store persisted via a **host bind mount** `/opt/cast/data` →
   `/app/components/api/.data` (not a named volume — `scripts/backup.sh` reads it
   directly). Depends on `docker-proxy`.
+  - **One more read-only host mount** (System Health's backup-freshness probe,
+    `INIT-0016`): `/opt/cast/backups:ro` (`scripts/backup.sh`'s output dir).
+    `api` never writes here — `health/backupFreshness.ts` only `stat()`s the
+    newest tarball (name/size/mtime), never opens one; the root-600 archives
+    (`0755` dir, `0600` files — verified live) stay unreadable to `castapi`
+    regardless of the mount. **TLS expiry does NOT get a mount** — certbot
+    hardens `/etc/letsencrypt/archive/<domain>` to `0700 root:root` (verified
+    live), so an unprivileged reader can't resolve the `live/` symlink into
+    it; `health/certExpiry.ts` does a real TLS handshake to `web:443` instead
+    (container-to-container over the internal bridge, same pattern as
+    `internalWebUrl` below) — reads the SAME cert nginx actually serves, no
+    mount or permission dependency at all.
   - **Runs as an unprivileged user, not root** (INIT-0026 Phase 3 security
     review) — `entrypoint.sh` starts as root just long enough to `chown` the
     bind-mounted `.data` dir (its host ownership can't be baked into the

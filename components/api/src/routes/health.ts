@@ -3,21 +3,25 @@
  * timeout and graceful degrade (the LC pattern), so the page always renders.
  */
 import { Router } from "express";
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { join, resolve } from "path";
-import { requireAuth } from "../middleware/auth";
+import { requirePermission } from "../middleware/auth";
 import { config, adConfigured, aisstreamConfigured, isCwWritesEnabled } from "../config";
 import { resolveCwCreds } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
 import { getPackageManifest } from "../health/packages";
 import { getContainers } from "../health/containers";
 import { getAisStatus } from "../vessels/aisListener";
-import { readEventLoopLag } from "../health/eventLoopLag";
+import { getMetricsHistory, getLatestMetricSample } from "../health/metrics";
+import { getTlsExpiryProbe } from "../health/certExpiry";
+import { getBackupFreshnessProbe } from "../health/backupFreshness";
+import { recordIntegrationSample, getIntegrationMetricsHistory } from "../health/integrationMetrics";
+import { DATA_DIR } from "../store/db";
 
 const router = Router();
 
 /** Package manifest + OSV.dev vulnerability check (cached 24h). */
-router.get("/packages", requireAuth, async (_req, res) => {
+router.get("/packages", requirePermission("system.read"), async (_req, res) => {
   try {
     res.json({ packages: await getPackageManifest() });
   } catch (e) {
@@ -26,12 +30,22 @@ router.get("/packages", requireAuth, async (_req, res) => {
 });
 
 /** Docker container inventory, via the read-only docker-socket-proxy. */
-router.get("/containers", requireAuth, async (_req, res) => {
+router.get("/containers", requirePermission("system.read"), async (_req, res) => {
   try {
     res.json({ containers: await getContainers() });
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Container query failed" });
   }
+});
+
+/** Resource-usage time series (CPU/memory/disk-IO/storage) — see health/metrics.ts. */
+router.get("/metrics", requirePermission("system.read"), (_req, res) => {
+  res.json(getMetricsHistory());
+});
+
+/** Integration performance time series (CW latency, AIS processing latency) — see health/integrationMetrics.ts. */
+router.get("/integration-metrics", requirePermission("system.read"), (_req, res) => {
+  res.json(getIntegrationMetricsHistory());
 });
 // CAST_VERSION/CAST_BUILD env vars were never actually set anywhere (not in
 // docker-compose.yml, not in either Dockerfile) — this silently always
@@ -49,11 +63,21 @@ try {
   console.warn("[health] version.json not found — reporting version/build as unknown");
 }
 
-router.get("/full", requireAuth, async (_req, res) => {
+router.get("/full", requirePermission("system.read"), async (_req, res) => {
+  // Timed so the SAME ping this probe already makes every ~15s (the frontend's
+  // poll interval) also feeds the CW latency chart — no new load on CW.
+  let cwSample: { latencyMs: number; ok: boolean } | null = null;
+  const cwStart = Date.now();
   const connectwise = resolveCwCreds().creds
     ? await getSystemInfo()
-        .then((i) => ({ state: "ok" as const, detail: `Connected — CW ${i.version}` }))
-        .catch((e) => ({ state: "down" as const, detail: e instanceof Error ? e.message : "unreachable" }))
+        .then((i) => {
+          cwSample = { latencyMs: Date.now() - cwStart, ok: true };
+          return { state: "ok" as const, detail: `Connected — CW ${i.version}` };
+        })
+        .catch((e) => {
+          cwSample = { latencyMs: Date.now() - cwStart, ok: false };
+          return { state: "down" as const, detail: e instanceof Error ? e.message : "unreachable" };
+        })
     : { state: "warn" as const, detail: "Not configured" };
 
   const activeDirectory = adConfigured()
@@ -98,15 +122,38 @@ router.get("/full", requireAuth, async (_req, res) => {
   // MMSIs per connection — is far under aisstream's ~300msg/s global-feed
   // budget, so danger here would mean something else entirely is blocking
   // the process), not a value aisstream publishes.
-  const lag = readEventLoopLag();
+  // Read from the metrics sampler's latest sample rather than the histogram
+  // directly — readEventLoopLag() resets on every read, so this route and
+  // the sampler both calling it would each only see a fraction of the window.
+  const lag = getLatestMetricSample();
   const backpressure = {
-    state: lag.meanMs > 50 ? ("down" as const) : lag.meanMs > 10 ? ("warn" as const) : ("ok" as const),
-    detail: `Event-loop lag — mean ${lag.meanMs.toFixed(2)}ms, p99 ${lag.p99Ms.toFixed(2)}ms, max ${lag.maxMs.toFixed(2)}ms (since last check)`,
+    state: !lag ? ("idle" as const) : lag.eventLoopLagMeanMs > 50 ? ("down" as const) : lag.eventLoopLagMeanMs > 10 ? ("warn" as const) : ("ok" as const),
+    detail: !lag
+      ? "No samples yet"
+      : `Event-loop lag — mean ${lag.eventLoopLagMeanMs.toFixed(2)}ms, p99 ${lag.eventLoopLagP99Ms.toFixed(2)}ms, max ${lag.eventLoopLagMaxMs.toFixed(2)}ms (since last sample)`,
   };
 
+  let dbSizeBytes = 0;
+  try {
+    dbSizeBytes = statSync(join(DATA_DIR, "cast.db")).size;
+  } catch {
+    // No DB file yet (fresh install) — 0 is a fine default, not an error worth surfacing.
+  }
+
+  const tls = await getTlsExpiryProbe();
+  const backups = getBackupFreshnessProbe();
+
+  recordIntegrationSample({
+    at: new Date().toISOString(),
+    cw: cwSample,
+    aisTier1: ais.configured ? { avgProcessingMs: ais.tier1.avgProcessingMs, maxProcessingMs: ais.tier1.maxProcessingMs } : null,
+    aisTier2: ais.configured ? { avgProcessingMs: ais.tier2.avgProcessingMs, maxProcessingMs: ais.tier2.maxProcessingMs } : null,
+  });
+
   res.json({
-    app: { version: VERSION, build: BUILD, env: config.nodeEnv },
+    app: { version: VERSION, build: BUILD, env: config.nodeEnv, uptimeSeconds: process.uptime(), dbSizeBytes },
     integrations: { connectwise, aisstream, activeDirectory, aisTier1, aisTier2 },
+    infra: { tls, backups },
     backpressure,
     cwWrites: isCwWritesEnabled(),
   });

@@ -2,7 +2,7 @@
 status: active
 read-when: Writing or reviewing ANY CAST web UI — a screen, a component, or a style. This is the anti-fragmentation contract.
 related: [../decisions/0007-web-app-design-system.md, cast-web-app-mockup.md]
-updated: 2026-08-18
+updated: 2026-08-17
 ---
 
 # CAST design system — rules + inventory
@@ -44,7 +44,18 @@ classes and 554 inline styles *before* it wrote the rules. We write them first.
 ## Primitive inventory (`ui/`)
 `Button` · `Card`(+Header/Body/Footer) · `Badge` · `StatusDot` · `Field`(+Input/Select/Textarea/Checkbox)
 · `Table` · `EmptyState` · `PageHeader` · `Tabs` · `Gauge` · `Modal` · `Toast`(+`useToast`) · `Banner` · `Spinner`
-· `Disclosure` (collapsible header/body row + an always-visible non-clickable `subheader` zone added `v0.11.0` for content a `<button>` can't legally contain, e.g. a `<table>` — Vessel Location's history tree + write-preview) · `Icons`.
+· `Disclosure` (collapsible header/body row + an always-visible non-clickable `subheader` zone added `v0.11.0` for content a `<button>` can't legally contain, e.g. a `<table>` — Vessel Location's history tree + write-preview) · `Icons`
+· `RadialGauge` (circular meter, same threshold coloring as `Gauge`) · `TimeSeriesChart` (hand-rolled SVG line chart —
+crosshair+tooltip hover, direct end-labels, legend for ≥2 series, table-view fallback; built for System Health's
+resource-usage charts, dataviz skill).
+
+**Chart color** (`--chart-series-1`/`-2` in `tokens.css`): categorical, fixed order, reused identically across every
+2-series chart on the page (series-1 = primary/received, series-2 = secondary/sent) — never picked per-chart.
+`--chart-series-2` (`#d9711f`) is validated with `dataviz`'s `scripts/validate_palette.js` against **both**
+`--color-brand` (light) and its dark override, so the same hex works unchanged in both modes. A 3rd+ series
+(e.g. per-container comparisons) is deliberately NOT a 3rd categorical hue — use small multiples (System Health's
+per-container table rows, each with its own single-hue `Gauge`) instead, since CAST's token set has no validated
+3rd chart hue yet.
 
 **Adding a primitive:** class in `components.css` → thin component in `ui/` → export from `ui/index.ts`.
 

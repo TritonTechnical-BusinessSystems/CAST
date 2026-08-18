@@ -16,6 +16,7 @@ import logisticsShipmentsRoutes from "./routes/logisticsShipments";
 import logisticsDocumentsRoutes from "./routes/logisticsDocuments";
 import { startTierRefresh, stopTierRefresh } from "./jobs/tierRefresh";
 import { startAisListener, stopAisListener } from "./vessels/aisListener";
+import { startMetricsSampler, stopMetricsSampler } from "./health/metrics";
 import { seedBreakGlass } from "./auth/local";
 import { db } from "./store/db";
 
@@ -44,6 +45,7 @@ const server = app.listen(config.port, () => {
   seedBreakGlass();
   startTierRefresh();
   startAisListener();
+  startMetricsSampler();
 });
 
 // better-sqlite3 must finalize its prepared statements before the Node
@@ -54,6 +56,7 @@ const server = app.listen(config.port, () => {
 function shutdown() {
   stopTierRefresh();
   stopAisListener();
+  stopMetricsSampler();
   server.close(() => {
     db.close();
     process.exit(0);

@@ -82,7 +82,7 @@
 .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
 .card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border); }
 .card-title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
-.card-body { padding: var(--space-5); }
+.card-body { padding: var(--space-5); overflow-wrap: anywhere; }
 .card-footer { padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface-sunken); }
 
 /* ===================== Form fields ===================== */
@@ -214,6 +214,50 @@
 /* ===================== Gauge (System Health) ===================== */
 .gauge { height: 8px; border-radius: var(--radius-pill); background: var(--color-surface-sunken); overflow: hidden; }
 .gauge-fill { height: 100%; border-radius: var(--radius-pill); transition: width var(--ease-base); }
+
+/* ===================== Radial gauge (System Health) ===================== */
+.radial-gauge { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.radial-gauge-track { fill: none; stroke: var(--color-surface-sunken); }
+.radial-gauge-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset var(--ease-base); }
+.radial-gauge-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.radial-gauge-value { font-weight: var(--weight-semibold); font-size: var(--text-md); }
+.radial-gauge-caption { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px; }
+
+/* ===================== Stat tile (System Health) ===================== */
+.stat-tile { display: flex; flex-direction: column; gap: var(--space-1); }
+.stat-tile-value { font-size: var(--text-2xl); font-weight: var(--weight-semibold); }
+.stat-tile-label { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ===================== Time-series chart (System Health, dataviz skill) =====================
+ * Hand-rolled SVG (at most 2 series anywhere on this page — a charting
+ * library would be overkill). Fixed viewBox, scales via CSS width. */
+.chart { display: flex; flex-direction: column; gap: var(--space-2); }
+.chart-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 28px; }
+.chart-legend { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.chart-legend-item { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-soft); }
+.chart-legend-swatch { width: 12px; height: 3px; border-radius: var(--radius-sm); flex-shrink: 0; }
+.chart-plot { position: relative; }
+.chart-svg { width: 100%; height: auto; display: block; touch-action: none; }
+.chart-gridline { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-axis-label { fill: var(--chart-axis-text); font-size: 9px; font-family: var(--font-body); }
+.chart-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-end-label { font-size: 10px; font-family: var(--font-mono); font-weight: var(--weight-semibold); }
+.chart-crosshair { stroke: var(--color-border); stroke-width: 1; }
+.chart-hover-dot { stroke: var(--color-surface); stroke-width: 2; }
+.chart-tooltip {
+  position: absolute; top: 4px; transform: translateX(-50%);
+  background: var(--color-surface-rail); color: var(--color-text-inverse);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+  padding: var(--space-2) var(--space-3); font-size: var(--text-xs);
+  pointer-events: none; white-space: nowrap; z-index: var(--z-sticky);
+}
+.chart-tooltip-left { transform: translateX(-100%); }
+.chart-tooltip-right { transform: translateX(0%); }
+.chart-tooltip-time { color: rgba(255, 255, 255, 0.6); margin-bottom: var(--space-1); font-family: var(--font-mono); }
+.chart-tooltip-row { display: flex; align-items: center; gap: var(--space-2); }
+.chart-tooltip-row strong { font-variant-numeric: tabular-nums; }
+.chart-tooltip-key { width: 10px; height: 2px; border-radius: var(--radius-sm); flex-shrink: 0; }
+.chart-table-scroll { max-height: 320px; overflow-y: auto; }
 
 /* ===================== Auth (login) — a genuinely one-off page chrome ===================== */
 .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-6); background: var(--color-surface-rail); }

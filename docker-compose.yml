@@ -5,15 +5,18 @@ services:
   # Read-only view of the Docker daemon for System Health's container
   # inventory (INIT-0016) — cast-api talks to THIS, never the raw socket, so a
   # compromised API process can list containers but never control the daemon.
-  # Only CONTAINERS (GET) is allow-listed; everything else (POST/exec/etc.) is
-  # off by default. Never published to the host — reachable only from `api`
-  # over the internal bridge network.
+  # CONTAINERS (GET, list/inspect) and STATS (GET, per-container cpu/mem/io
+  # counters — System Health's resource-usage charts, INIT-0016) are
+  # allow-listed; everything else (POST/exec/etc.) is off by default. Never
+  # published to the host — reachable only from `api` over the internal
+  # bridge network.
   docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: cast-docker-proxy
     restart: unless-stopped
     environment:
       CONTAINERS: 1
+      STATS: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks: [internal]
@@ -30,6 +33,15 @@ services:
       # Encrypted store + key on a host bind mount so backups read it directly
       # (scripts/backup.sh). Persists across redeploys.
       - /opt/cast/data:/app/components/api/.data
+      # Read-only, System Health's backup-freshness probe (INIT-0016) — the
+      # SAME dir `scripts/backup.sh` writes to. `api` never writes here, and
+      # its unprivileged user (uid 10001) can't read a tarball's contents
+      # (root-600), only its name/size/mtime via stat — see
+      # health/backupFreshness.ts. (TLS expiry does NOT need a mount — see
+      # health/certExpiry.ts / config.ts for why: certbot's archive dir is
+      # root-only, so a file read would never actually work here; it's a
+      # live TLS handshake to `web:443` instead.)
+      - /opt/cast/backups:/opt/cast/backups:ro
     depends_on: [docker-proxy]
     networks: [internal]
     healthcheck:
