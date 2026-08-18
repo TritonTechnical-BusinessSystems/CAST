@@ -589,3 +589,81 @@ expandable history below. The write-preview table could not live inside the
 valid content inside a `<button>` — so `Disclosure` gained a second,
 non-clickable `subheader` zone (`components/web/src/ui/Disclosure.tsx`) for
 exactly this case: always-visible content that isn't part of the toggle.
+
+## 8. Resolved 2026-08-18 — the write allowlist, and going live
+
+Two follow-ups the same day the confidence-tier design shipped.
+
+**"CW Site Name set to:" replaces "Will write:"** — more literal about what
+the Vessel Location subheader line actually shows. Also: the no-position-
+data-at-all case previously displayed the string "No signal received yet" as
+if that were the site name text; now it shows bare "Vessel" — the same text
+the "expired" confidence tier already correctly returns, so "never had data"
+and "had data, now too stale to trust" render identically and honestly (this
+is what the CW site name actually is or would be, not a description of why).
+
+**A controlled-rollout allowlist gates Vessel Site writes, on top of (not
+instead of) `isCwWritesEnabled()`.** User, asked directly before enabling
+real writes for the first time: *"Can we gate the initial push so we control
+it and can test with a few at a time?"* `isCwWritesEnabled()` is a single
+flag shared across every CW write CAST makes — vessel identity
+reconciliation (`INIT-0014`, deliberately left "gated pending user approval"
+as a *separate* decision), Logistics document posting, ticket status
+updates — all human-triggered by clicking something in their own UI, not
+scheduled jobs, so turning the shared flag on doesn't flood those.
+
+- `config.ts`: `vesselSiteWriteAllowlist()` / `setVesselSiteWriteAllowlist()`
+  / `isVesselSiteWriteAllowed(mmsi)` — a setting holding `"all"` or an array
+  of MMSIs. **Default (unset) is an empty array — writes to NOBODY**, the
+  safe direction for a controlled rollout. `"all"` is an explicit graduation
+  sentinel, so "no restriction" can never be an accidental unset value.
+- `routes/tracking.ts`'s `writeVesselSites()` checks
+  `isVesselSiteWriteAllowed(v.mmsi)` before computing `formatSiteUpdate` at
+  all (skips the nearest-port/timezone work too, not just the CW call, for
+  anyone not allowlisted) — a second, narrower gate layered on top of the
+  existing `isCwWritesEnabled()` check inside `updateVesselSite` itself,
+  never a replacement for it.
+- **Pre-release security gate BLOCKED the first version of this and found a
+  real, live gap**, not a theoretical one: `reconcileVesselSites()`'s
+  auto-create path (`rule.autoCreateVesselSite`, runs on the SAME scheduled
+  tier-refresh cycle as `writeVesselSites`) calls `cw.createVesselSite()` —
+  also a real CW write — and it was gated only by `isCwWritesEnabled()`, not
+  by the new allowlist at all. Confirmed live in production before writing
+  the fix: `autoCreateVesselSite` is `true` today. Left unfixed, the very
+  first tier-refresh cycle after enabling writes would have auto-created a
+  new "Vessel" site on every rule-matched company lacking one — the exact
+  "everything at once" outcome this whole feature exists to prevent, with
+  the allowlist offering zero protection against it. Fixed: the auto-create
+  branch now also requires `isVesselSiteWriteAllowed()` on the vessel's
+  normalized MMSI before creating anything.
+- The security review also flagged two UI gaps, both fixed before shipping:
+  the two write-status GETs (`cwWritesEnabled`, the allowlist) silently
+  swallowed fetch failures and left the page showing its default,
+  safe-looking "writes are OFF" state — meaning a transient request failure
+  could make a page whose whole purpose is showing the true write state
+  confidently show the wrong one. Now surfaces an explicit "couldn't confirm
+  write status — treat as unknown" banner (with a retry) instead. And
+  switching the page-level selector straight to "All tracked vessels" fired
+  immediately with no confirmation, unlike the equivalent action on the
+  Integrations page — now uses the same confirm-modal pattern already
+  established there (`pages/Integrations.tsx`'s "Enable ConnectWise writes?"
+  dialog) rather than inventing a new one.
+- New routes: `GET`/`PUT /api/tracking/vessel-site-write-allowlist`.
+- **The Vessel Location tab is now also the control surface** — a
+  page-level "Vessel Site writes" selector (Allowlist only / All tracked
+  vessels) plus a per-vessel checkbox in each vessel's `subheader` zone
+  (same non-clickable-button constraint as the write-preview table, same
+  fix). Switching the page-level selector to "Allowlist only" resets the
+  list to empty rather than restoring whatever was previously checked —
+  a deliberate choice, not a bug: re-enabling a whole prior list silently on
+  a mode switch is exactly the kind of surprise a rollout-control mechanism
+  shouldn't produce. A `Badge` ("CW write: ON") in the always-visible header
+  line shows at a glance, without expanding, which vessels are live. The
+  status `Banner` reflects both gates together (`cwWritesEnabled` AND the
+  allowlist state), since either one being off means nothing writes.
+- Verified live in a browser: default state (writes off) shows a neutral
+  preview-only banner and unchecked boxes; checking one vessel persists
+  immediately (confirmed via a direct DB read, not just the UI reflecting
+  its own optimistic state back); switching to "All tracked vessels" shows
+  every checkbox checked and disabled; switching back to "Allowlist only"
+  correctly resets to empty.

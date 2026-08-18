@@ -4,6 +4,18 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.12.0 — August 2026
+
+Real ConnectWise writes can now be turned on for a handful of vessels at a time, not all-or-nothing.
+
+## Highlights
+
+- **A controlled rollout, right in the Vessel Location tab.** A page-level switch chooses between "Allowlist only" and "All tracked vessels," and every vessel gets its own checkbox to opt it into real writes individually — see exactly what would be written, then decide to actually let it happen, one vessel at a time.
+- **Nothing writes by default, even with writes turned on.** The allowlist starts empty on purpose, so enabling the master switch is safe on its own — a vessel only ever gets a real write once it's explicitly checked.
+- **Clearer labeling.** The write-preview line now reads "CW Site Name set to:" instead of "Will write:," and a vessel with no data at all now correctly shows "Vessel" — the same plain text a long-stale vessel already showed — instead of a description of the absence.
+
+---
+
 # What's New in v0.11.0 — August 2026
 
 Vessel Site updates now come with a color: how sure CAST is that what you're reading is still true.

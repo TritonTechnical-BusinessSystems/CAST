@@ -18,7 +18,14 @@
  */
 import { Router } from "express";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { tierRefreshMinutes, setTierRefreshMinutes } from "../config";
+import {
+  tierRefreshMinutes,
+  setTierRefreshMinutes,
+  vesselSiteWriteAllowlist,
+  setVesselSiteWriteAllowlist,
+  isVesselSiteWriteAllowed,
+  type VesselSiteWriteAllowlist,
+} from "../config";
 import { getSetting, setSetting } from "../store/secretStore";
 import { listCompanyStatuses, listServiceBoards, listProjectStatuses } from "../connectwise/manageClient";
 import { getCwClient } from "../connectwise/client";
@@ -107,6 +114,20 @@ router.get("/current-split", requireAuth, (_req, res) => {
   res.json(getSetting("tracking.currentSplit") ?? null);
 });
 
+/** Controlled-rollout gate for Vessel Site writes (INIT-0012, 2026-08-18) — `"all"` or a list of allowed MMSIs. Default (unset) is an empty list: writes to nobody until explicitly opted in. */
+router.get("/vessel-site-write-allowlist", requireAuth, (_req, res) => {
+  res.json({ allowlist: vesselSiteWriteAllowlist() });
+});
+
+router.put("/vessel-site-write-allowlist", requirePermission("tracking.write"), (req, res) => {
+  const { allowlist } = (req.body ?? {}) as { allowlist?: unknown };
+  if (allowlist !== "all" && !(Array.isArray(allowlist) && allowlist.every((m) => typeof m === "string"))) {
+    return res.status(400).json({ error: 'allowlist must be "all" or an array of MMSI strings' });
+  }
+  setVesselSiteWriteAllowlist(allowlist as VesselSiteWriteAllowlist);
+  res.json({ ok: true, allowlist: vesselSiteWriteAllowlist() });
+});
+
 function toList(vessels: { vesselName: string; companyName: string }[]) {
   return vessels.map((v) => ({ vesselName: v.vesselName, companyName: v.companyName }));
 }
@@ -155,6 +176,17 @@ async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) =>
  * client with an MMSI," and that must hold even if an operator has
  * temporarily unchecked "Require MMSI" to audit vessels missing one.
  *
+ * ALSO gated by `isVesselSiteWriteAllowed()` (2026-08-18, security review) —
+ * creation is a real CW write, same category as `updateVesselSite`, and
+ * without this check it would bypass the Vessel Site Write Allowlist
+ * entirely: `autoCreateVesselSite` runs on this same scheduled cycle, so a
+ * company with no resolvable site would get a brand-new "Vessel" site
+ * created on the very next tier-refresh regardless of whether that
+ * company's MMSI was ever explicitly allowlisted — exactly the "everything
+ * at once" outcome the allowlist exists to prevent. Confirmed live in
+ * production before this fix: `autoCreateVesselSite` is `true` today, so
+ * this was not a theoretical gap.
+ *
  * Called only from the scheduled tier-refresh job, never from the
  * interactive `/preview` — site creation is a real CW write and shouldn't be
  * a side effect of someone adjusting filters in the UI.
@@ -172,8 +204,11 @@ export async function reconcileVesselSites(rule: Rule): Promise<void> {
       const r = resolveVesselSite(sites, siteMap[v.id] ?? null);
       if (r.siteId) {
         siteMap[v.id] = r.siteId;
-      } else if (rule.autoCreateVesselSite && checkMmsi(v.mmsi).valid) {
-        siteMap[v.id] = (await cw.createVesselSite(v.id)).id;
+      } else {
+        const mmsiCheck = checkMmsi(v.mmsi);
+        if (rule.autoCreateVesselSite && mmsiCheck.valid && mmsiCheck.normalized && isVesselSiteWriteAllowed(mmsiCheck.normalized)) {
+          siteMap[v.id] = (await cw.createVesselSite(v.id)).id;
+        }
       }
       // else: leave unresolved — no site, and either auto-create is off or the vessel has no valid MMSI.
     } catch (err) {
@@ -202,6 +237,11 @@ type LastSiteWrite = Record<string, { name: string; addressLine1?: string; timeZ
  * vessels. `formatSiteUpdate` returns null for stale/no-data vessels, which
  * are left untouched (see that file's header for why).
  *
+ * Gated a second time by `isVesselSiteWriteAllowed()` (`config.ts`), on top
+ * of the existing `isCwWritesEnabled()` check inside `updateVesselSite`
+ * itself — a controlled-rollout allowlist so real writes can start with a
+ * handful of MMSIs rather than every Tier 1/2 vessel at once.
+ *
  * Called only from the scheduled tier-refresh job — a real CW write,
  * same as reconcileVesselSites, shouldn't be a side effect of `/preview`.
  */
@@ -214,6 +254,7 @@ export async function writeVesselSites(split: { tier1: { id: string; mmsi: strin
   await mapWithConcurrency(vessels, 8, async (v) => {
     const siteId = siteMap[v.id];
     if (!siteId) return;
+    if (!isVesselSiteWriteAllowed(v.mmsi)) return;
     const update = formatSiteUpdate(getPosition(v.mmsi));
     if (!update) return;
     const prev = lastWrite[siteId];

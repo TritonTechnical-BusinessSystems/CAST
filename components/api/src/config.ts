@@ -200,3 +200,40 @@ export function setVesselStatusFallbackDays(days: number): void {
   if (!(days > 0)) throw new Error("Fallback duration must be a positive number of days");
   setSetting(VESSEL_STATUS_FALLBACK_DAYS_KEY, days);
 }
+
+const VESSEL_SITE_WRITE_ALLOWLIST_KEY = "tracking.vesselSiteWriteAllowlist";
+
+export type VesselSiteWriteAllowlist = "all" | string[];
+
+/**
+ * A second, narrower gate in front of Vessel Site writes specifically — on
+ * top of, not instead of, `isCwWritesEnabled()`. `cwWritesEnabled` is shared
+ * across every CW write CAST makes (vessel identity reconciliation,
+ * Logistics document posting, ticket status) — flipping it on to start
+ * Vessel Site writes would also silently remove the safety interlock on
+ * those other, separately-gated features. This allowlist exists so the
+ * *first* real production writes can be scoped to a handful of MMSIs the
+ * user picks and watches, rather than every Tier 1/2 vessel at once on the
+ * very next 5-minute cycle (user, 2026-08-18: "gate the initial push so we
+ * control it and can test with a few at a time"). Default (unset) is an
+ * empty list — writes to NOBODY until explicitly opted in, the safe
+ * direction for a controlled rollout. `"all"` is the explicit graduation
+ * sentinel once testing is done, so "no restriction" has to be a deliberate
+ * choice, never an accidental unset value.
+ */
+export function vesselSiteWriteAllowlist(): VesselSiteWriteAllowlist {
+  const stored = getSetting<VesselSiteWriteAllowlist>(VESSEL_SITE_WRITE_ALLOWLIST_KEY);
+  return stored ?? [];
+}
+
+export function setVesselSiteWriteAllowlist(value: VesselSiteWriteAllowlist): void {
+  if (value !== "all" && !Array.isArray(value)) {
+    throw new Error('Allowlist must be "all" or an array of MMSIs');
+  }
+  setSetting(VESSEL_SITE_WRITE_ALLOWLIST_KEY, value);
+}
+
+export function isVesselSiteWriteAllowed(mmsi: string): boolean {
+  const allowlist = vesselSiteWriteAllowlist();
+  return allowlist === "all" || allowlist.includes(mmsi);
+}

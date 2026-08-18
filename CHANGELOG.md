@@ -10,6 +10,22 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.12.0 — build 2608025 — 2026-08-18T02:45:45Z
+
+### Added
+- [Security] **A controlled-rollout allowlist now gates real Vessel Site writes**, on top of (not instead of) the existing `cwWritesEnabled` safety flag — asked for directly before enabling real writes for the first time: *"Can we gate the initial push so we control it and can test with a few at a time?"* Default (unset) is an empty allowlist — writes to nobody, even once the master flag is on — with `"all"` as an explicit graduation sentinel that can never be an accidental default. New `GET`/`PUT /api/tracking/vessel-site-write-allowlist`.
+- [UX] **The Vessel Location tab is now the control surface for the allowlist** — a page-level "Vessel Site writes" selector (Allowlist only / All tracked vessels) plus a per-vessel checkbox, live-persisted on toggle. A `Badge` in each vessel's always-visible header shows "CW write: ON" at a glance without expanding; the status banner reflects both gates together, since either one being off means nothing writes.
+
+### Changed
+- [UX] "Will write:" relabeled to "CW Site Name set to:" — more literal about what the line shows.
+- [UX] The no-position-data-at-all case now shows bare "Vessel" instead of the string "No signal received yet" — matches the "expired" tier's own text, so both "never had data" and "had data, now too stale to trust" render identically and honestly: this is what the CW site name actually is (or would be), not a description of why.
+
+### Security
+- [Security] **Pre-release security gate BLOCKED the first version of this and found a real, live gap** (independent review, `knowledge/conventions/versioning.md`'s MINOR-bump gate): `reconcileVesselSites()`'s auto-create path (`rule.autoCreateVesselSite`, runs on the same scheduled cycle as the Vessel Site writes) calls a real ConnectWise write (`createVesselSite`) that was gated only by the master `cwWritesEnabled` flag — not by the new allowlist at all. Confirmed live in production before writing the fix: `autoCreateVesselSite` is `true` today, so this was not theoretical — the first tier-refresh cycle after enabling writes would have auto-created a new "Vessel" site on every matched company lacking one, the exact "everything at once" outcome this feature exists to prevent. Fixed: auto-create now also requires `isVesselSiteWriteAllowed()`. Also fixed: the page's two write-status checks silently swallowed fetch failures and defaulted to showing "writes are OFF" — a transient request failure could make the one page whose purpose is showing the true write state confidently show the wrong one; now shows an explicit "couldn't confirm write status" banner with a retry instead. And switching straight to "All tracked vessels" fired immediately with no confirmation; now uses the same confirm-modal pattern already established on the Integrations page.
+
+### Docs
+- [Docs] `knowledge/architecture/vessel-location-updating-aisstream.md` §8 and `naming-lexicon.md`'s new **Vessel Site Write Allowlist** entry — including why this is a second, narrower gate layered on the existing shared `cwWritesEnabled` flag rather than a replacement for it, and why it's deliberately not called a "pin" or "exclude" (a different, previously-rejected concept from the priority/tier-split engine).
+
 ## v0.11.0 — build 2608024 — 2026-08-18T02:11:08Z
 
 ### Added

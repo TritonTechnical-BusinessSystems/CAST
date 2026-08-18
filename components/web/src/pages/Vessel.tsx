@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { PageHeader, Card, Table, Badge, Banner, Spinner, EmptyState, Disclosure, Select, Field } from "../ui";
+import { PageHeader, Card, Table, Badge, Banner, Spinner, EmptyState, Disclosure, Select, Field, Checkbox, Button, Modal, useToast } from "../ui";
+
+type WriteAllowlist = "all" | string[];
 
 interface TrackedVessel {
   id: string;
@@ -87,11 +89,36 @@ function HistoryPanel({ entries }: { entries: HistoryEntry[] }) {
 }
 
 export function Vessel() {
+  const toast = useToast();
   const [vessels, setVessels] = useState<TrackedVessel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [historyLimit, setHistoryLimit] = useState(20);
   const [historyCache, setHistoryCache] = useState<Record<string, HistoryEntry[] | "loading" | "error">>({});
+  const [cwWritesEnabled, setCwWritesEnabled] = useState(false);
+  const [allowlist, setAllowlist] = useState<WriteAllowlist>([]);
+  // Neither "writes are off" nor an empty allowlist can be trusted until
+  // BOTH status fetches actually succeed — silently falling back to those
+  // (safe-looking) defaults on a failed request would let this page show
+  // "OFF" while the server might genuinely be writing live. Security review,
+  // 2026-08-18: "the operator's only visibility surface silently and
+  // confidently reports the safest possible state when it actually knows
+  // nothing."
+  const [writeStatusError, setWriteStatusError] = useState(false);
+  const [confirmAllMode, setConfirmAllMode] = useState(false);
+
+  function loadWriteStatus() {
+    setWriteStatusError(false);
+    Promise.all([
+      api.get<{ writesEnabled: boolean }>("/integrations/connectwise"),
+      api.get<{ allowlist: WriteAllowlist }>("/tracking/vessel-site-write-allowlist"),
+    ])
+      .then(([cw, gate]) => {
+        setCwWritesEnabled(cw.writesEnabled);
+        setAllowlist(gate.allowlist);
+      })
+      .catch(() => setWriteStatusError(true));
+  }
 
   useEffect(() => {
     api
@@ -99,7 +126,29 @@ export function Vessel() {
       .then((r) => setVessels(r.vessels))
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load tracked vessels"))
       .finally(() => setLoading(false));
+    loadWriteStatus();
   }, []);
+
+  function isWriteAllowed(mmsi: string): boolean {
+    return allowlist === "all" || allowlist.includes(mmsi);
+  }
+
+  function saveAllowlist(next: WriteAllowlist) {
+    const prev = allowlist;
+    setAllowlist(next);
+    api
+      .put<{ ok: boolean; allowlist: WriteAllowlist }>("/tracking/vessel-site-write-allowlist", { allowlist: next })
+      .catch((e) => {
+        setAllowlist(prev);
+        toast("error", e instanceof Error ? e.message : "Failed to update the write allowlist");
+      });
+  }
+
+  function toggleVessel(mmsi: string) {
+    if (allowlist === "all") return;
+    const next = allowlist.includes(mmsi) ? allowlist.filter((m) => m !== mmsi) : [...allowlist, mmsi];
+    saveAllowlist(next);
+  }
 
   function loadHistory(mmsi: string) {
     const key = `${mmsi}:${historyLimit}`;
@@ -118,21 +167,106 @@ export function Vessel() {
         title="Vessel Location"
         subtitle="Every vessel with live AIS coverage right now (Monitoring Tier 1/2), its current position, and its most recently received updates."
         actions={
-          <Field label="History per vessel">
-            <Select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
-              {HISTORY_LIMIT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  Last {n}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <>
+            <Field label="Vessel Site writes">
+              <Select
+                value={allowlist === "all" ? "all" : "list"}
+                disabled={writeStatusError}
+                onChange={(e) => {
+                  if (e.target.value === "all") {
+                    setConfirmAllMode(true);
+                  } else {
+                    saveAllowlist([]);
+                  }
+                }}
+              >
+                <option value="list">Allowlist only (test a few)</option>
+                <option value="all">All tracked vessels</option>
+              </Select>
+            </Field>
+            <Field label="History per vessel">
+              <Select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
+                {HISTORY_LIMIT_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    Last {n}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </>
         }
       />
-      <Banner tone="info">
-        "Current" reflects exactly what would be written to each vessel's ConnectWise Vessel Site if writes were
-        enabled (<span className="mono">formatSiteUpdate</span>) — this page only reads that data, it never writes.
+      <Banner
+        tone={
+          writeStatusError
+            ? "danger"
+            : !cwWritesEnabled
+              ? "info"
+              : allowlist === "all"
+                ? "danger"
+                : allowlist.length > 0
+                  ? "warning"
+                  : "info"
+        }
+      >
+        {writeStatusError ? (
+          <>
+            ⚠️ Couldn't confirm write status from the server — treat this page as unknown, not safe, until it
+            reloads.{" "}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={loadWriteStatus}>
+              Retry
+            </button>
+          </>
+        ) : !cwWritesEnabled ? (
+          <>
+            ConnectWise writes are OFF — this page is preview-only right now (<span className="mono">formatSiteUpdate</span>).
+          </>
+        ) : allowlist === "all" ? (
+          <>
+            ⚠️ ConnectWise writes are LIVE for <strong>every</strong> vessel shown below — the "Vessel Site writes"
+            selector above is set to "All tracked vessels".
+          </>
+        ) : allowlist.length > 0 ? (
+          <>
+            ⚠️ ConnectWise writes are LIVE for <strong>{allowlist.length}</strong> vessel{allowlist.length === 1 ? "" : "s"} — check the
+            box on a vessel below to add or remove it from the allowlist.
+          </>
+        ) : (
+          <>
+            ConnectWise writes are enabled, but no vessel is on the write allowlist yet — this page is still
+            preview-only until you check a box below.
+          </>
+        )}
       </Banner>
+      {confirmAllMode && (
+        <Modal
+          title="Enable ConnectWise writes for ALL tracked vessels?"
+          onClose={() => setConfirmAllMode(false)}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmAllMode(false)}>Cancel</Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  saveAllowlist("all");
+                  setConfirmAllMode(false);
+                }}
+              >
+                Enable for all vessels
+              </Button>
+            </>
+          }
+        >
+          <div className="col gap-3">
+            <p>
+              Every vessel with live AIS coverage (Tier 1/2 — up to ~60 at a time) will start receiving real
+              ConnectWise Vessel Site writes on the next tier-refresh cycle, not just the ones currently checked
+              below.
+            </p>
+            <p className="muted text-sm">You can switch back to the allowlist at any time — it resets to empty, not to whatever was previously checked.</p>
+          </div>
+        </Modal>
+      )}
 
       {loading ? (
         <Card>
@@ -162,10 +296,17 @@ export function Vessel() {
                     <strong>{v.vesselName}</strong>
                     <Badge tone="brand">Tier {v.tier}</Badge>
                     <Badge tone={STATUS_TONE[v.navigationalStatus]}>{STATUS_LABEL[v.navigationalStatus]}</Badge>
+                    {cwWritesEnabled && isWriteAllowed(v.mmsi) && <Badge tone="danger">CW write: ON</Badge>}
                   </div>
                 }
                 subheader={
                   <div className="col gap-2">
+                    <Checkbox
+                      label="Enable ConnectWise write for this vessel"
+                      checked={isWriteAllowed(v.mmsi)}
+                      disabled={allowlist === "all" || writeStatusError}
+                      onChange={() => toggleVessel(v.mmsi)}
+                    />
                     <div>
                       <span className="muted">CW Site Name set to: </span>
                       {v.summary ?? "Vessel"}
