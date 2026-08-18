@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.4 — build 2608030 — 2026-08-18T23:55:05Z
+
+### Fixed
+- [Design-System] **Inconsistent field heights across Logistics Configuration forms** — reported live from the "Add Company" modal: some inputs (Name, City/State/Zip, Phone/Email, Tax ID/EIN/VAT/EORI) rendered at ~18px tall instead of the standard 36px, and sat visibly misaligned against sibling fields in the same row. Root cause: `className="grow"` (`flex: 1`) was applied to the `<Input>` inside a `<Field>`, but `.field` is itself a `flex-direction: column` container — `flex-basis: 0%` applies to the *vertical* axis there, not horizontal, collapsing the input's height instead of doing anything useful for width (which `.field`'s own default `align-items: stretch` already handled, with or without that class). Removed the misapplied class from all 10 affected inputs; a code comment now flags this specific footgun for `.grow`. Also added a `.top` alignment utility and applied it to these fields' `.row` wrappers, so a field with a hint no longer sits visibly offset from a sibling field without one.
+
 ## v0.13.3 — build 2608029 — 2026-08-18T23:26:58Z
 
 ### Fixed

@@ -255,9 +255,9 @@ export function LogisticsConfigBranding() {
           }
         >
           <div className="col gap-3">
-            <div className="row gap-3">
+            <div className="row gap-3 top">
               <Field label="Name">
-                <Input className="grow" value={draft.name} onChange={(e) => setDraft((d) => (d ? { ...d, name: e.target.value } : d))} />
+                <Input value={draft.name} onChange={(e) => setDraft((d) => (d ? { ...d, name: e.target.value } : d))} />
               </Field>
               <Field label="PDF Code" hint="Appended to CI/PL filenames.">
                 <Input
@@ -274,15 +274,15 @@ export function LogisticsConfigBranding() {
             <Field label="Address line 2">
               <Input value={draft.address_line2 ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, address_line2: e.target.value } : d))} />
             </Field>
-            <div className="row gap-3">
+            <div className="row gap-3 top">
               <Field label="City">
-                <Input className="grow" value={draft.city ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, city: e.target.value } : d))} />
+                <Input value={draft.city ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, city: e.target.value } : d))} />
               </Field>
               <Field label="State">
-                <Input className="grow" value={draft.state ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, state: e.target.value } : d))} />
+                <Input value={draft.state ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, state: e.target.value } : d))} />
               </Field>
               <Field label="Zip">
-                <Input className="grow" value={draft.zip ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, zip: e.target.value } : d))} />
+                <Input value={draft.zip ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, zip: e.target.value } : d))} />
               </Field>
             </div>
             <Field label="Country">
@@ -292,27 +292,27 @@ export function LogisticsConfigBranding() {
               <Textarea rows={2} value={draft.address_block ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, address_block: e.target.value } : d))} />
             </Field>
 
-            <div className="row gap-3">
+            <div className="row gap-3 top">
               <Field label="Phone">
-                <Input className="grow" value={draft.phone ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, phone: e.target.value } : d))} />
+                <Input value={draft.phone ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, phone: e.target.value } : d))} />
               </Field>
               <Field label="Email">
-                <Input className="grow" value={draft.email ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, email: e.target.value } : d))} />
+                <Input value={draft.email ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, email: e.target.value } : d))} />
               </Field>
             </div>
 
-            <div className="row gap-3">
+            <div className="row gap-3 top">
               <Field label="Tax ID">
-                <Input className="grow" value={draft.tax_id ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, tax_id: e.target.value } : d))} />
+                <Input value={draft.tax_id ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, tax_id: e.target.value } : d))} />
               </Field>
               <Field label="EIN">
-                <Input className="grow" value={draft.ein ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, ein: e.target.value } : d))} />
+                <Input value={draft.ein ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, ein: e.target.value } : d))} />
               </Field>
               <Field label="VAT">
-                <Input className="grow" value={draft.vat ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, vat: e.target.value } : d))} />
+                <Input value={draft.vat ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, vat: e.target.value } : d))} />
               </Field>
               <Field label="EORI">
-                <Input className="grow" value={draft.eori ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, eori: e.target.value } : d))} />
+                <Input value={draft.eori ?? ""} onChange={(e) => setDraft((d) => (d ? { ...d, eori: e.target.value } : d))} />
               </Field>
             </div>
 
@@ -324,7 +324,7 @@ export function LogisticsConfigBranding() {
               />
             </Field>
 
-            <div className="row gap-3">
+            <div className="row gap-3 top">
               <Field label="Primary color">
                 <Input
                   type="color"
