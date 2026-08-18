@@ -12,11 +12,12 @@
  *   `FALLBACK_MS` (confidence.ts) with nothing fresher at all, even "docked
  *   in the same yard for months" stops being a safe presumption — the name
  *   reverts to a bare, unstatused "Vessel".
- * - `addressLine1` = raw coordinates, comma-joined, NO space and no
- *   rounding — "whatever the feed gives" (user, 2026-08-17): AIS sources
- *   vary in natural precision, so this doesn't force a fixed decimal count.
- *   Omitted (not overwritten) once the tier is "expired" — we have no
- *   current confidence in a position to assert one.
+ * - `addressLine1` = coordinates, comma+space-joined, rounded to 5 decimal
+ *   places (~1m — more than enough for a vessel two orders of magnitude
+ *   larger than that; user, 2026-08-18, superseding the earlier "whatever
+ *   the feed gives, no space" call from the day before). Omitted (not
+ *   overwritten) once the tier is "expired" — we have no current confidence
+ *   in a position to assert one.
  * - `timeZoneSetupId` = the CW `timeZoneSetups` entry (timezone.ts) for the
  *   vessel's own coordinates — priority 1 always coordinates; priority 2
  *   (rare, only if that lookup itself fails) the vessel's resolved CURRENT
@@ -114,7 +115,7 @@ export function formatSiteUpdate(position: VesselPosition | undefined): SiteUpda
   const hasPosition = position.lat != null && position.lon != null;
   const port = hasPosition ? nearestPort(position.lat as number, position.lon as number) : null;
   const near = placeName(port);
-  const addressLine1 = hasPosition ? `${position.lat},${position.lon}` : null;
+  const addressLine1 = hasPosition ? `${(position.lat as number).toFixed(5)}, ${(position.lon as number).toFixed(5)}` : null;
 
   let name: string;
   if (bucket === "underway") {

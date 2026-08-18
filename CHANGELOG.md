@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.1 — build 2608027 — 2026-08-18T23:05:50Z
+
+### Changed
+- [Backend] Vessel Site `addressLine1` coordinates now round to 5 decimal places (~1m precision — more than sufficient for a vessel two orders of magnitude larger than that) and are comma+space-joined (`43.58741, 7.13141`) — supersedes the previous day's explicit "whatever the feed gives, no space" call. Flows through to both the real ConnectWise write and the Vessel Location preview table, since both are driven by the same `formatSiteUpdate`.
+
 ## v0.13.0 — build 2608026 — 2026-08-18T22:47:03Z
 
 ### Added
