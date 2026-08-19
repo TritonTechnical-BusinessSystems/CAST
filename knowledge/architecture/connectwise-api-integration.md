@@ -2,7 +2,7 @@
 status: active
 read-when: Building or changing CAST's ConnectWise PSA (Manage) API integration — the credentialed read/write path (INIT-0002 / 0012 / 0014 / 0018), auth, custom-field read/write, or the ManageCwClient.
 related: [vessel-location-updating-aisstream.md, shipment-tracking-trackingmore.md, ../decisions/0002-extension-never-touches-cw-credentials.md]
-updated: 2026-08-13
+updated: 2026-08-19
 ---
 
 # ConnectWise PSA (Manage) REST API — integration pattern
@@ -82,10 +82,17 @@ array back. 204/empty body = success.
 
 ## 6. Client shape in CAST
 
-`components/api/src/connectwise/client.ts` defines `CwClient` (interface) with an
-in-memory `StubCwClient` (active until keys land) and — to build next —
-`ManageCwClient` implementing the calls above, selected by `cwConfigured()` in
-`getCwClient()`. HTTP via `fetch` (Node 24 global) or axios; add **429/retry
+`components/api/src/connectwise/client.ts` defines `CwClient` (interface), implemented
+by `ManageCwClient` (the only implementation now that every real instance has real
+keys — the pre-real-keys `StubCwClient` was removed 2026-08-19). `getCwClient(instanceId)`
+takes a **required** instance id ("tritontech"/Production, "tritontech_cs1"/Sandbox, ...)
+— there is no default/no-arg mode. Credentials come from
+`connectwise/creds.ts`'s `resolveCwCredsForInstance(instanceId)`, which is **strictly
+per-instance with zero fallback of any kind** (user, 2026-08-19: "not comfortable with
+a fallback at all for database access/reads/writes ... if something goes wrong and we
+fallback to the wrong database, especially the Production one, we're causing real
+damage to data") — an instance with nothing stored resolves to `null`, never another
+instance's creds. HTTP via `fetch` (Node 24 global) or axios; add **429/retry
 backoff fresh** (LC's reference has none).
 
 ## 7. Live status (verified 2026-07-23)

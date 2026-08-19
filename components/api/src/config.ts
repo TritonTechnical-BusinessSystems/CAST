@@ -85,12 +85,17 @@ export const config = {
    * credentialed CW read+write path; creds server-side only (decisions/0002).
    * Pattern mirrors LogisticsCoordinator's live integration —
    * knowledge/architecture/connectwise-api-integration.md.
+   *
+   * NOTE: `CW_BASE_URL`/`CW_COMPANY`/`CW_PUBLIC_KEY`/`CW_PRIVATE_KEY`/
+   * `CW_CLIENT_ID` env vars are read by nothing anymore (removed 2026-08-19,
+   * along with `cwConfigured()` — dead code once real credentials for every
+   * instance live in the encrypted per-instance store, `connectwise/creds.ts`,
+   * not `.env`). The vars may still be SET in a deployed `.env` (harmless,
+   * unread) — worth removing from the host's `.env` once comfortable, since
+   * two copies of the same secret where only one is authoritative is needless
+   * exposure surface, but that's a manual step on the deploy host, not this
+   * code change.
    */
-  cwBaseUrl: env.CW_BASE_URL ?? "https://na.myconnectwise.net/v4_6_release/apis/3.0",
-  cwCompany: env.CW_COMPANY ?? "",
-  cwPublicKey: env.CW_PUBLIC_KEY ?? "",
-  cwPrivateKey: env.CW_PRIVATE_KEY ?? "",
-  cwClientId: env.CW_CLIENT_ID ?? "",
   /** Company custom-field captions holding the vessel IMO / MMSI (INIT-0014). */
   cwImoFieldCaption: env.CW_IMO_FIELD_CAPTION ?? "Vessel IMO",
   cwMmsiFieldCaption: env.CW_MMSI_FIELD_CAPTION ?? "Vessel MMSI",
@@ -189,10 +194,6 @@ export function adConfigured(): boolean {
 
 export function aisstreamConfigured(): boolean {
   return Boolean(config.aisstreamApiKey);
-}
-
-export function cwConfigured(): boolean {
-  return Boolean(config.cwCompany && config.cwPublicKey && config.cwPrivateKey && config.cwClientId);
 }
 
 export function trackingmoreConfigured(): boolean {

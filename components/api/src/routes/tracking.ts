@@ -29,6 +29,7 @@ import {
 import { getSetting, setSetting } from "../store/secretStore";
 import { listCompanyStatuses, listServiceBoards, listProjectStatuses } from "../connectwise/manageClient";
 import { getCwClient } from "../connectwise/client";
+import { requireCredsForInstance } from "../connectwise/creds";
 import type { VesselCompany } from "../connectwise/client";
 import { checkImo, checkMmsi } from "../vessels/identifiers";
 import { prioritizeVessels } from "../vessels/priority";
@@ -37,6 +38,12 @@ import { formatSiteUpdate } from "../vessels/siteWriter";
 import { getPosition, listPositions } from "../vessels/positionStore";
 import { statusBucket } from "../vessels/navStatus";
 import type { LastKnown } from "../vessels/priority";
+
+// Vessel tracking is a Production-only concept (not part of INIT-0026's
+// multi-instance Logistics rebuild) — the literal instance id, not a
+// "default instance" lookup, so this can never silently follow a changed
+// default (user, 2026-08-19: no fallback/indirection in CW credential use).
+const CW_INSTANCE = "tritontech";
 
 interface Rule {
   statuses: string[];
@@ -63,10 +70,11 @@ const router = Router();
 
 router.get("/options", requireAuth, async (_req, res) => {
   try {
+    const creds = requireCredsForInstance(CW_INSTANCE);
     const [statuses, boards, projectStatuses] = await Promise.all([
-      listCompanyStatuses(),
-      listServiceBoards(),
-      listProjectStatuses(),
+      listCompanyStatuses(creds),
+      listServiceBoards(creds),
+      listProjectStatuses(creds),
     ]);
     res.json({ statuses, boards, projectStatuses });
   } catch (e) {
@@ -192,7 +200,7 @@ async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) =>
  * a side effect of someone adjusting filters in the UI.
  */
 export async function reconcileVesselSites(rule: Rule): Promise<void> {
-  const cw = getCwClient();
+  const cw = getCwClient(CW_INSTANCE);
   const matched = matchRule(await cw.listTrackedVessels(), rule);
   const siteMap = getSetting<SiteMap>("tracking.siteMap") ?? {};
   const unresolved = matched.filter((v) => !siteMap[v.id]);
@@ -246,7 +254,7 @@ type LastSiteWrite = Record<string, { name: string; addressLine1?: string; timeZ
  * same as reconcileVesselSites, shouldn't be a side effect of `/preview`.
  */
 export async function writeVesselSites(split: { tier1: { id: string; mmsi: string }[]; tier2: { id: string; mmsi: string }[] }): Promise<void> {
-  const cw = getCwClient();
+  const cw = getCwClient(CW_INSTANCE);
   const siteMap = getSetting<SiteMap>("tracking.siteMap") ?? {};
   const lastWrite = getSetting<LastSiteWrite>("tracking.lastSiteWrite") ?? {};
   const vessels = [...split.tier1, ...split.tier2];
@@ -281,7 +289,7 @@ export async function writeVesselSites(split: { tier1: { id: string; mmsi: strin
 
 /** Shared by the live preview and the scheduled tier-refresh job. */
 export async function computeSplit(rule: Rule) {
-  const cw = getCwClient();
+  const cw = getCwClient(CW_INSTANCE);
   const [vessels, siteMap] = await Promise.all([
     cw.listTrackedVessels(),
     Promise.resolve(getSetting<SiteMap>("tracking.siteMap") ?? {}),

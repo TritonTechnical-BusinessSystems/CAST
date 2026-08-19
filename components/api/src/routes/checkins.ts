@@ -9,6 +9,12 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { db } from "../store/db";
 import { listMembers } from "../connectwise/manageClient";
+import { requireCredsForInstance } from "../connectwise/creds";
+
+// Fleet check-ins are matched against Production CW members only — see
+// tracking.ts's CW_INSTANCE comment for why this is a literal, not a
+// "default instance" lookup.
+const CW_INSTANCE = "tritontech";
 
 interface Row {
   device_id: string;
@@ -92,7 +98,7 @@ router.get("/", requireAuth, async (_req, res) => {
   let members: { identifier: string; name: string }[] = [];
   let membersError: string | null = null;
   try {
-    members = await listMembers();
+    members = await listMembers(requireCredsForInstance(CW_INSTANCE));
   } catch (e) {
     membersError = e instanceof Error ? e.message : "CW member list unavailable";
   }

@@ -15,10 +15,27 @@ import { getCwClient } from "../connectwise/client";
 
 const router = Router();
 
+// Vessel identity reconciliation is a Production-only concept — see
+// tracking.ts's CW_INSTANCE comment for why this is a literal, not a
+// "default instance" lookup.
+const CW_INSTANCE = "tritontech";
+
 /** GET /api/vessel-identity — the reconciliation audit for all tracked vessels. */
 router.get("/", requireAuth, async (_req, res) => {
-  const cw = getCwClient();
-  const vessels = await cw.listTrackedVessels();
+  // try/catch is load-bearing, not defensive style: this route previously
+  // could never throw (StubCwClient always answered), but now that the
+  // encrypted store is the sole source of truth, an unconfigured/rotated
+  // instance or any CW error (403/429/5xx) rejects here — and Express 4
+  // doesn't forward async rejections, so an uncaught one takes down the
+  // whole API process (no error middleware, no unhandledRejection handler
+  // registered). Found in the pre-release security gate, 2026-08-19.
+  let vessels;
+  try {
+    const cw = getCwClient(CW_INSTANCE);
+    vessels = await cw.listTrackedVessels();
+  } catch (e) {
+    return void res.status(502).json({ error: e instanceof Error ? e.message : "ConnectWise query failed" });
+  }
 
   const audit = vessels.map((v) => {
     const imo = checkImo(v.imo);
@@ -82,7 +99,7 @@ router.post("/:id", requirePermission("vessel.reconcile"), async (req, res) => {
   }
 
   try {
-    const cw = getCwClient();
+    const cw = getCwClient(CW_INSTANCE);
     const updated = await cw.setVesselIdentifiers(req.params.id, patch);
     return res.json({
       ok: true,

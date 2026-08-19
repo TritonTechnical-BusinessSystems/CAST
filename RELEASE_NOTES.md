@@ -4,6 +4,25 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.15.0 — August 2026
+
+ConnectWise credentials got a real safety pass — no more shared fallback paths, and a real place to manage both Production and Sandbox.
+
+## Highlights
+
+- **No more credential fallback, anywhere.** Every ConnectWise call now requires its own instance's real, resolved credentials — enforced at the code level, not just by convention. There is no longer any path, accidental or otherwise, where a request meant for one ConnectWise environment could silently use another's credentials.
+- **Integrations now manages ConnectWise PSA properly** — one section, one card per environment (Production, Sandbox), each with its own connection test and its own credentials form. Updating just an API key no longer requires re-entering everything else for that environment.
+- **Production's credentials moved into the same secure, encrypted storage everything else uses** — they'd been living only in a server config file since day one. Migrated in place, verified byte-for-byte, with zero downtime.
+
+## For the power users
+
+- Sandbox's credentials form pre-fills the shared Client ID (the same one Production uses) so it doesn't need typing twice — just the company and API key pair are entered fresh.
+- A real bug was caught and fixed while building this: a partially-saved credential (just the Client ID, ahead of the rest) could get silently wiped out by the next save on top of it. Fixed before anyone hit it in practice.
+- A pre-release security check blocked the first version of this and found two real gaps — a missing check that would have let a mistyped or malicious address receive Production's real API key, and a crash risk in one vessel-identity route. Both fixed and verified before this shipped, no impact to any user.
+- Credentials can now be fully cleared, not just overwritten — useful if a key ever needs to be revoked rather than replaced.
+
+---
+
 # What's New in v0.14.0 — August 2026
 
 Logistics Configuration got a real workout this round — its layout, its data, and a couple of real bugs, all fixed the same day they were found.

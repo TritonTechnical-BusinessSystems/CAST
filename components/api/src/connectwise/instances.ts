@@ -23,11 +23,6 @@ export function listCwInstances(): CwInstance[] {
   return rows.map((r) => ({ id: r.id, name: r.name, isDefault: !!r.is_default }));
 }
 
-export function getDefaultCwInstanceId(): string {
-  const row = db.prepare("SELECT id FROM cw_instances WHERE is_default = 1 LIMIT 1").get() as { id: string } | undefined;
-  return row?.id ?? "tritontech";
-}
-
 /** Throws if the instance id isn't registered -- callers should never silently fall through to the wrong instance's data. */
 export function assertValidCwInstance(instanceId: string): void {
   const row = db.prepare("SELECT 1 FROM cw_instances WHERE id = ?").get(instanceId);

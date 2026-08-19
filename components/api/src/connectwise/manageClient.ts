@@ -7,7 +7,7 @@
  * user gate, toggleable in-app (Integrations page). Reads are always allowed.
  */
 import { config, isCwWritesEnabled } from "../config";
-import { resolveCwCreds, resolveCwCredsForInstance, type CwCreds } from "./creds";
+import { resolveCwCredsForInstance, type CwCreds } from "./creds";
 import type { CwClient, CwSite, VesselCompany, ShippingRequestTicket, ShipmentTicketDetail, CwBoardStatus, CwCurrencyOption } from "./client";
 
 function authHeaders(c: CwCreds): Record<string, string> {
@@ -15,9 +15,14 @@ function authHeaders(c: CwCreds): Record<string, string> {
   return { Authorization: `Basic ${token}`, clientId: c.clientId, "Content-Type": "application/json", Accept: "application/json" };
 }
 
-async function cwFetch<T>(path: string, init?: RequestInit & { creds?: CwCreds }): Promise<T> {
-  const creds = init?.creds ?? resolveCwCreds().creds;
-  if (!creds) throw new Error("ConnectWise is not configured");
+// `creds` is REQUIRED (2026-08-19, user: "not comfortable with a fallback at
+// all for database access/reads/writes... if something goes wrong and we
+// fallback to the wrong database, especially the Production one, we're
+// causing real damage to data"). Every call site must resolve its own
+// instance's creds explicitly and pass them in — no implicit legacy/default
+// lookup exists anywhere in this file anymore.
+async function cwFetch<T>(path: string, init: RequestInit & { creds: CwCreds }): Promise<T> {
+  const { creds } = init;
   const res = await fetch(`${creds.baseUrl}${path}`, {
     ...init,
     headers: { ...authHeaders(creds), ...(init?.headers as Record<string, string> | undefined) },
@@ -51,7 +56,7 @@ function toVessel(c: CwCompany): VesselCompany {
 }
 
 /** Cheap connectivity/auth check (used by Integrations "Test connection"). */
-export async function getSystemInfo(creds?: CwCreds): Promise<{ version: string }> {
+export async function getSystemInfo(creds: CwCreds): Promise<{ version: string }> {
   return cwFetch<{ version: string }>("/system/info", { creds });
 }
 
@@ -61,7 +66,7 @@ function sortNames(names: string[]): string[] {
 }
 
 /** Active only — CW marks retired statuses/boards inactiveFlag=true rather than deleting them. */
-export async function listCompanyStatuses(creds?: CwCreds): Promise<string[]> {
+export async function listCompanyStatuses(creds: CwCreds): Promise<string[]> {
   const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
     "/company/companies/statuses?pageSize=200&fields=id,name,inactiveFlag",
     { creds },
@@ -71,7 +76,7 @@ export async function listCompanyStatuses(creds?: CwCreds): Promise<string[]> {
 
 interface CwBoardRow { name: string; department?: { name?: string }; inactiveFlag?: boolean }
 
-async function listAllBoards(creds?: CwCreds): Promise<CwBoardRow[]> {
+async function listAllBoards(creds: CwCreds): Promise<CwBoardRow[]> {
   return cwFetch<CwBoardRow[]>("/service/boards?pageSize=200&fields=id,name,department,inactiveFlag", { creds });
 }
 
@@ -82,7 +87,7 @@ async function listAllBoards(creds?: CwCreds): Promise<CwBoardRow[]> {
  * `inactiveFlag`, currently true for two retired example boards). Internal
  * admin work and retired boards aren't vessel-tracking priority signals.
  */
-export async function listServiceBoards(creds?: CwCreds): Promise<string[]> {
+export async function listServiceBoards(creds: CwCreds): Promise<string[]> {
   const rows = await listAllBoards(creds);
   return sortNames(rows.filter((r) => !r.inactiveFlag && r.department?.name !== "Admin").map((r) => r.name));
 }
@@ -94,13 +99,13 @@ export async function listServiceBoards(creds?: CwCreds): Promise<string[]> {
  * (the same Service Board records), verified live; `board/department/name`
  * isn't a recognized condition path (400), but `board/name not in (...)` is.
  */
-async function listAdminBoardNames(creds?: CwCreds): Promise<string[]> {
+async function listAdminBoardNames(creds: CwCreds): Promise<string[]> {
   const rows = await listAllBoards(creds);
   return rows.filter((r) => !r.inactiveFlag && r.department?.name === "Admin").map((r) => r.name);
 }
 
 /** CW Project statuses (e.g. "1: Active", "5: Closed"), active only — parallel to listCompanyStatuses. */
-export async function listProjectStatuses(creds?: CwCreds): Promise<string[]> {
+export async function listProjectStatuses(creds: CwCreds): Promise<string[]> {
   const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
     "/project/statuses?pageSize=200&fields=id,name,inactiveFlag",
     { creds },
@@ -116,7 +121,7 @@ export async function listProjectStatuses(creds?: CwCreds): Promise<string[]> {
  * (no special-cased error message here, matching every other list* function
  * in this file — the route handler can add a friendlier message if needed).
  */
-export async function listPurchaseOrderStatuses(creds?: CwCreds): Promise<string[]> {
+export async function listPurchaseOrderStatuses(creds: CwCreds): Promise<string[]> {
   const rows = await cwFetch<{ name: string; inactiveFlag?: boolean }[]>(
     "/procurement/purchaseorderstatuses?pageSize=200&fields=id,name,inactiveFlag",
     { creds },
@@ -147,7 +152,7 @@ interface CwUserDefinedField {
  * got renamed once in production already (a hardcoded caption silently broke
  * until caught).
  */
-export async function listCarrierOptions(creds?: CwCreds): Promise<string[]> {
+export async function listCarrierOptions(creds: CwCreds): Promise<string[]> {
   const rows = await cwFetch<CwUserDefinedField[]>(
     `/system/userDefinedFields?conditions=${encodeURIComponent(`caption="${config.cwCarrierFieldCaption}"`)}`,
     { creds },
@@ -168,7 +173,7 @@ export async function listCarrierOptions(creds?: CwCreds): Promise<string[]> {
  * 404, so this is a permission gap to close in ConnectWise, not a wrong
  * path), matching every other list* function in this file.
  */
-export async function listCurrencyOptions(creds?: CwCreds): Promise<CwCurrencyOption[]> {
+export async function listCurrencyOptions(creds: CwCreds): Promise<CwCurrencyOption[]> {
   const rows = await cwFetch<{ isoCode: string; name: string }[]>("/finance/currencies?pageSize=200&fields=isoCode,name", { creds });
   return rows.map((r) => ({ code: r.isoCode, name: r.name })).sort((a, b) => a.code.localeCompare(b.code));
 }
@@ -182,7 +187,7 @@ export async function listCurrencyOptions(creds?: CwCreds): Promise<CwCurrencyOp
  * `licenseClass="F"` (verified live: 99 F people vs 15 A API accounts) plus
  * `inactiveFlag=false` to drop disabled accounts.
  */
-export async function listMembers(creds?: CwCreds): Promise<{ identifier: string; name: string }[]> {
+export async function listMembers(creds: CwCreds): Promise<{ identifier: string; name: string }[]> {
   const rows = await cwFetch<{ id: number; identifier?: string; firstName?: string; lastName?: string }[]>(
     // conditions=inactiveFlag=false AND licenseClass="F" (URL-encoded; cwFetch sends the path raw)
     '/system/members?pageSize=1000&conditions=inactiveFlag%3Dfalse%20AND%20licenseClass%3D%22F%22&fields=id,identifier,firstName,lastName',
@@ -214,7 +219,7 @@ function mergeActivity(into: Map<string, string>, rows: CwActivityRow[]): void {
  * against real CW (2026-08) to handle special characters (emoji board names)
  * fine; `_info.lastUpdated` verified present on every ticket row.
  */
-async function queryOpenTicketActivity(boardNames: string[], creds?: CwCreds): Promise<Map<string, string>> {
+async function queryOpenTicketActivity(boardNames: string[], creds: CwCreds): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (boardNames.length === 0) return out;
   const boardList = boardNames.map((b) => `"${b.replace(/"/g, '\\"')}"`).join(",");
@@ -236,7 +241,7 @@ async function queryOpenTicketActivity(boardNames: string[], creds?: CwCreds): P
  * outranks the ticket signal above. Projects on an "Admin"-department board
  * are excluded, same as Admin boards are excluded from ticket tracking.
  */
-async function queryOpenProjectActivity(statusNames: string[], creds?: CwCreds): Promise<Map<string, string>> {
+async function queryOpenProjectActivity(statusNames: string[], creds: CwCreds): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (statusNames.length === 0) return out;
   const statusList = statusNames.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(",");
@@ -255,7 +260,7 @@ async function queryOpenProjectActivity(statusNames: string[], creds?: CwCreds):
   return out;
 }
 
-async function queryCompanies(conditions?: string, creds?: CwCreds): Promise<CwCompany[]> {
+async function queryCompanies(creds: CwCreds, conditions?: string): Promise<CwCompany[]> {
   const out: CwCompany[] = [];
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "1000", page: String(page), fields: "id,name,identifier,status,customFields" });
@@ -301,7 +306,7 @@ function toShippingTicket(r: CwTicketRow, ticketType: "service" | "project"): Sh
   };
 }
 
-async function queryTickets(path: string, conditions: string, fields: string, creds?: CwCreds): Promise<CwTicketRow[]> {
+async function queryTickets(path: string, conditions: string, fields: string, creds: CwCreds): Promise<CwTicketRow[]> {
   const out: CwTicketRow[] = [];
   for (let page = 1; ; page++) {
     const params = new URLSearchParams({ pageSize: "200", page: String(page), conditions, fields });
@@ -318,7 +323,7 @@ async function queryTickets(path: string, conditions: string, fields: string, cr
  * LC's `get_shipping_requests()` exactly (two parallel CW calls, merge,
  * sort by id descending).
  */
-async function listShippingRequestTickets(creds?: CwCreds): Promise<ShippingRequestTicket[]> {
+async function listShippingRequestTickets(creds: CwCreds): Promise<ShippingRequestTicket[]> {
   const [service, project] = await Promise.all([
     queryTickets("/service/tickets", DEFAULT_SHIPPING_REQUEST_FILTER, SHIPPING_REQUEST_FIELDS, creds),
     queryTickets("/project/tickets", DEFAULT_SHIPPING_REQUEST_FILTER, SHIPPING_REQUEST_FIELDS, creds),
@@ -333,7 +338,7 @@ async function listShippingRequestTickets(creds?: CwCreds): Promise<ShippingRequ
  * LC's per-ticket-id sum exactly, run concurrently rather than serially
  * (safe perf improvement, same query shape/semantics per ticket).
  */
-async function getShippingRequestProductCounts(ticketIds: number[], creds?: CwCreds): Promise<Map<number, number>> {
+async function getShippingRequestProductCounts(ticketIds: number[], creds: CwCreds): Promise<Map<number, number>> {
   const entries = await Promise.all(
     ticketIds.map(async (id): Promise<[number, number]> => {
       let total = 0;
@@ -354,7 +359,7 @@ async function getShippingRequestProductCounts(ticketIds: number[], creds?: CwCr
   return new Map(entries);
 }
 
-async function fetchTicketDetail(path: string, id: number, creds?: CwCreds): Promise<CwTicketRow | null> {
+async function fetchTicketDetail(path: string, id: number, creds: CwCreds): Promise<CwTicketRow | null> {
   try {
     return await cwFetch<CwTicketRow>(
       `${path}/${id}?fields=id,summary,company,status,board,site,requiredDate,estimatedStartDate`,
@@ -372,7 +377,7 @@ async function fetchTicketDetail(path: string, id: number, creds?: CwCreds): Pro
  * which module it's in), matching how a shipment's local row is looked up
  * by CW ticket id with no separate type marker stored.
  */
-async function getShipmentTicket(ticketId: number, creds?: CwCreds): Promise<ShipmentTicketDetail | null> {
+async function getShipmentTicket(ticketId: number, creds: CwCreds): Promise<ShipmentTicketDetail | null> {
   const service = await fetchTicketDetail("/service/tickets", ticketId, creds);
   const [row, ticketType] = service ? [service, "service" as const] : [await fetchTicketDetail("/project/tickets", ticketId, creds), "project" as const];
   if (!row) return null;
@@ -386,7 +391,7 @@ async function getShipmentTicket(ticketId: number, creds?: CwCreds): Promise<Shi
 }
 
 /** Active statuses for a board — boards are shared between service/project tickets, so one lookup covers both. */
-async function listBoardStatuses(boardId: number, creds?: CwCreds): Promise<CwBoardStatus[]> {
+async function listBoardStatuses(boardId: number, creds: CwCreds): Promise<CwBoardStatus[]> {
   const rows = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }[]>(
     `/service/boards/${boardId}/statuses?pageSize=200&fields=id,name,inactiveFlag`,
     { creds },
@@ -402,12 +407,11 @@ async function listBoardStatuses(boardId: number, creds?: CwCreds): Promise<CwBo
  * application/json` and JSON-encodes the body, neither of which applies to
  * a multipart upload (the browser/runtime must set its own boundary).
  */
-async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string, creds?: CwCreds): Promise<number> {
+async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string, creds: CwCreds): Promise<number> {
   if (!isCwWritesEnabled()) {
     throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
   }
-  const c = creds ?? resolveCwCreds().creds;
-  if (!c) throw new Error("ConnectWise is not configured");
+  const c = creds;
   const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
   const form = new FormData();
   form.append("file", new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }), filename);
@@ -429,7 +433,7 @@ async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename
 }
 
 /** Writes the CW ticket's own status (distinct from and unrelated to the local shipment record's `status` column). */
-async function updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number, creds?: CwCreds): Promise<void> {
+async function updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number, creds: CwCreds): Promise<void> {
   if (!isCwWritesEnabled()) {
     throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
   }
@@ -443,25 +447,20 @@ async function updateTicketStatus(ticketId: number, ticketType: "service" | "pro
 
 export class ManageCwClient implements CwClient {
   /**
-   * `instanceId` unset = legacy/default single-instance behavior, byte-for-
-   * byte unchanged from before multi-instance support existed (every call
-   * below passes `this.creds()`, which returns `undefined` in this case,
-   * and `cwFetch` falls through to its own `resolveCwCreds()` exactly as it
-   * always has — zero behavior change for existing callers like vessel
-   * tracking's `getCwClient()`).
-   *
-   * `instanceId` set = INIT-0026's multi-instance Logistics rebuild. `creds()`
-   * below is the hard safety boundary: an explicitly-requested instance with
-   * no configured credentials throws loudly rather than silently falling
-   * back to the default/legacy creds — the whole point being it must be
-   * structurally impossible for a Sandbox-scoped request to accidentally
-   * read or write Production (or vice versa) because a credential lookup
-   * quietly defaulted to the wrong place.
+   * `instanceId` is REQUIRED — every caller must say which CW company
+   * ("tritontech"/Production, "tritontech_cs1"/Sandbox, ...) it means. There
+   * is no legacy/default no-instance mode anymore (removed 2026-08-19, user:
+   * "not comfortable with a fallback at all ... if something goes wrong and
+   * we fallback to the wrong database, especially the Production one, we're
+   * causing real damage to data"). `creds()` below is the hard safety
+   * boundary this depends on: an instance with no configured credentials
+   * throws loudly rather than silently falling back to any other instance's
+   * creds — structurally impossible for a Sandbox-scoped request to
+   * accidentally read or write Production (or vice versa).
    */
-  constructor(private readonly instanceId?: string) {}
+  constructor(private readonly instanceId: string) {}
 
-  private creds(): CwCreds | undefined {
-    if (!this.instanceId) return undefined;
+  private creds(): CwCreds {
     const { creds } = resolveCwCredsForInstance(this.instanceId);
     if (!creds) throw new Error(`ConnectWise is not configured for instance "${this.instanceId}"`);
     return creds;
@@ -473,7 +472,7 @@ export class ManageCwClient implements CwClient {
     // still surface for reconciliation. Optional status further scopes it.
     const parts = [`market/name contains "${config.cwVesselMarket}"`];
     if (config.cwTrackedStatus) parts.push(`status/name="${config.cwTrackedStatus}"`);
-    const companies = await queryCompanies(parts.join(" AND "), this.creds());
+    const companies = await queryCompanies(this.creds(), parts.join(" AND "));
     return companies.map(toVessel);
   }
 

@@ -7,8 +7,12 @@ import { readFileSync, statSync } from "fs";
 import { join, resolve } from "path";
 import { requirePermission } from "../middleware/auth";
 import { config, adConfigured, aisstreamConfigured, isCwWritesEnabled } from "../config";
-import { resolveCwCreds } from "../connectwise/creds";
+import { resolveCwCredsForInstance } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
+
+// The main "ConnectWise API" probe checks Production only — see
+// routes/tracking.ts's CW_INSTANCE comment for why this is a literal.
+const CW_INSTANCE = "tritontech";
 import { getPackageManifest } from "../health/packages";
 import { getContainers } from "../health/containers";
 import { getAisStatus } from "../vessels/aisListener";
@@ -68,8 +72,9 @@ router.get("/full", requirePermission("system.read"), async (_req, res) => {
   // poll interval) also feeds the CW latency chart — no new load on CW.
   let cwSample: { latencyMs: number; ok: boolean } | null = null;
   const cwStart = Date.now();
-  const connectwise = resolveCwCreds().creds
-    ? await getSystemInfo()
+  const cwCreds = resolveCwCredsForInstance(CW_INSTANCE).creds;
+  const connectwise = cwCreds
+    ? await getSystemInfo(cwCreds)
         .then((i) => {
           cwSample = { latencyMs: Date.now() - cwStart, ok: true };
           return { state: "ok" as const, detail: `Connected — CW ${i.version}` };
