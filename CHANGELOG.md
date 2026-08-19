@@ -10,6 +10,15 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.14.0 — build 2608032 — 2026-08-19T00:18:47Z
+
+### Added
+- [Integrations] **Logistics Configuration's Carriers and Currencies tabs are now live ConnectWise lookups, per CW instance** — replaces the old locally-managed lists (placeholder seed data, never real Triton data). Carriers reads the same `Shipment Carrier` ticket custom field (id 70) already used for outbound tracking, via `GET /system/userDefinedFields` — no dedicated custom-field-definitions REST resource exists in CW's API (`/system/customFields` 404s); this is the real one, found in the `vc3/connectwise-rest-api` client's generated types rather than by guessing paths. Confirmed live: 14 real carrier options. Currencies reads CW's Finance > Currencies setup (`GET /finance/currencies`) — endpoint confirmed correct, but the CAST API member currently lacks the Finance permission grant to read it; the UI surfaces that exact ask in its own error banner instead of failing silently.
+- [Backend] New per-instance `GET /api/logistics/:instance/config/carriers` and `.../currencies`, backed by `ManageCwClient.listCarrierOptions()`/`.listCurrencyOptions()`. The carrier field's caption is configurable (`CW_CARRIER_FIELD_CAPTION`, default "Shipment Carrier") rather than hardcoded — LC's own commit history shows this exact field got renamed once in production already.
+
+### Removed
+- [Backend] The local `logistics_carriers`/`logistics_currencies` tables and their CRUD routes (`POST`/`PATCH`/`DELETE /api/logistics/config/{carriers,currencies}`) — carriers and currencies are managed in ConnectWise now, not duplicated in CAST.
+
 ## v0.13.4.1 — build 2608031 — 2026-08-19T00:06:46Z
 
 ### Changed

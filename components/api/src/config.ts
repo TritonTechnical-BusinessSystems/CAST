@@ -96,6 +96,16 @@ export const config = {
   cwMmsiFieldCaption: env.CW_MMSI_FIELD_CAPTION ?? "Vessel MMSI",
   /** Site custom-field caption holding the confidence-tiered write's timestamp (user-created 2026-08-17, a "Text" type field on the Site, not the Company). */
   cwLastAisUpdateFieldCaption: env.CW_LAST_AIS_UPDATE_FIELD_CAPTION ?? "Last AIS Data Update",
+  /**
+   * Ticket custom-field caption whose picklist is Logistics' live Carriers
+   * list (id 70, INIT-0018/0026). `||` not `??` — a blank env value (e.g. a
+   * stray blank line in `.env`) must also fall back, same reasoning as
+   * `jwtSecret` above: an empty caption isn't nullish, so `??` would let it
+   * through as `caption=""`, silently pulling whichever CW custom field
+   * happens to match that condition instead of failing loud (flagged in the
+   * v0.14.0 pre-release security gate).
+   */
+  cwCarrierFieldCaption: env.CW_CARRIER_FIELD_CAPTION || "Shipment Carrier",
   /** CW company status that further scopes tracking (optional; INIT-0015). */
   cwTrackedStatus: env.CW_TRACKED_STATUS ?? "",
   /**

@@ -8,7 +8,7 @@
  */
 import { config, isCwWritesEnabled } from "../config";
 import { resolveCwCreds, resolveCwCredsForInstance, type CwCreds } from "./creds";
-import type { CwClient, CwSite, VesselCompany, ShippingRequestTicket, ShipmentTicketDetail, CwBoardStatus } from "./client";
+import type { CwClient, CwSite, VesselCompany, ShippingRequestTicket, ShipmentTicketDetail, CwBoardStatus, CwCurrencyOption } from "./client";
 
 function authHeaders(c: CwCreds): Record<string, string> {
   const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
@@ -122,6 +122,55 @@ export async function listPurchaseOrderStatuses(creds?: CwCreds): Promise<string
     { creds },
   );
   return sortNames(rows.filter((r) => !r.inactiveFlag).map((r) => r.name));
+}
+
+interface CwUserDefinedFieldOption {
+  optionValue: string;
+  inactiveFlag?: boolean;
+  sortOrder?: number;
+}
+interface CwUserDefinedField {
+  id: number;
+  options?: CwUserDefinedFieldOption[];
+}
+
+/**
+ * Carrier picklist, live from the SAME CW ticket custom field
+ * `Shipment Carrier` (id 70, INIT-0018) already used for outbound tracking —
+ * replaces the old locally-managed `logistics_carriers` table (INIT-0026,
+ * 2026-08-19: "need to be a live lookup of our Carriers custom field").
+ * There's no dedicated "custom field definitions" REST resource in CW's API
+ * (verified live — /system/customFields 404s); the real endpoint is
+ * `/system/userDefinedFields`, the same one CW's own admin screen calls it
+ * ("System > Setup Tables > Custom Fields"). Caption is configurable
+ * (`config.cwCarrierFieldCaption`) — LC's own history shows this exact field
+ * got renamed once in production already (a hardcoded caption silently broke
+ * until caught).
+ */
+export async function listCarrierOptions(creds?: CwCreds): Promise<string[]> {
+  const rows = await cwFetch<CwUserDefinedField[]>(
+    `/system/userDefinedFields?conditions=${encodeURIComponent(`caption="${config.cwCarrierFieldCaption}"`)}`,
+    { creds },
+  );
+  const options = rows[0]?.options ?? [];
+  return options
+    .filter((o) => !o.inactiveFlag)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((o) => o.optionValue);
+}
+
+/**
+ * Currency list, live from CW's Finance > Currencies setup — replaces the
+ * old locally-managed `logistics_currencies` table (INIT-0026, 2026-08-19).
+ * Requires a Finance-module read grant on the CW API member; if that grant
+ * is missing this surfaces as a plain 403 from cwFetch (verified live,
+ * 2026-08-19 — confirmed the endpoint itself is `/finance/currencies`, not a
+ * 404, so this is a permission gap to close in ConnectWise, not a wrong
+ * path), matching every other list* function in this file.
+ */
+export async function listCurrencyOptions(creds?: CwCreds): Promise<CwCurrencyOption[]> {
+  const rows = await cwFetch<{ isoCode: string; name: string }[]>("/finance/currencies?pageSize=200&fields=isoCode,name", { creds });
+  return rows.map((r) => ({ code: r.isoCode, name: r.name })).sort((a, b) => a.code.localeCompare(b.code));
 }
 
 /** CW members — the source of truth for who the extension check-ins belong to. */
@@ -543,6 +592,14 @@ export class ManageCwClient implements CwClient {
   // no separate module-level name since there's no other caller for it yet.
   async listPurchaseOrderStatuses(): Promise<string[]> {
     return listPurchaseOrderStatuses(this.creds());
+  }
+
+  async listCarrierOptions(): Promise<string[]> {
+    return listCarrierOptions(this.creds());
+  }
+
+  async listCurrencyOptions(): Promise<CwCurrencyOption[]> {
+    return listCurrencyOptions(this.creds());
   }
 
   async listShippingRequestTickets(): Promise<ShippingRequestTicket[]> {

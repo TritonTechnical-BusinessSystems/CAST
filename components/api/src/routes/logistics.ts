@@ -28,6 +28,16 @@ import { getCwClient } from "../connectwise/client";
 
 const router = Router();
 
+function requireInstance(instanceId: string, res: import("express").Response): boolean {
+  try {
+    assertValidCwInstance(instanceId);
+    return true;
+  } catch (e) {
+    res.status(404).json({ error: e instanceof Error ? e.message : "Unknown CW instance" });
+    return false;
+  }
+}
+
 router.get("/instances", requireAuth, (_req, res) => {
   res.json(listCwInstances());
 });
@@ -180,45 +190,47 @@ router.get("/config/companies/:id/logo", requireAuth, (req, res) => {
   res.sendFile(p);
 });
 
-// ── Carriers ─────────────────────────────────────────────────────────────────
+// ── Carriers / Currencies — live CW lookups, per instance ──────────────────
+//
+// Replaced the old locally-managed logistics_carriers/logistics_currencies
+// tables (2026-08-19, user: "need to be a live lookup ... in each respective
+// CW instance") — those were placeholder seed data (5 sample carriers, 3
+// sample currencies) copied from LC's own seed, never real Triton data.
+// Carriers reads the SAME "Shipment Carrier" ticket custom field (id 70)
+// INIT-0018's outbound tracking already reads; Currencies reads CW's Finance
+// > Currencies setup — see connectwise/manageClient.ts for both.
 
-router.get("/config/carriers", requireAuth, (_req, res) => {
-  res.json(db.prepare("SELECT * FROM logistics_carriers ORDER BY sort_order, name").all());
+// Matches the /:instance/config/po-statuses pattern below: a 403 from CW
+// gets a sanitized, actionable message (not CW's raw response body, which
+// can carry the API member/company identifier and internal CW error codes —
+// real disclosure to any authenticated CAST user, flagged in the pre-release
+// security gate) and the real 403 status; anything else passes through at
+// 502 (upstream failure), never 500 (which would misleadingly imply a CAST-
+// side bug).
+function cwLookupError(e: unknown, permissionHint: string): { status: number; message: string } {
+  const message = e instanceof Error ? e.message : "ConnectWise API error";
+  if (message.includes("403")) return { status: 403, message: `ConnectWise API key lacks permission for ${permissionHint}. Grant this API member's security role access in CW, then reload.` };
+  return { status: 502, message };
+}
+
+router.get("/:instance/config/carriers", requireAuth, async (req, res) => {
+  if (!requireInstance(req.params.instance, res)) return;
+  try {
+    res.json(await getCwClient(req.params.instance).listCarrierOptions());
+  } catch (e) {
+    const { status, message } = cwLookupError(e, "Custom Fields (system/userDefinedFields)");
+    res.status(status).json({ error: message });
+  }
 });
 
-router.post("/config/carriers", requirePermission("logistics.write"), (req, res) => {
-  const info = db
-    .prepare("INSERT INTO logistics_carriers (name, sort_order) VALUES (?, ?)")
-    .run(req.body.name, req.body.sort_order ?? 0);
-  res.status(201).json(db.prepare("SELECT * FROM logistics_carriers WHERE id = ?").get(info.lastInsertRowid));
-});
-
-router.patch("/config/carriers/:id", requirePermission("logistics.write"), (req, res) => {
-  db.prepare("UPDATE logistics_carriers SET name = ? WHERE id = ?").run(req.body.name, req.params.id);
-  res.json(db.prepare("SELECT * FROM logistics_carriers WHERE id = ?").get(req.params.id));
-});
-
-router.delete("/config/carriers/:id", requirePermission("logistics.write"), (req, res) => {
-  db.prepare("DELETE FROM logistics_carriers WHERE id = ?").run(req.params.id);
-  res.status(204).end();
-});
-
-// ── Currencies ───────────────────────────────────────────────────────────────
-
-router.get("/config/currencies", requireAuth, (_req, res) => {
-  res.json(db.prepare("SELECT * FROM logistics_currencies ORDER BY sort_order, code").all());
-});
-
-router.post("/config/currencies", requirePermission("logistics.write"), (req, res) => {
-  const info = db
-    .prepare("INSERT INTO logistics_currencies (code, name, sort_order) VALUES (?, ?, ?)")
-    .run(req.body.code, req.body.name, req.body.sort_order ?? 0);
-  res.status(201).json(db.prepare("SELECT * FROM logistics_currencies WHERE id = ?").get(info.lastInsertRowid));
-});
-
-router.delete("/config/currencies/:id", requirePermission("logistics.write"), (req, res) => {
-  db.prepare("DELETE FROM logistics_currencies WHERE id = ?").run(req.params.id);
-  res.status(204).end();
+router.get("/:instance/config/currencies", requireAuth, async (req, res) => {
+  if (!requireInstance(req.params.instance, res)) return;
+  try {
+    res.json(await getCwClient(req.params.instance).listCurrencyOptions());
+  } catch (e) {
+    const { status, message } = cwLookupError(e, "Finance > Currency (finance/currencies)");
+    res.status(status).json({ error: message });
+  }
 });
 
 // ── Export Statement Presets ─────────────────────────────────────────────────

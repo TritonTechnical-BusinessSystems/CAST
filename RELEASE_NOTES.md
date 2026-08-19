@@ -4,6 +4,29 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.14.0 — August 2026
+
+Logistics Configuration got a real workout this round — its layout, its data, and a couple of real bugs, all fixed the same day they were found.
+
+## Highlights
+
+- **Carriers and Currencies are now live from ConnectWise**, not a hand-typed local list — Carriers reads the same "Shipment Carrier" field logistics tracking already uses, so it's always exactly what's configured in CW, per instance (Production/Sandbox can differ). Currencies is wired up the same way, pending one ConnectWise permission grant.
+- **Configuration is now the main Logistics page**, not a separate page one click away — the old landing page's embed-link generator moved into a tab of its own alongside the rest of Configuration.
+- **Outbound Shipments works against real ConnectWise again** — it was failing with a configuration error despite CAST's main CW connection already being live; now reuses those same credentials automatically for the Production instance.
+- **A real layout bug is fixed**: several fields in the Configuration forms (Add Company and others) were rendering at half their intended height and visibly misaligned from their neighbors. Root cause was a CSS class doing the wrong thing inside a differently-oriented container — now fixed everywhere it appeared, with a guardrail comment so it doesn't come back.
+
+## Improvements
+
+- Vessel Site coordinates now round to 5 decimal places (~1m precision) with a space after the comma, both in the real ConnectWise write and the on-screen preview.
+- The "Ship As Companies" tab is now labeled "Branding / Ship As".
+
+## For the power users
+
+- Currencies won't populate until the CAST ConnectWise API member is granted a Finance > Currency read permission — the tab's own error banner says so explicitly; nothing to debug, just a permission to add in ConnectWise.
+- Sandbox (`tritontech_cs1`) still has no ConnectWise credentials of its own — Production's reuse fix doesn't extend to it, since there's nothing to reuse; that one's still blocked on retrieving LogisticsCoordinator's stored sandbox keys.
+
+---
+
 # What's New in v0.13.0 — August 2026
 
 System Health went from a page of status dots to a real operations dashboard.

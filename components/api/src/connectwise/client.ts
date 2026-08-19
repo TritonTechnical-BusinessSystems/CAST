@@ -116,6 +116,15 @@ export interface CwClient {
   updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number): Promise<void>;
   /** "Post to CW" (INIT-0026 Phase 3) — attaches a generated CI/PL PDF to the ticket's Documents tab. Returns the new CW document id. */
   uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string): Promise<number>;
+  /** Live carrier picklist from the "Shipment Carrier" ticket custom field (INIT-0026, replaces the old locally-managed list). */
+  listCarrierOptions(): Promise<string[]>;
+  /** Live currency list from CW's Finance > Currencies setup (INIT-0026, replaces the old locally-managed list). */
+  listCurrencyOptions(): Promise<CwCurrencyOption[]>;
+}
+
+export interface CwCurrencyOption {
+  code: string;
+  name: string;
 }
 
 export interface CwSite {
@@ -296,6 +305,18 @@ export class StubCwClient implements CwClient {
   private nextDocId = 9001;
   async uploadTicketDocument(): Promise<number> {
     return this.nextDocId++;
+  }
+
+  async listCarrierOptions(): Promise<string[]> {
+    return ["DHL", "FedEx", "UPS", "freight forwarder", "hand carry"];
+  }
+
+  async listCurrencyOptions(): Promise<CwCurrencyOption[]> {
+    return [
+      { code: "USD", name: "US Dollar" },
+      { code: "EUR", name: "Euro" },
+      { code: "GBP", name: "British Pound" },
+    ];
   }
 }
 

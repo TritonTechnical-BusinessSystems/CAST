@@ -92,12 +92,14 @@ db.exec(`
   );
 
   -- Logistics Configuration (INIT-0026 Phase 1) -- shared app-level config,
-  -- NOT CW-instance-scoped (a "Ship As" branding identity, a carrier name,
-  -- etc. are the same regardless of which CW instance a shipment happens to
-  -- be against) -- ported from LogisticsCoordinator's own MAIN_SCHEMA_SQL
-  -- (companies/config_carriers/config_currencies/export_statement_presets/
-  -- ci_flags), which made the identical shared-vs-per-instance split.
-  -- "logistics_" prefix keeps ownership obvious in cast.db's shared schema.
+  -- NOT CW-instance-scoped (a "Ship As" branding identity is the same
+  -- regardless of which CW instance a shipment happens to be against) --
+  -- ported from LogisticsCoordinator's own MAIN_SCHEMA_SQL (companies/
+  -- export_statement_presets/ci_flags). "logistics_" prefix keeps ownership
+  -- obvious in cast.db's shared schema. Carriers and Currencies used to live
+  -- here too (config_carriers/config_currencies) but are now a LIVE, per-CW-
+  -- instance lookup instead (2026-08-19) -- see routes/logistics.ts and
+  -- connectwise/manageClient.ts, not a local table.
   CREATE TABLE IF NOT EXISTS logistics_companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -112,19 +114,6 @@ db.exec(`
     is_default INTEGER NOT NULL DEFAULT 0,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS logistics_carriers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS logistics_currencies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
-    name TEXT NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS logistics_export_presets (
@@ -144,21 +133,6 @@ db.exec(`
   );
 `);
 
-// Seed starter carriers/currencies, matching LC's own seed data exactly (idempotent).
-if ((db.prepare("SELECT COUNT(*) as n FROM logistics_carriers").get() as { n: number }).n === 0) {
-  const seedCarriers = db.prepare("INSERT INTO logistics_carriers (name, sort_order) VALUES (?, ?)");
-  [["DHL", 1], ["FedEx", 2], ["UPS", 3], ["freight forwarder", 4], ["hand carry", 5]].forEach(([name, order]) =>
-    seedCarriers.run(name, Number(order)),
-  );
-}
-if ((db.prepare("SELECT COUNT(*) as n FROM logistics_currencies").get() as { n: number }).n === 0) {
-  const seedCurrencies = db.prepare("INSERT INTO logistics_currencies (code, name, sort_order) VALUES (?, ?, ?)");
-  [
-    ["USD", "US Dollar", 1],
-    ["EUR", "Euro", 2],
-    ["GBP", "British Pound", 3],
-  ].forEach(([code, name, order]) => seedCurrencies.run(code, name, Number(order)));
-}
 
 // Seed the two known instances (idempotent -- INSERT OR IGNORE) so the registry
 // is never empty on a fresh box. Real credentials are configured separately via

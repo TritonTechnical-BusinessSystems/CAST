@@ -5,9 +5,6 @@ import { CommercialInvoice } from "../documents/CommercialInvoice";
 import { PackingList } from "../documents/PackingList";
 import type { InvoiceData, PackingListData, Shipment, CiLineItem, CwTicketDetail, Company } from "../documents/types";
 
-interface Carrier {
-  name: string;
-}
 interface Currency {
   code: string;
 }
@@ -35,7 +32,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
   const [plData, setPlData] = useState<PackingListData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [carriers, setCarriers] = useState<Carrier[]>([]);
+  const [carriers, setCarriers] = useState<string[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [incoterms, setIncoterms] = useState<string[]>([]);
   const [ciFlags, setCiFlags] = useState<CiFlagOpt[]>([]);
@@ -46,8 +43,8 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
 
   useEffect(() => {
     api.get<Company[]>("/logistics/config/companies").then(setCompanies).catch(() => {});
-    api.get<Carrier[]>("/logistics/config/carriers").then(setCarriers).catch(() => {});
-    api.get<Currency[]>("/logistics/config/currencies").then(setCurrencies).catch(() => {});
+    api.get<string[]>(`/logistics/${instance}/config/carriers`).then(setCarriers).catch(() => {});
+    api.get<Currency[]>(`/logistics/${instance}/config/currencies`).then(setCurrencies).catch(() => {});
     api.get<string[]>("/logistics/config/incoterms").then(setIncoterms).catch(() => {});
     api.get<CiFlagOpt[]>("/logistics/config/ci-flags").then(setCiFlags).catch(() => {});
     api.get<Preset[]>("/logistics/config/export-presets").then(setPresets).catch(() => {});
@@ -207,7 +204,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
             shipment={invoiceData.shipment}
             ticket={ticket}
             companies={companies}
-            carriers={carriers.map((c) => c.name)}
+            carriers={carriers}
             currencies={currencies.map((c) => c.code)}
             incoterms={incoterms}
             presets={presets}
@@ -224,7 +221,7 @@ export function LogisticsShipmentDocuments({ instance, shipmentId, ticket }: { i
           shipment={plData.shipment}
           ticket={ticket}
           companies={companies}
-          carriers={carriers.map((c) => c.name)}
+          carriers={carriers}
           incoterms={incoterms}
           onSaveShipment={patchShipment}
           zoom={zoom}
