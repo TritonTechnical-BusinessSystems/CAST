@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.13.4.1 — build 2608031 — 2026-08-19T00:06:46Z
+
+### Changed
+- [UX] Logistics Configuration's "Ship As Companies" tab relabeled to "Branding / Ship As".
+
 ## v0.13.4 — build 2608030 — 2026-08-18T23:55:05Z
 
 ### Fixed

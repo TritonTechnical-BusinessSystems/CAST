@@ -14,7 +14,7 @@ import { LogisticsConfigEmbedLinks } from "./LogisticsConfigEmbedLinks";
 // directly by shipment/document forms in later phases (`GET
 // /api/logistics/config/incoterms`), not a page a human visits.
 const tabs: TabDef[] = [
-  { id: "branding", label: "Ship As Companies" },
+  { id: "branding", label: "Branding / Ship As" },
   { id: "carriers", label: "Carriers" },
   { id: "currencies", label: "Currencies" },
   { id: "export-presets", label: "Export Presets" },
