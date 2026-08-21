@@ -78,8 +78,16 @@ export async function getDeployStatus(): Promise<{ ok: boolean; status: number; 
 export async function triggerDeploy(action: DeployAction, triggeredBy: string): Promise<{ ok: boolean; detail: string; watchUrl?: string }> {
   const { ok, status, body } = await call(`/${action}`, "POST", triggeredBy);
   if (ok) {
-    const watchUrl = buildWatchUrl();
-    return { ok: true, detail: "Deploy started", ...(watchUrl ? { watchUrl } : {}) };
+    // NO watch URL for `update-monitor` — that action rebuilds and restarts
+    // the monitor itself, so handing the browser to it would land the operator
+    // on a page that is torn down underneath them seconds later. The monitor
+    // cannot be its own progress display while it is the thing restarting;
+    // `update-monitor` stays on System Health and reports through the Deploy
+    // card's own status banner instead. (`api`/`web` are untouched by it, so
+    // that card stays live throughout — the exact inverse of why a normal
+    // redeploy needs the monitor at all.)
+    const watchUrl = action === "update-monitor" ? null : buildWatchUrl();
+    return { ok: true, detail: action === "update-monitor" ? "Monitor update started" : "Deploy started", ...(watchUrl ? { watchUrl } : {}) };
   }
   if (status === 409) return { ok: false, detail: "A deploy is already running" };
   if (status === 401) return { ok: false, detail: "Deploy agent rejected the request — token mismatch" };

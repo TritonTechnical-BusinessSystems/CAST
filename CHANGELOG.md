@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.20.1 — build 2608043 — 2026-08-21T19:46:03Z
+
+### Fixed
+- [UX] **"Update deploy monitor" sent you to the page it was about to destroy.** Found by the user asking, plainly, how the monitor itself ever gets updated. `triggerDeploy` returned a `watchUrl` for all three actions and `DeployCard` redirected whenever one was present — so triggering a monitor rebuild handed the browser to the monitor, which was then torn down and restarted underneath it seconds later. Never caught during development because only the two redeploy buttons were exercised, not the third action added alongside them. Fixed: `update-monitor` returns no watch URL and stays on System Health, which is exactly right for it — that action rebuilds only the monitor, leaving `api`/`web` untouched, so the Deploy card stays live throughout and can report progress itself. That's the precise inverse of why a normal redeploy needs the monitor at all. The card also now gets its own banner for this case ("Rebuilding the deploy monitor… the app itself isn't being restarted, so this page stays live") rather than mislabelling it as a redeploy.
+
 ## v0.20.0 — build 2608042 — 2026-08-21T06:31:35Z
 
 ### Added

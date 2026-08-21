@@ -568,7 +568,13 @@ function DeployCard() {
       <CardHeader title="Deploy" />
       <CardBody>
         <div className="col gap-3">
-          {running && (
+          {running && status.action === "update-monitor" && (
+            <Banner tone="info">
+              Rebuilding the deploy monitor… Started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. The app itself isn't
+              being restarted, so this page stays live — it'll update here when the monitor is back. Takes about a minute.
+            </Banner>
+          )}
+          {running && status.action !== "update-monitor" && (
             <Banner tone="info">
               {status.action === "update-and-redeploy" ? "Updating from git and redeploying…" : "Redeploying…"} Started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. This page keeps checking — the "Application" card above will show the new build once it lands.
             </Banner>
