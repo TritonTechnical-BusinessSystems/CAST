@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.18.0.2 — build 2608039 — 2026-08-21T05:20:48Z
+
+### Changed
+- [UX] **The "Deploy" card moved to the top of the System Health page** — user, directly: *"it's kind of a dumb place to bury those buttons."* It previously rendered last on the page, after eight probe cards, two chart sections, and the Application card — meaning triggering a redeploy meant scrolling past a full page of read-only monitoring data first, and it was nested inside the page's `/health/full` loading gate even though it doesn't depend on that call. Now renders immediately below the page header, unconditionally (still returns nothing for non-admins or when the deploy agent isn't configured — same visibility rule as before, just no longer coupled to unrelated data loading).
+
 ## v0.18.0.1 — build 2608038 — 2026-08-21T04:59:53Z
 
 ### Changed

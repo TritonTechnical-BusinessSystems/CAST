@@ -650,6 +650,7 @@ export function SystemHealth() {
         subtitle="Live status, resource usage, and dependencies for CAST's own services."
         actions={<Button variant="secondary" onClick={() => { load(); loadMetrics(); loadIntegrationMetrics(); }}>Refresh status</Button>}
       />
+      <DeployCard />
       {err ? (
         <Banner tone="danger">{err}</Banner>
       ) : !h ? (
@@ -696,7 +697,6 @@ export function SystemHealth() {
               </div>
             </CardBody>
           </Card>
-          <DeployCard />
           <ContainersCard containerMetrics={latestContainers} />
           <PackagesCard />
         </>
