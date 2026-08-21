@@ -10,6 +10,15 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.22.1 — build 2608046 — 2026-08-21T20:51:47Z
+
+### Fixed
+- [UX] **The deploy monitor's stage list could revert to "nothing has happened" partway through a real deploy, while the output tape right below it kept scrolling real, current progress** — reported live during an actual production redeploy. `deploy-agent`'s log buffer is bounded (500 chunks stored, only the last 200 returned by `/status`) — a long enough build pushes the early `::stage::` marker lines out of that window entirely. The stage list was rendering directly off each poll's raw, possibly-truncated log instead of the client's own accumulated memory of every marker it had already seen (`stageOrder`, which the code was already building correctly but not using for this) — so the moment those early markers scrolled out of the server's window, completed stages reverted to unmarked. Fixed by rendering off the accumulated list. Verified against a reproduction of the exact scenario: a stage list from a log the server is actively truncating still correctly shows earlier stages complete.
+- [UX] **The "typical" duration shown during a deploy could be wildly wrong** — observed live: `19s` against a real, previously-measured `3:35` deploy. `update-monitor` runs (rebuild one small container, ~1 minute) and real `redeploy`/`update-and-redeploy` runs (rebuild `api`+`web`, several minutes) were feeding the same rolling average, capped at the last 5 entries — a couple of fast monitor-only updates was enough to drag a real deploy's baseline down to something nonsensical. Fixed with separate baselines per action family.
+
+### Changed
+- [UX] System Health's "Deploy monitor" tile renamed to "Deployment & Update Monitor" — user, directly.
+
 ## v0.22.0 — build 2608045 — 2026-08-21T20:17:34Z
 
 ### Added

@@ -680,7 +680,7 @@ function DeployCard() {
           title={
             <span className="row gap-2">
               <StatusDot state={monitor?.reachable === false ? "down" : monitor?.updateStaged ? "warn" : "ok"} />
-              Deploy monitor
+              Deployment & Update Monitor
             </span>
           }
           action={monitor?.updateStaged ? <Badge tone="warning">Update ready</Badge> : undefined}

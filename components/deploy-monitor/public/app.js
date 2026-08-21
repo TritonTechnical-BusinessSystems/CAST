@@ -11,9 +11,19 @@
   "use strict";
 
   var APP_ORIGIN = document.body.dataset.appOrigin || "";
-  var DEFAULT_TYPICAL_SEC = 215; // 3:35 — the first real measured run, until this browser has seen its own
-  var TYPICAL_KEY = "cast.deploy.durations";
   var REDIRECT_DELAY_SEC = 5;
+  // Separate baselines per action FAMILY, not one shared key -- bug found
+  // live 2026-08-21: an "update-monitor" run (rebuilds one small container,
+  // ~1 minute) and a real "redeploy"/"update-and-redeploy" (rebuilds api+web,
+  // several minutes) were both feeding the same rolling average. The array
+  // only keeps the last 5 entries, so a couple of fast monitor-only updates
+  // was enough to drag the "typical" duration shown during a real deploy down
+  // to something nonsensical (observed: 19s against an actual ~3:35 run).
+  var TYPICAL_DEPLOY = { key: "cast.deploy.durations", fallback: 215 }; // 3:35 — first real measured deploy
+  var TYPICAL_MONITOR = { key: "cast.deploy.monitor-durations", fallback: 60 };
+  function typicalFor(action) {
+    return action === "update-monitor" ? TYPICAL_MONITOR : TYPICAL_DEPLOY;
+  }
 
   var STAGE_LABELS = {
     pull: "git pull origin main",
@@ -72,9 +82,10 @@
     return m + ":" + (s < 10 ? "0" : "") + s;
   }
 
-  function typicalSeconds() {
+  function typicalSeconds(action) {
+    var t = typicalFor(action);
     try {
-      var raw = window.localStorage.getItem(TYPICAL_KEY);
+      var raw = window.localStorage.getItem(t.key);
       var arr = raw ? JSON.parse(raw) : [];
       if (Array.isArray(arr) && arr.length) {
         var sum = arr.reduce(function (a, b) {
@@ -85,19 +96,20 @@
     } catch (e) {
       /* localStorage unavailable or corrupt — fall through to the default */
     }
-    return DEFAULT_TYPICAL_SEC;
+    return t.fallback;
   }
 
-  function recordDuration(sec) {
+  function recordDuration(action, sec) {
+    var t = typicalFor(action);
     try {
-      var raw = window.localStorage.getItem(TYPICAL_KEY);
+      var raw = window.localStorage.getItem(t.key);
       var arr = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(arr)) arr = [];
       arr.push(sec);
       // Keep a short window so the baseline tracks how this box behaves NOW,
       // not how it behaved months ago on different hardware or image sizes.
       while (arr.length > 5) arr.shift();
-      window.localStorage.setItem(TYPICAL_KEY, JSON.stringify(arr));
+      window.localStorage.setItem(t.key, JSON.stringify(arr));
     } catch (e) {
       /* non-fatal — the baseline is a nicety, not a requirement */
     }
@@ -249,7 +261,7 @@
     var elapsedSec = startMs ? ((endMs || Date.now()) - startMs) / 1000 : 0;
     el.elapsed.textContent = fmtDuration(elapsedSec);
 
-    var typical = typicalSeconds();
+    var typical = typicalSeconds(status.action);
     var overrun = running && elapsedSec > typical;
 
     if (running) setState(overrun ? "slow" : "running");
@@ -269,7 +281,17 @@
     el.trackLeft.textContent = running ? "elapsed" : failed ? "stopped" : status.status === "done" ? "finished" : "elapsed";
     el.trackRight.textContent = overrun ? "longer than usual (typical " + fmtDuration(typical) + ")" : "typical " + fmtDuration(typical);
 
-    renderStages(parsed.stages, failed);
+    // `stageOrder`, NOT `parsed.stages` — real bug, caught live 2026-08-21: a
+    // long enough build pushes the early `::stage::` lines out of
+    // deploy-agent's own log window (500 chunks stored, only the last 200
+    // returned by /status), so a poll partway through no longer sees them in
+    // the raw log at all. Rendering directly off `parsed.stages` made the
+    // stage list forget everything already completed and revert to "nothing
+    // has happened" the moment that scroll-off occurred — while the output
+    // tape kept showing real, current progress right below it. `stageOrder`
+    // is this session's own accumulated memory of every marker it has ever
+    // seen, independent of whether the server's log window still contains it.
+    renderStages(stageOrder, failed);
 
     // tape
     if (el.tape.textContent !== parsed.visible) {
@@ -286,7 +308,7 @@
         // Only learn from a deploy we actually watched — otherwise every
         // revisit to an old finished deploy would re-record the same duration
         // and skew the baseline.
-        if (sawRunning && startMs && endMs) recordDuration(Math.round((endMs - startMs) / 1000));
+        if (sawRunning && startMs && endMs) recordDuration(status.action, Math.round((endMs - startMs) / 1000));
         showSuccess(sawRunning);
       }
     }
