@@ -131,7 +131,35 @@ common `8443` to leave that port free for something else later.
   it mid-stream; it updates via its own `update-monitor.sh` agent action
   (System Health → Deploy card → "Update deploy monitor"), which is the only
   non-SSH way to pick up a change to it.
-All `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
+All `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored),
+EXCEPT `deploy-monitor`, which has its own minimal `components/deploy-monitor/.env`
+(see its entry above for why).
+
+### Updating `deploy-agent` or `deploy-monitor` — you must pass `--build`
+`deploy.sh` builds **only `api` and `web`**, deliberately, so it can't recreate the
+infrastructure containers mid-run. The consequence, which is easy to miss: a
+`git pull` that changes `components/deploy-agent/` or `components/deploy-monitor/`
+does **not** update those running containers, and neither does
+`docker compose up -d --force-recreate <svc>` — that recreates the container from
+the *existing image*. The code keeps running at whatever version it was last built
+at, while the source on disk says otherwise.
+
+Both were hit live on 2026-08-21: `deploy-agent` was recreated to pick up the new
+`DEPLOY_AGENT_READONLY_TOKEN` and still returned 401, because the recreated
+container was running a pre-`v0.20.0` image with no read-only-token support at all.
+The env var was present; the code ignoring it was old.
+
+```bash
+cd /opt/cast/app
+docker compose up -d --build --force-recreate deploy-agent    # or deploy-monitor
+```
+
+For `deploy-monitor` specifically, the in-app **System Health → Deploy → "Update
+deploy monitor"** action does exactly this (`update-monitor.sh` runs
+`docker compose build deploy-monitor` then `up -d`), so it only needs the manual
+command when the monitor is down or the app can't reach the agent. `deploy-agent`
+has no in-app equivalent by design — nothing should be able to rebuild the
+container that holds the Docker socket except a human at a shell.
 
 ## nginx (`components/web/nginx.conf`)
 `80 → 301 https`. `443 ssl` serves the SPA (try_files fallback, immutable asset
