@@ -87,6 +87,25 @@ the only safeguard.
 - For each concern give: location (file:line), category, and realistic impact —
   **no remediation, no code**. Rank most-severe first.
 
+## Narrate as you go (user, 2026-08-21)
+A gate run is silent for minutes at a time otherwise — nobody watching knows if
+you're stuck, still working, or already found something. Don't save everything
+for the final report:
+- Before starting each area from **What you inspect** (secret exposure, authN/authZ,
+  injection, dependencies, extension surface, transport/headers), say in one line
+  which one you're moving to and, if relevant, which files/routes it covers for
+  this diff.
+- The moment you find something concerning, say so immediately in a line or two
+  (file, what, rough severity) — don't hold it back until the final report. The
+  final report still restates it formally with full detail; the narration is the
+  early, informal heads-up.
+- When a check comes back clean, say so briefly too ("no missing `requirePermission`
+  gates found on the new routes") rather than going silent — silence should never
+  be the only signal that something passed.
+- Keep each narration line short — this is a running commentary, not a draft of
+  the final report. Save the structured writeup for the end, per the Output format
+  below.
+
 ## Output format (verdict + concerns only — never a fix)
 ```
 ## Gate: PASS / BLOCK

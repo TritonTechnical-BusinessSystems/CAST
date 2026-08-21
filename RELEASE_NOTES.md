@@ -4,6 +4,24 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.17.0 — August 2026
+
+System Health can now trigger a redeploy directly from the browser — no more SSHing into the server for routine updates.
+
+## Highlights
+
+- **"Redeploy" and "Update from git + Redeploy" buttons on System Health.** The first rebuilds and restarts from whatever's currently checked out; the second pulls the latest code first. Built directly in response to tonight's connectivity troubles making even reaching the server a hassle.
+- **The credential-holding part of the app was deliberately kept out of this.** The same server process that decrypts every stored integration credential never gets direct control of Docker or the deploy key — a brand-new, separate, minimal component holds those instead, reachable only through two narrow, authenticated actions. A bug or intrusion in the main app's own code still couldn't reach Docker or GitHub directly, even though the new component (necessarily, to do its job) carries real host-level privilege of its own.
+- **"Clear credentials" on the Integrations page is no longer a big red button** — it's tucked into a small "3 dots" menu in each card's corner instead, matching how most apps keep destructive actions out of primary button space. The confirmation step before it actually clears anything is unchanged.
+
+## For the power users
+
+- Only one deploy can run at a time — a second click while one's in progress is refused with a clear message, not queued or raced.
+- The deploy trigger is gated behind a new, stricter permission than anything else in the app (not even the credentials-management role gets it by default) — deliberately scoped to admins only, since it runs real code on the server.
+- This hasn't been exercised against the live production server yet as of this release — the first real use should be watched closely rather than assumed to work.
+
+---
+
 # What's New in v0.16.0 — August 2026
 
 The ConnectWise-writes safety switch got the same rigor as the credential work in v0.15.0 — it's now scoped per environment, not one shared switch — and every remaining place that quietly assumed "Production" instead of asking is gone.

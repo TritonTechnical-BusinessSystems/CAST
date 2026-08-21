@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import {
   PageHeader, Card, CardHeader, CardBody, StatusDot, Badge, Banner, Button, Spinner, Table, EmptyState,
-  Gauge, RadialGauge, TimeSeriesChart, type ChartSeries,
+  Gauge, RadialGauge, TimeSeriesChart, Modal, useToast, type ChartSeries,
 } from "../ui";
+import { useAuth } from "../auth";
 import { ago } from "../ago";
 import { formatBytes, formatBytesPerSec, formatDuration } from "../format";
 
@@ -491,6 +492,122 @@ function ContainersCard({ containerMetrics }: { containerMetrics: ContainerMetri
   );
 }
 
+interface DeployStatus {
+  configured: boolean;
+  status?: "idle" | "running" | "done";
+  action?: "redeploy" | "update-and-redeploy" | null;
+  triggeredBy?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  exitCode?: number | null;
+  log?: string;
+}
+
+/**
+ * Redeploy trigger (INIT-0035). Never touches Docker or git itself — calls
+ * `POST /api/system/deploy/*`, which forwards to the deploy-agent container
+ * over an internal-only network (`cast-api` holds neither the Docker socket
+ * nor the git deploy key). Gated on `system.deploy`, admin-only, stricter
+ * than `integrations.write` since this triggers real host code execution.
+ */
+function DeployCard() {
+  const { can } = useAuth();
+  const toast = useToast();
+  const [status, setStatus] = useState<DeployStatus | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"redeploy" | "update-and-redeploy" | null>(null);
+  const [triggering, setTriggering] = useState(false);
+
+  const load = () => {
+    api.get<DeployStatus>("/system/deploy/status").then(setStatus).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!can("system.deploy")) return;
+    load();
+    // Poll faster while a deploy is actually running, otherwise this is just
+    // routine background refresh — no reason to hammer the agent when idle.
+    const t = setInterval(load, status?.status === "running" ? 3000 : 15000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [can, status?.status]);
+
+  if (!can("system.deploy") || !status?.configured) return null;
+
+  const trigger = async (action: "redeploy" | "update-and-redeploy") => {
+    setTriggering(true);
+    try {
+      const r = await api.post<{ ok: boolean; detail: string }>(`/system/deploy/${action}`);
+      toast(r.ok ? "success" : "error", r.detail);
+      setConfirmAction(null);
+      load();
+    } catch (e) {
+      toast("error", e instanceof Error ? e.message : "Failed to trigger deploy");
+    } finally {
+      setTriggering(false);
+    }
+  };
+
+  const running = status.status === "running";
+
+  return (
+    <Card>
+      <CardHeader title="Deploy" />
+      <CardBody>
+        <div className="col gap-3">
+          {running && (
+            <Banner tone="info">
+              {status.action === "update-and-redeploy" ? "Updating from git and redeploying…" : "Redeploying…"} Started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. This page keeps checking — the "Application" card above will show the new build once it lands.
+            </Banner>
+          )}
+          {status.status === "done" && status.finishedAt && (
+            <Banner tone={status.exitCode === 0 ? "success" : "danger"}>
+              Last {status.action} (triggered by {status.triggeredBy ?? "unknown"}): {status.exitCode === 0 ? "succeeded" : `failed (exit code ${status.exitCode})`}, finished {ago(status.finishedAt)}.
+            </Banner>
+          )}
+          <div className="row gap-2">
+            <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("redeploy")}>
+              Redeploy
+            </Button>
+            <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("update-and-redeploy")}>
+              Update from git + Redeploy
+            </Button>
+          </div>
+          {status.log && (
+            <details>
+              <summary className="muted text-sm">Last run's output</summary>
+              <pre className="mono text-xs log-output">{status.log}</pre>
+            </details>
+          )}
+        </div>
+      </CardBody>
+      {confirmAction && (
+        <Modal
+          title={confirmAction === "update-and-redeploy" ? "Update from git and redeploy?" : "Redeploy?"}
+          onClose={() => !triggering && setConfirmAction(null)}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmAction(null)} disabled={triggering}>Cancel</Button>
+              <Button variant="primary" onClick={() => trigger(confirmAction)} disabled={triggering}>
+                {triggering ? "Starting…" : confirmAction === "update-and-redeploy" ? "Update + redeploy" : "Redeploy"}
+              </Button>
+            </>
+          }
+        >
+          <div className="col gap-3">
+            <p>
+              {confirmAction === "update-and-redeploy"
+                ? "Pulls the latest main branch, rebuilds both containers, and restarts them."
+                : "Rebuilds both containers from the current checked-out code and restarts them."}{" "}
+              Takes 1-3 minutes; the site briefly restarts partway through.
+            </p>
+            <p className="muted text-sm">Only one deploy can run at a time — this is refused if one's already in progress.</p>
+          </div>
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
 export function SystemHealth() {
   const [h, setH] = useState<FullHealth | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -579,6 +696,7 @@ export function SystemHealth() {
               </div>
             </CardBody>
           </Card>
+          <DeployCard />
           <ContainersCard containerMetrics={latestContainers} />
           <PackagesCard />
         </>

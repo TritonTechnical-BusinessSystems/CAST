@@ -1,0 +1,29 @@
+# Never let a real secret or the local dev database into ANY image's build
+# context — a Dockerfile that COPYs a whole component directory (api/web/
+# deploy-agent) would otherwise bake .env's JWT secret, LDAP bind password,
+# break-glass password, and (as of INIT-0035) DEPLOY_AGENT_TOKEN straight into
+# an image layer, plus the encrypted-store master key and databases if a dev
+# checkout's .data/ happens to be present in the build context (security
+# review, 2026-08-21 — this file never existed before, a pre-existing gap the
+# deploy-agent work made materially worse by adding a new secret and a new
+# powerful permission a leaked JWT secret could forge).
+# Unlike .gitignore, a .dockerignore pattern with no `**/` prefix matches ONLY
+# at the build-context root (Docker's documented behavior) — every Dockerfile
+# here declares the REPO ROOT as build context, but the real secret file is
+# nested at components/api/.env, not the root, so the first version of this
+# file (root-only `.env`/`.env.*`) matched nothing at all (caught on a second
+# security-gate pass, 2026-08-21, after the first version shipped with this
+# exact bug). `**/` matches at any depth.
+**/.env
+**/.env.*
+!**/.env.example
+**/.data/
+node_modules
+.git
+# The extension signing key (decisions/0002 non-negotiable: never in the
+# CRX or git). No current Dockerfile copies components/browser-extension/.keys/,
+# and it's gitignored, so this isn't an active leak today — but a later
+# `COPY . .` would ship it silently without this (third security-gate pass,
+# 2026-08-21).
+**/.keys/
+**/*.pem

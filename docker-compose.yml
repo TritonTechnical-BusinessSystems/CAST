@@ -43,7 +43,7 @@ services:
       # live TLS handshake to `web:443` instead.)
       - /opt/cast/backups:/opt/cast/backups:ro
     depends_on: [docker-proxy]
-    networks: [internal]
+    networks: [internal, deploy]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -76,6 +76,64 @@ services:
         condition: service_healthy
     networks: [internal]
 
+  # Deploy agent (INIT-0035) — the ONLY container holding the real Docker
+  # socket + a git deploy key, so `api` (which decrypts every stored
+  # credential) never needs either directly. Triggered by `api`'s System
+  # Health "Redeploy" buttons over the internal network only — no `ports:`
+  # entry, unreachable from the host/internet. Real Docker socket access is
+  # host-root-equivalent by nature, and this container also needs read-write
+  # access to the app tree (including components/api/.env) to drive a git
+  # pull + rebuild — it is NOT a secrets-free or otherwise safe component if
+  # compromised. What this design actually buys (security review, 2026-08-21,
+  # correcting an earlier overclaim in this repo's own docs): `api`'s OWN
+  # code/dependencies/request-handling — the only part of the credential-
+  # holding process an outside attacker can actually reach — can never touch
+  # Docker or the deploy key, only this agent's two fixed, authenticated
+  # actions. On the dedicated `deploy` network (see below), not `internal` —
+  # `web` (the only internet-facing container) has no network path to it at all.
+  deploy-agent:
+    build:
+      context: .
+      dockerfile: components/deploy-agent/Dockerfile
+    image: cast-deploy-agent:latest
+    container_name: cast-deploy-agent
+    restart: unless-stopped
+    # Same file `api` already reads (DEPLOY_AGENT_TOKEN lives here too) — NOT
+    # compose-level `${DEPLOY_AGENT_TOKEN}` shell interpolation, which would
+    # need a root `.env` in the compose project directory that doesn't exist
+    # anywhere in this deploy's actual layout (caught in security review,
+    # 2026-08-21 — the original version of this file silently could never
+    # have received the token on the real host).
+    env_file: components/api/.env
+    environment:
+      APP_DIR: /opt/cast/app
+      DEPLOY_KEY_HOST_PATH: /home/tritonadmin/.ssh/cast-deploy-agent-key
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Both mirror the HOST path exactly (not a container-relative path) —
+      # dockerd runs on the host and resolves this compose project's own
+      # relative bind mounts (e.g. api's /opt/cast/data) against the real
+      # host filesystem, so `docker compose build/up` invoked from INSIDE
+      # this container only works correctly if its own view of the app tree
+      # (and the deploy key path referenced below) sits at the identical path
+      # the host itself uses (standard Docker-outside-of-Docker mirroring).
+      # The key is a plain bind mount, not Compose `secrets:` — a `secrets:`
+      # file source is resolved by whichever `docker compose` CLI process is
+      # running, which is THIS container when deploy.sh drives its own
+      # redeploy, not the host; without an identical-path bind mount here
+      # too, that resolution fails (caught in security review, 2026-08-21).
+      - /opt/cast/app:/opt/cast/app
+      - /home/tritonadmin/.ssh/cast-deploy-agent-key:/home/tritonadmin/.ssh/cast-deploy-agent-key:ro
+    networks: [deploy]
+
 networks:
   internal:
+    driver: bridge
+  # Separate from `internal` deliberately — only `api` and `deploy-agent` sit
+  # on this one, so `web` (the only container reachable from the internet)
+  # and `docker-proxy` have no network path to the agent at all, even though
+  # its own auth token would still refuse them (security review, 2026-08-21).
+  # NOT `internal: true` — deploy-agent needs real outbound internet access
+  # on this network for `git fetch`/`pull` against GitHub.
+  deploy:
     driver: bridge

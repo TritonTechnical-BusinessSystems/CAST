@@ -279,6 +279,7 @@
 .chart-tooltip-row strong { font-variant-numeric: tabular-nums; }
 .chart-tooltip-key { width: 10px; height: 2px; border-radius: var(--radius-sm); flex-shrink: 0; }
 .chart-table-scroll { max-height: 320px; overflow-y: auto; }
+.log-output { white-space: pre-wrap; max-height: 240px; overflow-y: auto; }
 
 /* ===================== Auth (login) — a genuinely one-off page chrome ===================== */
 .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-6); background: var(--color-surface-rail); }

@@ -151,6 +151,20 @@ export const config = {
   tlsDomain: env.CAST_TLS_DOMAIN ?? "cast.tritontechnical.com",
   tlsProbeHost: env.CAST_TLS_PROBE_HOST ?? "web",
   backupDir: env.CAST_BACKUP_DIR ?? "/opt/cast/backups",
+
+  /**
+   * Deploy agent (INIT-0035) — the ONLY component holding the real Docker
+   * socket and the git deploy key, specifically so THIS process (which
+   * decrypts every stored credential) never needs either. `deployAgentToken`
+   * is a shared secret with that container, never sent to the browser; a
+   * request without it (or the wrong value) is refused by the agent itself,
+   * defense-in-depth on top of this route's own `system.deploy` permission
+   * gate. No dev-mode fallback — deploy triggering is meaningless outside the
+   * real Docker Compose stack, so an empty token here just means the feature
+   * reports itself unconfigured rather than silently no-op'ing.
+   */
+  deployAgentUrl: env.CAST_DEPLOY_AGENT_URL ?? "http://deploy-agent:4001",
+  deployAgentToken: env.DEPLOY_AGENT_TOKEN ?? "",
 } as const;
 
 // Fail fast rather than silently signing sessions with a public default secret —

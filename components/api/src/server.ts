@@ -14,6 +14,7 @@ import extensionRoutes from "./routes/extension";
 import logisticsRoutes from "./routes/logistics";
 import logisticsShipmentsRoutes from "./routes/logisticsShipments";
 import logisticsDocumentsRoutes from "./routes/logisticsDocuments";
+import systemRoutes from "./routes/system";
 import { startTierRefresh, stopTierRefresh } from "./jobs/tierRefresh";
 import { startAisListener, stopAisListener } from "./vessels/aisListener";
 import { startMetricsSampler, stopMetricsSampler } from "./health/metrics";
@@ -39,6 +40,7 @@ app.use("/api/extension", extensionRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/logistics", logisticsShipmentsRoutes);
 app.use("/api/logistics", logisticsDocumentsRoutes);
+app.use("/api/system", systemRoutes);
 
 const server = app.listen(config.port, () => {
   console.log(`[cast-api] listening on :${config.port} (${config.nodeEnv})`);

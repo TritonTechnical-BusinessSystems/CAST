@@ -17,6 +17,7 @@ export const PERMISSIONS = [
   "integrations.read",  // view integration status
   "integrations.write", // enter/update credentials
   "system.read",        // view System Health
+  "system.deploy",      // trigger a redeploy from the System Health page (admin-only — see deploy/deployAgentClient.ts)
   "accounts.manage",    // manage local break-glass accounts
   "logistics.read",     // view Logistics (INIT-0026)
   "logistics.write",    // edit Logistics config/data

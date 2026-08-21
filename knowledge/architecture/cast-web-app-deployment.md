@@ -2,7 +2,7 @@
 status: active
 read-when: Deploying CAST to trt-cast-01, or changing container topology, nginx, TLS, or the auto-update mechanism.
 related: [cast-web-app-vm-provisioning.md, connectwise-api-integration.md, ../decisions/0006-web-app-stack-vite-react-express.md]
-updated: 2026-08-18
+updated: 2026-08-21
 ---
 
 # CAST web app — deployment
@@ -55,6 +55,38 @@ mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
 - **web** (built from `components/web/Dockerfile`, final stage `nginx:1.27-alpine`)
   — serves the SPA + proxies `/api` → `api:3001`, terminates TLS, publishes
   80+443, bind-mounts `/etc/letsencrypt:ro`. `depends_on: api` (`service_healthy`).
+- **deploy-agent** (`INIT-0035`, `components/deploy-agent/`) — the ONLY
+  container holding the real Docker socket (read-write, not the read-only
+  proxy) and a git deploy key, so `api` (which decrypts every stored
+  credential) never needs either directly. **Not itself a secrets-free or
+  safe-if-compromised component** — it bind-mounts the whole app tree
+  read-write (including `components/api/.env`) to drive `git pull`/`docker
+  compose`, and Docker socket access is host-root-equivalent by nature
+  (security review, 2026-08-21, correcting an earlier overclaim here). What
+  the split actually buys: `api`'s own code/dependencies/request-handling —
+  the only part of the credential-holding process an outside attacker can
+  reach — can never touch Docker or the deploy key, only this agent's two
+  fixed actions. Backs System Health's "Redeploy"/"Update from git +
+  Redeploy" buttons: `api` calls those two fixed, token-authenticated actions
+  over a **dedicated `deploy` network** (not `internal` — `web`, the only
+  internet-facing container, and `docker-proxy` have no network path to the
+  agent at all; no `ports:` entry either way). Zero npm dependencies by
+  design (Node built-ins only) — the single most privileged container in the
+  stack should have the smallest attack surface. Uses its OWN dedicated
+  deploy key (`cast-deploy-agent-key`, a separate GitHub Deploy Key, not
+  `tritonadmin`'s interactive one), delivered as a plain read-only bind mount
+  at the identical host path (NOT Compose `secrets:` — that mechanism is
+  resolved by whichever `docker compose` CLI process is running, which is
+  this container itself when it redeploys, not the host, so a `secrets:`
+  file source never resolved correctly) and copied to a correctly-
+  permissioned location by `entrypoint.sh` at container start, which also
+  pins GitHub's published SSH host key rather than trusting whatever's
+  presented on first connection. Requires `DEPLOY_AGENT_TOKEN` (a shared
+  bearer token) set in `components/api/.env` — the SAME file `api` reads,
+  not Compose-level `${VAR}` shell interpolation, which would need a root
+  `.env` this deploy's layout doesn't have; the deploy UI just hides itself
+  if unset (e.g.
+  local dev, which has no `deploy-agent` container at all).
 All `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
 
 ## nginx (`components/web/nginx.conf`)
