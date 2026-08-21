@@ -32,8 +32,18 @@ const HISTORY_LIMIT = 720; // 720 * 15s = 3h
 // trend-viewing at this resolution) is written to `metric_history` so data
 // survives restarts and accumulates toward the longer Range options that
 // feature will add. 4 * 15s = 1 sample/minute; kept for RETENTION_DAYS, then
-// pruned -- at ~1-2KB/row that's tens of MB even at 90 days, negligible next
-// to the encrypted secrets table sharing this same file.
+// pruned.
+//
+// AGGREGATES ONLY -- the per-container `containers[]` array is deliberately
+// stripped before persisting. Measured, not estimated: a FULL sample on
+// production is ~1510 bytes, which at 1/min for 90 days would be ~195MB
+// accumulating in the same sqlite file as the encrypted secrets table, on a
+// 2 vCPU/4GB box (an earlier version of this comment guessed "tens of MB" --
+// wrong by ~5-10x, corrected 2026-08-21 after measuring real rows). Stripping
+// containers[] measures at ~404 bytes/row => ~52MB at 90 days. Per-container
+// breakdown is still available at full 15s resolution from the in-memory
+// buffer for the last ~3h, which is the window it's actually useful for;
+// long-range charts plot the aggregate series only.
 const PERSIST_EVERY_N_SAMPLES = 4;
 const RETENTION_DAYS = 90;
 let samplesSincePersist = 0;
@@ -75,6 +85,10 @@ export interface MetricSample {
   eventLoopLagMaxMs: number;
   containers: ContainerSample[];
 }
+
+/** What actually gets written to `metric_history` — everything except the
+ *  per-container breakdown (see PERSIST_EVERY_N_SAMPLES' comment for why). */
+export type PersistedMetricSample = Omit<MetricSample, "containers">;
 
 interface DockerStatsRaw {
   cpu_stats: { cpu_usage: { total_usage: number }; system_cpu_usage?: number; online_cpus?: number; percpu_usage?: number[] };
@@ -219,7 +233,8 @@ async function takeSample(): Promise<void> {
   samplesSincePersist++;
   if (samplesSincePersist >= PERSIST_EVERY_N_SAMPLES) {
     samplesSincePersist = 0;
-    insertHistoryStmt.run({ at: sample.at, sampleJson: JSON.stringify(sample) });
+    const { containers: _dropped, ...persisted } = sample;
+    insertHistoryStmt.run({ at: sample.at, sampleJson: JSON.stringify(persisted satisfies PersistedMetricSample) });
     const cutoff = new Date(nowMs - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
     pruneHistoryStmt.run({ cutoff });
   }

@@ -16,7 +16,7 @@ System Health now quietly starts saving resource-usage history for up to 90 days
 
 ## For the power users
 
-- The new 90-day history is decimated to one sample a minute (not averaged), stored separately from the existing fast 3-hour/15-second buffer, which is unchanged.
+- The new 90-day history is decimated to one sample a minute (not averaged) and stores overall totals only — not the per-container breakdown, which stays available at full detail for the last 3 hours. That keeps 90 days of history to about 52 MB instead of 195 MB on a small server.
 - Found while building the above: a single failed connection to the container-stats service used to silently drop an entire resource-usage sample — not just the container portion of it, but the disk-space and responsiveness readings too. Fixed so one hiccup no longer costs a full data point.
 
 ---
