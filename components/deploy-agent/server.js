@@ -18,7 +18,9 @@
  */
 const http = require("http");
 const crypto = require("crypto");
-const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const { spawn, execFile } = require("child_process");
 
 const PORT = Number(process.env.DEPLOY_AGENT_PORT || 4001);
 const TOKEN = process.env.DEPLOY_AGENT_TOKEN || "";
@@ -129,7 +131,114 @@ function startDeploy(action, triggeredBy) {
   return true;
 }
 
-const server = http.createServer((req, res) => {
+/**
+ * "Is there anything on origin/main we haven't pulled yet?" (follow-up to
+ * INIT-0035, 2026-08-21) — user asked directly whether the Deploy card could
+ * show Current/Available versions before you click a button to find out.
+ *
+ * `git fetch` only updates remote-tracking refs (`origin/main`) — it never
+ * touches the working tree or HEAD, so it's safe to run at any time, including
+ * while a deploy is NOT running. It's still a real network call to GitHub, so
+ * it's read-only-token-eligible in spirit but deliberately gated to the full
+ * token below (see the comment at the auth check) and cached for
+ * UPDATE_CHECK_CACHE_MS so a chatty frontend (or several open tabs) can't
+ * trigger a fetch on every poll.
+ *
+ * execFile, not exec/spawn-with-shell — args are a fixed array, no shell ever
+ * parses them, so there is no injection surface even though this reads
+ * dynamic values (commit hashes) out of git's own output.
+ */
+const UPDATE_CHECK_CACHE_MS = 60_000;
+// 1MB is git's own historical default for a single object's worth of `show`
+// output; set explicitly rather than relying on execFile's implicit default
+// (also 1MB, but implicit) so this bound stays visible if this file is ever
+// edited to add another execFile call with different needs (security review,
+// 2026-08-21).
+const GIT_MAX_BUFFER = 1024 * 1024;
+let updateCheckCache = null; // { at: number, result: object }
+// De-dupes concurrent callers (e.g. two open admin tabs both clicking "Check
+// for updates" before the cache above has anything to serve) onto the SAME
+// in-flight promise, rather than each firing its own `git fetch` and risking
+// lock-file contention against each other (security review, 2026-08-21).
+let updateCheckInFlight = null;
+
+function git(args) {
+  return new Promise((resolve, reject) => {
+    execFile("git", args, { cwd: APP_DIR, timeout: 20_000, maxBuffer: GIT_MAX_BUFFER }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(stderr?.toString().trim() || err.message));
+      resolve(stdout.toString().trim());
+    });
+  });
+}
+
+async function checkForUpdate() {
+  if (updateCheckCache && Date.now() - updateCheckCache.at < UPDATE_CHECK_CACHE_MS) {
+    return updateCheckCache.result;
+  }
+  if (state.status === "running") {
+    // Don't race deploy.sh's own fetch/pull with a concurrent one. If nothing
+    // is cached yet, say so plainly rather than risk a torn read mid-pull.
+    if (updateCheckCache) return updateCheckCache.result;
+    throw new Error("A deploy is currently running — check again once it finishes");
+  }
+  if (updateCheckInFlight) return updateCheckInFlight;
+
+  updateCheckInFlight = performUpdateCheck().finally(() => {
+    updateCheckInFlight = null;
+  });
+  return updateCheckInFlight;
+}
+
+async function performUpdateCheck() {
+  await git(["fetch", "--prune", "origin"]);
+  const currentCommit = await git(["rev-parse", "--short", "HEAD"]);
+  const commitsBehind = Number(await git(["rev-list", "--count", "HEAD..origin/main"])) || 0;
+
+  const current = JSON.parse(fs.readFileSync(path.join(APP_DIR, "version.json"), "utf8"));
+
+  let availableVersion = null;
+  let availableBuild = null;
+  let availableCommit = currentCommit;
+  if (commitsBehind > 0) {
+    availableCommit = await git(["rev-parse", "--short", "origin/main"]);
+    try {
+      // Reads the file out of the remote-tracking ref directly -- does NOT
+      // check anything out, so the running deploy is untouched either way.
+      const available = JSON.parse(await git(["show", "origin/main:version.json"]));
+      // Coerced to string-or-null explicitly (security review, 2026-08-21) --
+      // this JSON comes from a file on origin/main, which this process
+      // doesn't control the shape of. A non-string here would otherwise flow
+      // untyped through to the frontend, where JSX throws trying to render a
+      // non-primitive as a text child, crashing the whole Deploy card for
+      // whoever's looking at it over a cosmetic field.
+      availableVersion = typeof available.version === "string" ? available.version : null;
+      availableBuild = typeof available.build === "string" ? available.build : null;
+    } catch (e) {
+      // origin/main having no readable version.json shouldn't hide the fact
+      // that there ARE new commits -- report the count, just without version
+      // labels for them.
+      console.warn(`[deploy-agent] could not read origin/main's version.json: ${e.message}`);
+    }
+  }
+
+  const result = {
+    // Same string-or-null coercion as the available-side fields above -- this
+    // one's read from a file this repo does control, but the check is free
+    // and keeps both sides of the comparison held to the identical contract.
+    currentVersion: typeof current.version === "string" ? current.version : null,
+    currentBuild: typeof current.build === "string" ? current.build : null,
+    currentCommit,
+    availableVersion,
+    availableBuild,
+    availableCommit,
+    commitsBehind,
+    checkedAt: new Date().toISOString(),
+  };
+  updateCheckCache = { at: Date.now(), result };
+  return result;
+}
+
+const server = http.createServer(async (req, res) => {
   const json = (code, body) => {
     res.writeHead(code, { "Content-Type": "application/json" });
     res.end(JSON.stringify(body));
@@ -146,10 +255,21 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url === "/status") {
     return json(200, { ...state, log: state.log.slice(-200).join("") });
   }
-  // Everything past here is a state-changing action: full token only. A
-  // read-only holder reaching this point is a 403 (authenticated, not
-  // permitted), never a silent success.
+  // Everything past here requires the FULL token. Not all of it mutates state
+  // (GET /update-check doesn't) -- the read-only credential exists
+  // specifically for deploy-monitor, which watches a deploy already in
+  // progress and has no reason to know what's waiting on origin/main. A
+  // read-only holder reaching any route past this point gets 403
+  // (authenticated, not permitted), never a silent success.
   if (!isFullToken) return json(403, { error: "Forbidden — read-only credential" });
+
+  if (req.method === "GET" && req.url === "/update-check") {
+    try {
+      return json(200, await checkForUpdate());
+    } catch (e) {
+      return json(502, { error: e instanceof Error ? e.message : String(e) });
+    }
+  }
   if (req.method === "POST" && (req.url === "/redeploy" || req.url === "/update-and-redeploy" || req.url === "/update-monitor")) {
     // Truncated hard — this only ever labels a log line, never touches argv/env/paths.
     const triggeredBy = String(req.headers["x-triggered-by"] || "unknown").slice(0, 200);

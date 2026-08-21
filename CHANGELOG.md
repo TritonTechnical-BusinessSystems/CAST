@@ -10,6 +10,15 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.22.0 — build 2608045 — 2026-08-21T20:17:34Z
+
+### Added
+- [Infra] **The Deploy card can now check whether there's actually an update available, before you click anything** — user, directly: *"Is the Deploy tile able to check and determine whether there's actually an update available? Current version: x, Available version: y."* A new "Check for updates" button asks `deploy-agent` to run a read-only `git fetch` against `origin/main` and reports back current vs. available version/build, and how many commits behind you are. When there's something new, "Update from git + Redeploy" switches to a primary button so it's visually obvious there's a reason to click it. Deliberately on-demand, not part of the existing 3-15s status poll — a real network call to GitHub shouldn't fire that often — and the agent additionally caches its own result for 60s and de-dupes concurrent callers (e.g. two open admin tabs) onto a single in-flight check rather than firing multiple fetches.
+- [Backend] The new `GET /update-check` route sits behind the same full-token gate as every state-changing agent action — not the read-only credential `deploy-monitor` holds. That credential exists specifically so the browser-facing monitor can watch a deploy in progress; it has no reason to know what's waiting on `origin/main` between deploys, so this stays out of its reach entirely, verified live: the read-only token gets a clean 403 against this route.
+
+### Security
+- [Security] Pre-release security gate **PASSed**, five Low/Info findings, three fixed before shipping: two open admin tabs checking simultaneously could each fire an independent `git fetch` before the cache populated (fixed with in-flight request de-duplication, verified live — three genuinely concurrent, cold-cache requests now share a single fetch); the `execFile` buffer limit on `git show` output relied on Node's implicit default rather than an explicit one (now explicit, so a future edit to this file can't silently lose the bound); and the version/build fields read from `origin/main`'s `version.json` had no runtime type check, so a malformed value there could have thrown rendering the Deploy card in the browser rather than degrading — both sides of the version comparison now coerce to string-or-null explicitly. Two findings left as documented, accepted edge cases: a narrow-window race between this read-only check and an actual deploy's own git operations, bounded to git lock contention that already surfaces as a clean error rather than corruption or a hang; and `execFile`'s timeout using `SIGTERM` rather than `SIGKILL`, which only matters if `git` itself ignored termination, which it doesn't in practice.
+
 ## v0.21.0 — build 2608044 — 2026-08-21T19:58:28Z
 
 ### Added

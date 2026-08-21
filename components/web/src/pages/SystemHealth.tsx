@@ -503,6 +503,17 @@ interface MonitorVersion {
   startedAt: string | null;
 }
 
+interface UpdateCheckInfo {
+  currentVersion: string | null;
+  currentBuild: string | null;
+  currentCommit: string;
+  availableVersion: string | null;
+  availableBuild: string | null;
+  availableCommit: string | null;
+  commitsBehind: number;
+  checkedAt: string;
+}
+
 interface DeployStatus {
   configured: boolean;
   monitor?: MonitorVersion | null;
@@ -531,9 +542,27 @@ function DeployCard() {
   const [status, setStatus] = useState<DeployStatus | null>(null);
   const [confirmAction, setConfirmAction] = useState<DeployAction | null>(null);
   const [triggering, setTriggering] = useState(false);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheckInfo | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const load = () => {
     api.get<DeployStatus>("/system/deploy/status").then(setStatus).catch(() => {});
+  };
+
+  // Deliberately on-demand, not part of the poll above: a real `git fetch`
+  // against GitHub runs on the agent side, so this shouldn't fire every
+  // 3-15s like the status check does.
+  const checkUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const r = await api.get<{ ok: boolean; error?: string } & Partial<UpdateCheckInfo>>("/system/deploy/update-check");
+      if (r.ok) setUpdateCheck(r as UpdateCheckInfo);
+      else toast("error", r.error ?? "Failed to check for updates");
+    } catch (e) {
+      toast("error", e instanceof Error ? e.message : "Failed to check for updates");
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   useEffect(() => {
@@ -561,6 +590,11 @@ function DeployCard() {
         window.location.href = r.watchUrl;
         return; // deliberately leave `triggering` set — we're navigating away
       }
+      // Clear a stale "N commits behind" banner — most relevant when no
+      // monitor is configured and this page doesn't navigate away, so an
+      // update-and-redeploy that just pulled those commits would otherwise
+      // keep claiming they're still pending.
+      if (r.ok && action === "update-and-redeploy") setUpdateCheck(null);
       toast(r.ok ? "success" : "error", r.detail);
       setConfirmAction(null);
       load();
@@ -592,12 +626,32 @@ function DeployCard() {
               Last {status.action} (triggered by {status.triggeredBy ?? "unknown"}): {status.exitCode === 0 ? "succeeded" : `failed (exit code ${status.exitCode})`}, finished {ago(status.finishedAt)}.
             </Banner>
           )}
+          {updateCheck &&
+            (updateCheck.commitsBehind > 0 ? (
+              <Banner tone="warning">
+                {updateCheck.commitsBehind} commit{updateCheck.commitsBehind === 1 ? "" : "s"} behind — running {updateCheck.currentVersion ?? "unknown"}
+                {updateCheck.currentBuild ? ` (build ${updateCheck.currentBuild})` : ""}, {updateCheck.availableVersion ?? "a newer version"}
+                {updateCheck.availableBuild ? ` (build ${updateCheck.availableBuild})` : ""} available on <code>main</code>.
+              </Banner>
+            ) : (
+              <span className="muted text-sm">
+                Up to date — running {updateCheck.currentVersion ?? "unknown"}
+                {updateCheck.currentBuild ? ` (build ${updateCheck.currentBuild})` : ""}, checked {ago(updateCheck.checkedAt)}.
+              </span>
+            ))}
           <div className="row gap-2">
             <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("redeploy")}>
               Redeploy
             </Button>
-            <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("update-and-redeploy")}>
+            <Button
+              variant={updateCheck && updateCheck.commitsBehind > 0 ? "primary" : "secondary"}
+              disabled={running || triggering}
+              onClick={() => setConfirmAction("update-and-redeploy")}
+            >
               Update from git + Redeploy
+            </Button>
+            <Button variant="ghost" size="sm" disabled={running || triggering || checkingUpdate} onClick={checkUpdate}>
+              {checkingUpdate ? "Checking…" : "Check for updates"}
             </Button>
           </div>
           {status.monitorConfigured && (

@@ -15,6 +15,7 @@
 import { Router } from "express";
 import { requirePermission } from "../middleware/auth";
 import {
+  checkForUpdate,
   deployAgentConfigured,
   deployMonitorConfigured,
   getDeployStatus,
@@ -45,6 +46,21 @@ router.get("/deploy/status", requirePermission("system.deploy"), async (_req, re
       monitor,
       error: e instanceof Error ? e.message : "Deploy agent unreachable",
     });
+  }
+});
+
+// A real network call to GitHub (the agent runs `git fetch`), so this is
+// deliberately its own on-demand route rather than folded into the status
+// poll above, which fires every 3-15s. The agent also caches its own result
+// for 60s as a second guard.
+router.get("/deploy/update-check", requirePermission("system.deploy"), async (_req, res) => {
+  if (!deployAgentConfigured()) return void res.status(400).json({ ok: false, error: "Deploy agent not configured" });
+  try {
+    const { ok, data, error } = await checkForUpdate();
+    if (!ok) return void res.status(502).json({ ok: false, error });
+    res.json({ ok: true, ...data });
+  } catch (e) {
+    res.status(502).json({ ok: false, error: e instanceof Error ? e.message : "Deploy agent unreachable" });
   }
 });
 

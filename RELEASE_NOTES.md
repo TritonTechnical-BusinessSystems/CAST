@@ -4,6 +4,21 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.22.0 — August 2026
+
+The Deploy card can now tell you whether there's actually something to deploy, before you click anything.
+
+## Highlights
+
+- **"Check for updates" on System Health's Deploy card.** Shows the version and build you're currently running against what's available on the main branch, and how many commits behind you are. When there's something new, the "Update from git + Redeploy" button changes color so it's obvious there's a reason to click it.
+
+## For the power users
+
+- The check is a real, on-demand network call to GitHub — it deliberately doesn't run automatically every few seconds like the rest of the Deploy card's status polling. The server also caches its own result for a minute and shares one check across multiple open tabs clicking it at the same time, rather than making redundant calls.
+- A pre-release security review passed, with three small hardening fixes made before shipping: two people checking at once could briefly cause duplicate work (fixed), and a couple of edge cases around malformed data were closed off so they'd degrade quietly instead of causing an error on screen.
+
+---
+
 # What's New in v0.21.0 — August 2026
 
 The deploy monitor from v0.20.0 can now update itself in place, right from System Health — and a real crash on the Currencies tab is fixed.

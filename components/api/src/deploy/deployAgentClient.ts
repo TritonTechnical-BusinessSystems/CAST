@@ -105,6 +105,35 @@ export async function getMonitorVersion(): Promise<MonitorVersionInfo> {
   }
 }
 
+export interface UpdateCheckInfo {
+  currentVersion: string | null;
+  currentBuild: string | null;
+  currentCommit: string;
+  availableVersion: string | null;
+  availableBuild: string | null;
+  availableCommit: string | null;
+  commitsBehind: number;
+  checkedAt: string;
+}
+
+/**
+ * "Is there anything on origin/main we haven't pulled yet?" — user asked
+ * directly whether the Deploy card could show Current/Available versions up
+ * front rather than only finding out by clicking a redeploy button.
+ *
+ * A real network call (`git fetch` on the agent side), so this is a distinct,
+ * on-demand action from `getDeployStatus()`'s 3-15s polling loop — the
+ * frontend calls this only when the operator asks, not on every status tick.
+ * The agent itself also caches for 60s server-side as a second guard against
+ * multiple open tabs.
+ */
+export async function checkForUpdate(): Promise<{ ok: boolean; data: UpdateCheckInfo | null; error?: string }> {
+  const { ok, status, body } = await call("/update-check", "GET");
+  if (ok) return { ok: true, data: body as UpdateCheckInfo };
+  const error = body && typeof body === "object" && "error" in body ? String((body as { error: unknown }).error) : `Deploy agent returned ${status}`;
+  return { ok: false, data: null, error };
+}
+
 async function call(path: string, method: "GET" | "POST", triggeredBy?: string): Promise<{ ok: boolean; status: number; body: unknown }> {
   const headers: Record<string, string> = { Authorization: `Bearer ${config.deployAgentToken}` };
   // Display-only — the agent never uses this for anything but its own log/status
