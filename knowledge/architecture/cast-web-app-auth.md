@@ -2,7 +2,7 @@
 status: active
 read-when: Configuring CAST web app login/authorization — the break-glass admin, the AD group→role mapping, or the roles/permissions model.
 related: [../decisions/0002-extension-never-touches-cw-credentials.md, cast-web-app-vm-provisioning.md]
-updated: 2026-07-23
+updated: 2026-08-21
 ---
 
 # CAST web app — authentication & authorization
@@ -17,8 +17,61 @@ Two ways in, one authorization model.
 2. **Local break-glass — "TritonAdmin".** One admin account for when AD is
    unreachable (or before AD is wired). Seeded automatically at first boot, always
    role **admin**. Set its password with `CAST_BREAKGLASS_PASSWORD` in `.env`; if
-   blank, a random password is generated and printed to the server log once. Change
-   it after first login.
+   blank, the account seeds with an **unknown, unlogged random password** — it's
+   locked until an admin runs the manual reset procedure below. This app's own
+   code never auto-arms a bypass unattended, full stop — an earlier version of
+   this seeded straight into the reset-pending state on every fresh boot instead,
+   which a security review correctly rejected as a remotely-reachable,
+   unattended admin-takeover window (worse than the cleartext-log problem it was
+   meant to fix, which at least required log access to exploit).
+
+   **Locked out and don't know the current password? (INIT-0036, 2026-08-21)**
+   There's no self-service "forgot password" — that would be a standing
+   authentication bypass on the highest-privilege account, not something to expose
+   as a public flow. Instead, an admin with real DB access puts the account into a
+   **time-bound** reset-pending state directly:
+   ```
+   docker exec cast-api node -e "
+     const db = require('better-sqlite3')('/app/components/api/.data/cast.db');
+     db.prepare(\"UPDATE local_accounts SET password_hash = ?, must_change_password = 1 WHERE username = 'TritonAdmin'\")
+       .run('RESET_PENDING:' + new Date().toISOString());
+   "
+   ```
+   `RESET_PENDING:<ISO timestamp>` is a deliberate sentinel (bcrypt hashes always
+   start with `$2`, never `R`) — **within 30 minutes of that timestamp, in either
+   direction** (`auth/local.ts`'s `RESET_WINDOW_MS`; a future-dated timestamp —
+   clock skew, or a hand-written non-UTC string — fails closed exactly like an
+   expired one, not open), the next local-mode login for that username succeeds
+   with ANY password, including a blank one, and the session is immediately
+   forced through `POST /api/auth/local/change-password` (`SetNewPassword.tsx` on
+   the frontend; `middleware/auth.ts`'s `requireAuth`/`requirePermission` 403
+   every OTHER route with `reason: "must-change-password"` until that happens) —
+   no route bypasses this by navigating around it. Past the window the bypass
+   stops working on its own (re-arm it to try again, same command). Every
+   reset-pending login, every completed reset, and every expired-window refusal
+   is logged (`console.warn`, `docker logs cast-api`) — this is a real
+   authentication bypass while armed, so it's auditable, not silent. The
+   completing password change is atomic against the DB, not just the session's
+   JWT claim (`setLocalPasswordIfResetPending`) — if two people signed in during
+   the same armed window, only the first to actually complete the change wins;
+   the second's attempt is refused (409) once the state's moved on, so recovery
+   genuinely closes the window rather than leaving it open to whoever still holds
+   a `mustChangePassword: true` session.
+
+   Two other cases land on the same "set a new password" screen but take a
+   different write path server-side, distinguished by `viaResetBypass` (set only
+   at the moment of authentication, never re-derived later — re-deriving it from
+   a later DB read turned out to be ambiguous between "a racer's sentinel was
+   already consumed" and "this account was never a bypass case at all"):
+   - **Legacy forced-change** — an account with `must_change_password=1` and a
+     REAL password (the column's existed since day one, set on every
+     freshly-generated seed, but nothing checked it until this). It authenticates
+     normally with its real password, so no bypass occurred — the change is a
+     plain write, no current-password re-entry or atomic race guard needed
+     (already proven via the login itself).
+   - **Voluntary change** — neither flag set. Requires proving `currentPassword`
+     first (`verifyLocalPassword`) — a live session alone was never enough on its
+     own to silently rewrite the password.
 
 ## Authorization — roles & permissions
 - **Permissions** (capabilities) and which **role** grants them live in

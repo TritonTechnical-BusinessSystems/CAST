@@ -13,6 +13,8 @@ export interface SessionUser {
   displayName: string;
   source: "ad" | "local";
   role: Role;
+  mustChangePassword?: boolean;
+  viaResetBypass?: boolean;
 }
 
 // Attach the authenticated user to the request for downstream handlers.
@@ -65,7 +67,14 @@ export function mintInternalRenderToken(): string {
 
 export function issueSession(res: Response, user: AuthedUser): void {
   const token = jwt.sign(
-    { id: user.id, displayName: user.displayName, source: user.source, role: user.role },
+    {
+      id: user.id,
+      displayName: user.displayName,
+      source: user.source,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword ?? false,
+      viaResetBypass: user.viaResetBypass ?? false,
+    },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
   );
@@ -76,34 +85,56 @@ export function clearSession(res: Response): void {
   res.clearCookie(COOKIE);
 }
 
-function readSession(req: Request): SessionUser | null {
+/** Raw session read, no must-change-password gate — for `/me` and the change-password route itself, both of which have to work WHILE a change is pending. */
+export function readSession(req: Request): SessionUser | null {
   const token = req.cookies?.[COOKIE];
   if (!token) return null;
   try {
     const payload = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;
-    return { id: payload.id, displayName: payload.displayName, source: payload.source, role: payload.role };
+    return {
+      id: payload.id,
+      displayName: payload.displayName,
+      source: payload.source,
+      role: payload.role,
+      mustChangePassword: Boolean(payload.mustChangePassword),
+      viaResetBypass: Boolean(payload.viaResetBypass),
+    };
   } catch {
     return null;
   }
 }
 
-/** Gate a route on a valid session. */
+/**
+ * Gate a route on a valid session — and, per INIT-0036, on NOT having a
+ * pending forced password change. A break-glass account mid-reset (or any
+ * local account seeded with `must_change_password`) can reach `/me` and
+ * `/auth/local/change-password` (both use `readSession` directly, bypassing
+ * this gate) but nothing else, until it actually sets a new password.
+ */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const user = readSession(req);
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (user.mustChangePassword) {
+    res.status(403).json({ error: "You must set a new password before continuing.", reason: "must-change-password" });
+    return;
+  }
   req.user = user;
   next();
 }
 
-/** Gate a route on a specific permission (admin holds all permissions). */
+/** Gate a route on a specific permission (admin holds all permissions). Same must-change-password gate as requireAuth. */
 export function requirePermission(perm: Permission) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = readSession(req);
     if (!user) {
       res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (user.mustChangePassword) {
+      res.status(403).json({ error: "You must set a new password before continuing.", reason: "must-change-password" });
       return;
     }
     if (!hasPermission(user.role, perm)) {

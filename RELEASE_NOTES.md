@@ -4,6 +4,21 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.18.0 — August 2026
+
+A real way back in if you ever forget the break-glass admin password — no public "forgot password" link, since that would be a standing security hole on the app's most privileged account.
+
+## Highlights
+
+- **Locked out of the local TritonAdmin account? There's now a real recovery path.** An admin with database access can put the account into a 30-minute reset window; the next sign-in works with any password (including blank) and immediately prompts for a new one before anything else in the app is reachable — enforced on the server, not just hidden behind a screen you could navigate around.
+
+## For the power users
+
+- This also quietly fixes a gap that's existed since day one: newly-created local accounts were always *meant* to force a password change on first use, but nothing ever actually checked for it. Both cases now go through the same enforced screen.
+- A pre-release security check caught a real gap in the first version of this: the reset window had no time limit and nothing recorded that a recovery login had happened. Both are fixed — the window now genuinely expires, and every use of it is logged. Changing your password the normal way (already knowing your current one) now actually asks for it, rather than trusting that a valid session alone was enough.
+
+---
+
 # What's New in v0.17.0 — August 2026
 
 System Health can now trigger a redeploy directly from the browser — no more SSHing into the server for routine updates.

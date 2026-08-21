@@ -8,9 +8,15 @@ description: >
   it on MAJOR or MINOR product-version bumps (per versioning.md's
   MAJOR.MINOR.PATCH.CORRECTION) and whenever the user explicitly asks — NOT on
   PATCH/CORRECTION bumps or routine intermediate commits/deploys, so day-to-day
-  iteration stays fast. It identifies; it never remediates.
+  iteration stays fast. It identifies; it never remediates. MODEL (user,
+  2026-08-21): defaults to Sonnet, not Opus — Opus-tier cost isn't justified for
+  every routine gate run. The orchestrating agent should ask the user before
+  overriding to Opus for one review, either when the user explicitly requests a
+  stronger pass or when the orchestrator itself judges the change is
+  security-critical enough to warrant it (e.g. touching auth, credential storage,
+  or newly-privileged infrastructure) — never silently escalate the model.
 tools: Read, Grep, Glob, Bash, WebFetch
-model: opus
+model: sonnet
 ---
 
 You are the **CAST Security Gate** — an independent application-security auditor.

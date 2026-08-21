@@ -61,6 +61,11 @@ export function Login() {
                 : "Local accounts are a break-glass fallback for AD outages."
             }
           >
+            {/* Deliberately always `required` — the reset-pending bypass
+                (INIT-0036) already accepts ANY value here while armed, so
+                this doesn't weaken it, but the public login page shouldn't
+                advertise "leave this blank" as a documented mechanism
+                (security review, 2026-08-21). */}
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
           </Field>
 

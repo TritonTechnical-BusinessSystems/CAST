@@ -13,6 +13,7 @@ export interface User {
   displayName: string;
   source: "ad" | "local";
   role: Role;
+  mustChangePassword?: boolean;
 }
 
 interface MeResponse {
@@ -27,6 +28,7 @@ interface AuthContextValue {
   can: (perm: string) => boolean;
   login: (username: string, password: string, mode: "ad" | "local") => Promise<void>;
   logout: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -62,10 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPermissions([]);
   };
 
+  const changePassword: AuthContextValue["changePassword"] = async (newPassword) => {
+    const r = await api.post<MeResponse>("/auth/local/change-password", { newPassword });
+    setUser(r.user);
+    setPermissions(r.permissions);
+  };
+
   const can = (perm: string) => permissions.includes(perm);
 
   return (
-    <AuthContext.Provider value={{ user, permissions, loading, can, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, permissions, loading, can, login, logout, changePassword }}>{children}</AuthContext.Provider>
   );
 }
 

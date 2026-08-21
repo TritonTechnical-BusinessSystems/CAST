@@ -17,6 +17,10 @@ export interface AuthedUser {
   displayName: string;
   source: "ad" | "local";
   role: Role;
+  /** Local accounts only (INIT-0036) — AD users never carry either flag. */
+  mustChangePassword?: boolean;
+  /** True ONLY when this session was authenticated via the reset-pending bypass (no password verified) — distinguishes it from the legacy `must_change_password=1` case, which already proved the current password via a normal login. Drives which write-path `POST /auth/local/change-password` uses. */
+  viaResetBypass?: boolean;
 }
 
 export type AuthResult =

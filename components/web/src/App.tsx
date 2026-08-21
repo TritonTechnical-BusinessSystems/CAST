@@ -3,6 +3,7 @@ import { useAuth } from "./auth";
 import { Layout } from "./components/Layout";
 import { Download } from "./pages/Download";
 import { Login } from "./pages/Login";
+import { SetNewPassword } from "./pages/SetNewPassword";
 import { Extension } from "./pages/Extension";
 import { VesselTracking } from "./pages/VesselTracking";
 import { Logistics } from "./pages/Logistics";
@@ -18,6 +19,10 @@ function RequireAuth() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
+  // Blocks the whole app shell, not just a route — mirrors the backend's own
+  // gate (every requireAuth/requirePermission route 403s while pending), so
+  // there's no route this could be bypassed by navigating to directly.
+  if (user.mustChangePassword) return <SetNewPassword />;
   return (
     <Layout>
       <Outlet />
