@@ -16,8 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends git openssh-cli
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY components/deploy-agent/server.js components/deploy-agent/deploy.sh components/deploy-agent/entrypoint.sh ./
-RUN chmod +x deploy.sh entrypoint.sh
+# update-monitor.sh was missing from this list from the moment it was
+# written (INIT-0038) -- every local check ran server.js straight from the
+# source tree, where the file naturally exists relative to __dirname, so
+# nothing caught that the built IMAGE never had it at all. Only surfaced by
+# actually clicking "Rebuild monitor" against a real container: bash exits
+# 127 for "script file not found," identically to its "command not found"
+# exit code, which is exactly what shipped (caught live 2026-08-21).
+COPY components/deploy-agent/server.js components/deploy-agent/deploy.sh components/deploy-agent/update-monitor.sh components/deploy-agent/entrypoint.sh ./
+RUN chmod +x deploy.sh update-monitor.sh entrypoint.sh
 
 ENV DEPLOY_AGENT_PORT=4001
 EXPOSE 4001

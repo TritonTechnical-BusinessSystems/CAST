@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.22.2 — build 2608047 — 2026-08-21T21:05:17Z
+
+### Fixed
+- [Infra] **"Rebuild monitor" has never worked — `update-monitor.sh` was never actually inside the `deploy-agent` image at all.** Reported live: clicking it produced "Last update failed (exit code 127)". The script was written and wired into `server.js`'s action table when the monitor self-update feature was first built (`INIT-0038`), but the `Dockerfile`'s `COPY` line was never updated to include it — only `server.js`, `deploy.sh`, and `entrypoint.sh` were ever copied in. Every local check that ran during development invoked `server.js` straight from the source tree, where the file naturally exists relative to `__dirname`, so nothing surfaced the gap — it only showed up against a real built container, which this feature was never actually exercised against until now. Exit code 127 is bash's code for "command not found," and it's also exactly what `bash` prints for "script file doesn't exist," which is what was actually happening. Fixed by adding it to the `COPY` line and its `chmod +x`; verified this time by building the real image locally and confirming the file exists, is executable, and passes `bash -n` inside the built container — not just by re-reading the Dockerfile.
+
 ## v0.22.1 — build 2608046 — 2026-08-21T20:51:47Z
 
 ### Fixed
