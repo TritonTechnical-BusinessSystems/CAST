@@ -4,6 +4,23 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.19.0 — August 2026
+
+System Health now quietly starts saving resource-usage history for up to 90 days, ahead of a longer-range view being built to show it — and two Integrations/System Health placement tweaks make the app easier to actually use.
+
+## Highlights
+
+- **Resource-usage history now persists for up to 90 days**, not just the last 3 hours. This release only turns on collection — a way to actually browse the longer history is still coming — but since history can't be recreated after the fact, saving is starting now rather than waiting for the viewing screen to be finished.
+- **The "Deploy" card moved to the top of System Health**, instead of being the second-to-last thing on the page, past a full screen of monitoring data.
+- **"Update credentials" on the Integrations page moved into the same "3 dots" menu "Clear credentials" already uses** — the last standalone button on that page's cards is now tucked away consistently with the rest.
+
+## For the power users
+
+- The new 90-day history is decimated to one sample a minute (not averaged), stored separately from the existing fast 3-hour/15-second buffer, which is unchanged.
+- Found while building the above: a single failed connection to the container-stats service used to silently drop an entire resource-usage sample — not just the container portion of it, but the disk-space and responsiveness readings too. Fixed so one hiccup no longer costs a full data point.
+
+---
+
 # What's New in v0.18.0 — August 2026
 
 A real way back in if you ever forget the break-glass admin password — no public "forgot password" link, since that would be a standing security hole on the app's most privileged account.

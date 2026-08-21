@@ -131,6 +131,19 @@ db.exec(`
     font_size INTEGER NOT NULL DEFAULT 9,
     sort_order INTEGER NOT NULL DEFAULT 0
   );
+
+  -- Downsampled (1-per-minute) persisted resource-usage history (INIT-0037)
+  -- -- health/metrics.ts's in-memory ring buffer only holds ~3h and is lost
+  -- on every restart; this table retains one full MetricSample (JSON, same
+  -- shape as the in-memory one -- no separate column-per-field schema to
+  -- keep in sync) per minute, pruned to a rolling retention window, so trend
+  -- data actually exists once longer Range options are built to read it.
+  CREATE TABLE IF NOT EXISTS metric_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    sample_json TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_metric_history_at ON metric_history(at);
 `);
 
 

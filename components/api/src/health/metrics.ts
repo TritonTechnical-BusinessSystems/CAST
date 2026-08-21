@@ -2,9 +2,13 @@
  * Resource-usage time series for System Health (INIT-0016 follow-up,
  * 2026-08-17) — CPU/memory/disk-IO/storage charts, not just point-in-time
  * probes. Samples every METRIC_INTERVAL_MS and keeps a bounded in-memory ring
- * buffer (HISTORY_LIMIT samples ≈ 3h at the default interval) — this is a
- * live dashboard, not an audit trail, so a restart losing history is
- * acceptable and a real time-series DB would be overkill for a 2 vCPU/4GB box.
+ * buffer (HISTORY_LIMIT samples ≈ 3h at the default interval) for the fast,
+ * fine-grained recent path — a restart losing THIS part is fine, it's a live
+ * dashboard, not an audit trail. Separately (INIT-0037), one sample a minute
+ * is also persisted to `metric_history` (sqlite, same file as everything
+ * else) and pruned past RETENTION_DAYS, so longer-range trend data survives
+ * restarts and actually accumulates ahead of the Range-selector UI that will
+ * read it — decimated, not averaged, and no querying/API surface for it yet.
  *
  * CPU/memory/block-IO/network come from the read-only docker-proxy's
  * `/containers/{id}/stats` (per-container cgroup counters, the same data
@@ -16,12 +20,26 @@
  */
 import { statfs } from "fs/promises";
 import { config } from "../config";
-import { DATA_DIR } from "../store/db";
+import { DATA_DIR, db } from "../store/db";
 import { getContainers } from "./containers";
 import { readEventLoopLag } from "./eventLoopLag";
 
 const METRIC_INTERVAL_MS = 15_000;
 const HISTORY_LIMIT = 720; // 720 * 15s = 3h
+
+// Persisted, downsampled history (INIT-0037) -- every PERSIST_EVERY_N_SAMPLES'th
+// in-memory sample (not an average -- decimation, simple and sufficient for
+// trend-viewing at this resolution) is written to `metric_history` so data
+// survives restarts and accumulates toward the longer Range options that
+// feature will add. 4 * 15s = 1 sample/minute; kept for RETENTION_DAYS, then
+// pruned -- at ~1-2KB/row that's tens of MB even at 90 days, negligible next
+// to the encrypted secrets table sharing this same file.
+const PERSIST_EVERY_N_SAMPLES = 4;
+const RETENTION_DAYS = 90;
+let samplesSincePersist = 0;
+
+const insertHistoryStmt = db.prepare(`INSERT INTO metric_history (at, sample_json) VALUES (@at, @sampleJson)`);
+const pruneHistoryStmt = db.prepare(`DELETE FROM metric_history WHERE at < @cutoff`);
 
 export interface ContainerSample {
   name: string;
@@ -106,9 +124,21 @@ async function fetchContainerStats(id: string): Promise<DockerStatsRaw> {
 }
 
 async function sampleContainers(nowMs: number): Promise<{ containers: ContainerSample[]; coreCount: number }> {
-  const containers = await getContainers();
   const samples: ContainerSample[] = [];
   let coreCount = 1;
+  let containers: Awaited<ReturnType<typeof getContainers>>;
+  try {
+    containers = await getContainers();
+  } catch (e) {
+    // docker-proxy itself unreachable (vs. a single container's stats
+    // failing, already handled per-container below) -- don't let this abort
+    // the whole sample. Storage and event-loop lag are independent signals
+    // that stay useful even with zero container data, and INIT-0037's
+    // persisted history should keep accumulating through a docker-proxy
+    // blip, not silently stop collecting for however long it's down.
+    console.warn("[metrics] getContainers failed -- recording this sample with no container data:", e instanceof Error ? e.message : e);
+    return { containers: samples, coreCount };
+  }
   for (const c of containers) {
     if (c.state !== "running") continue;
     try {
@@ -185,6 +215,14 @@ async function takeSample(): Promise<void> {
 
   history.push(sample);
   if (history.length > HISTORY_LIMIT) history.shift();
+
+  samplesSincePersist++;
+  if (samplesSincePersist >= PERSIST_EVERY_N_SAMPLES) {
+    samplesSincePersist = 0;
+    insertHistoryStmt.run({ at: sample.at, sampleJson: JSON.stringify(sample) });
+    const cutoff = new Date(nowMs - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    pruneHistoryStmt.run({ cutoff });
+  }
 }
 
 export function startMetricsSampler(): void {

@@ -10,7 +10,13 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
-## v0.18.0.2 — build 2608039 — 2026-08-21T05:20:48Z
+## v0.19.0 — build 2608040 — 2026-08-21T05:33:13Z
+
+### Added
+- [Backend] **System Health resource-usage history now persists to disk, up to 90 days** (`INIT-0037`, collection-only — the viewing UI is a separate, not-yet-built follow-up) — user, directly: *"Expand the buffer to 90d now so we can start collecting that data,"* ahead of the Range-selector feature itself, since history can't be backfilled retroactively. New `metric_history` table (sqlite, same file as everything else): every 4th in-memory sample (15s × 4 = 1/minute, decimated not averaged) is persisted as JSON via `health/metrics.ts`, pruned past a rolling 90-day cutoff. The existing in-memory ring buffer (~3h, 15s resolution) is unchanged and still serves the current `15m/1h/3h` UI.
+
+### Fixed
+- [Backend] **A single failed `docker-proxy` call used to drop an entire resource-usage sample, not just the container-stats portion of it** — `sampleContainers()`'s outer `getContainers()` call had no error handling of its own (only the per-container stats fetch inside the loop did), so any `docker-proxy` hiccup aborted the whole sample via `Promise.all`, silently losing storage and event-loop-lag data too and — as of this same release — a full minute of the new persisted history. Caught while verifying the persistence change above (dev has no `docker-proxy` running at all, which made the gap obvious immediately). Fixed: a `getContainers()` failure now degrades to recording the sample with empty container data instead of losing the whole tick.
 
 ### Changed
 - [UX] **The "Deploy" card moved to the top of the System Health page** — user, directly: *"it's kind of a dumb place to bury those buttons."* It previously rendered last on the page, after eight probe cards, two chart sections, and the Application card — meaning triggering a redeploy meant scrolling past a full page of read-only monitoring data first, and it was nested inside the page's `/health/full` loading gate even though it doesn't depend on that call. Now renders immediately below the page header, unconditionally (still returns nothing for non-admins or when the deploy agent isn't configured — same visibility rule as before, just no longer coupled to unrelated data loading).
