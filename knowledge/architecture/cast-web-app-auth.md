@@ -9,6 +9,28 @@ updated: 2026-08-21
 
 Two ways in, one authorization model.
 
+## The session cookie is scoped to `/api` — don't widen it
+`cast_token` is set with **`path: "/api"`** (`middleware/auth.ts`), not Express's
+default `/`. Cookies are scoped by host and path but **not by port**, so a
+`/`-scoped cookie was being attached to every request to the `deploy-monitor`
+container on `:20443` (`INIT-0038`) — the one browser-facing process in the stack
+that is deliberately denied every other credential. It can't verify the token,
+but it received a live admin JWT in plain request headers (security gate BLOCK,
+2026-08-21). Every route that reads this cookie is mounted under `/api/*`
+(`server.ts`), so the narrower path costs nothing.
+
+Two consequences to preserve if this is ever touched:
+- **`clearCookie` must pass the same path.** It only matches a cookie whose path
+  matches, so a mismatch means logout silently leaves a live session in the
+  browser. `clearSession` clears both `/api` and the legacy `/`.
+- **`issueSession` evicts a legacy `path=/` cookie before setting the new one.**
+  Path is part of a cookie's identity, so a returning browser would otherwise hold
+  both and send two `cast_token` values on every `/api` request.
+
+The PDF renderer's internal cookie (`pdf/render.ts`) intentionally stays at
+`path: "/"` — it lives only in an ephemeral internal Playwright context that
+never reaches the monitor.
+
 ## Ways in
 1. **Active Directory (primary).** LDAPS bind, gated by the **CAST Users** group —
    valid credentials alone aren't enough; non-members are denied. Configure via the

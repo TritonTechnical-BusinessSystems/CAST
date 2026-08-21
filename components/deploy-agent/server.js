@@ -22,11 +22,29 @@ const { spawn } = require("child_process");
 
 const PORT = Number(process.env.DEPLOY_AGENT_PORT || 4001);
 const TOKEN = process.env.DEPLOY_AGENT_TOKEN || "";
+// Read-only companion credential (INIT-0038). `deploy-monitor` — the container
+// that renders live deploy progress to a browser while `api`/`web` are being
+// rebuilt — needs to READ this agent's status, but must never be able to
+// TRIGGER a deploy: it's browser-facing, so it's the likeliest thing here to
+// be reached by something untrusted. This token is accepted on GET /status
+// ONLY; both POST routes still require the full DEPLOY_AGENT_TOKEN. Optional —
+// unset simply means no monitor is deployed.
+const READONLY_TOKEN = process.env.DEPLOY_AGENT_READONLY_TOKEN || "";
 const APP_DIR = process.env.APP_DIR || "/opt/cast/app";
 const MAX_RUNTIME_MS = 15 * 60 * 1000; // a normal run is 1-3 min; this is a stuck-process backstop, not a target
 
 if (TOKEN.length < 32) {
   console.error("[deploy-agent] DEPLOY_AGENT_TOKEN missing or shorter than 32 chars — refusing to start");
+  process.exit(1);
+}
+if (READONLY_TOKEN && READONLY_TOKEN.length < 32) {
+  console.error("[deploy-agent] DEPLOY_AGENT_READONLY_TOKEN is set but shorter than 32 chars — refusing to start");
+  process.exit(1);
+}
+// If these were ever equal the read-only split would be decorative — the
+// "read-only" holder would in fact hold the full trigger credential.
+if (READONLY_TOKEN && READONLY_TOKEN === TOKEN) {
+  console.error("[deploy-agent] DEPLOY_AGENT_READONLY_TOKEN must differ from DEPLOY_AGENT_TOKEN — refusing to start");
   process.exit(1);
 }
 
@@ -72,18 +90,28 @@ function finish(exitCode, extraLog) {
  * (security review, 2026-08-21: no audit trail existed for who could trigger
  * the single most powerful action in the app).
  */
-function startDeploy(pull, triggeredBy) {
+function startDeploy(action, triggeredBy) {
   if (state.status === "running") return false;
+  // Fixed, closed set — the script path and its arguments are chosen HERE from
+  // a literal table, never assembled from anything the caller sent. A new
+  // action means a new entry in this object, not a new parameter.
+  const RUNS = {
+    redeploy: { script: "deploy.sh", args: [] },
+    "update-and-redeploy": { script: "deploy.sh", args: ["--pull"] },
+    "update-monitor": { script: "update-monitor.sh", args: [] },
+  };
+  const run = RUNS[action];
+  if (!run) return false;
   state = {
     status: "running",
-    action: pull ? "update-and-redeploy" : "redeploy",
+    action,
     triggeredBy: triggeredBy || "unknown",
     startedAt: new Date().toISOString(),
     finishedAt: null,
     exitCode: null,
     log: [],
   };
-  const child = spawn("bash", [`${__dirname}/deploy.sh`, ...(pull ? ["--pull"] : [])], { cwd: APP_DIR, env: process.env });
+  const child = spawn("bash", [`${__dirname}/${run.script}`, ...run.args], { cwd: APP_DIR, env: process.env });
   currentChild = child;
   child.stdout.on("data", appendLog);
   child.stderr.on("data", appendLog);
@@ -109,16 +137,24 @@ const server = http.createServer((req, res) => {
 
   const authHeader = req.headers.authorization || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!constantTimeEqual(provided, TOKEN)) return json(401, { error: "Unauthorized" });
+  // Both comparisons always run (no short-circuit) so auth timing doesn't
+  // reveal WHICH credential was presented, and neither is skipped.
+  const isFullToken = constantTimeEqual(provided, TOKEN);
+  const isReadOnlyToken = READONLY_TOKEN ? constantTimeEqual(provided, READONLY_TOKEN) : false;
+  if (!isFullToken && !isReadOnlyToken) return json(401, { error: "Unauthorized" });
 
   if (req.method === "GET" && req.url === "/status") {
     return json(200, { ...state, log: state.log.slice(-200).join("") });
   }
-  if (req.method === "POST" && (req.url === "/redeploy" || req.url === "/update-and-redeploy")) {
+  // Everything past here is a state-changing action: full token only. A
+  // read-only holder reaching this point is a 403 (authenticated, not
+  // permitted), never a silent success.
+  if (!isFullToken) return json(403, { error: "Forbidden — read-only credential" });
+  if (req.method === "POST" && (req.url === "/redeploy" || req.url === "/update-and-redeploy" || req.url === "/update-monitor")) {
     // Truncated hard — this only ever labels a log line, never touches argv/env/paths.
     const triggeredBy = String(req.headers["x-triggered-by"] || "unknown").slice(0, 200);
-    const pull = req.url === "/update-and-redeploy";
-    return startDeploy(pull, triggeredBy) ? json(202, { ok: true, status: "started" }) : json(409, { error: "A deploy is already running" });
+    const action = req.url.slice(1);
+    return startDeploy(action, triggeredBy) ? json(202, { ok: true, status: "started" }) : json(409, { error: "A deploy is already running" });
   }
   json(404, { error: "Not found" });
 });

@@ -126,13 +126,77 @@ services:
       - /home/tritonadmin/.ssh/cast-deploy-agent-key:/home/tritonadmin/.ssh/cast-deploy-agent-key:ro
     networks: [deploy]
 
+  # The one container that stays up and browser-reachable DURING a redeploy
+  # (INIT-0038). `deploy.sh` rebuilds `api` and `web`, so anything served by
+  # `web` and fed by `api` goes dark for exactly the window it was meant to
+  # report on. This publishes its own port with its own TLS so it survives that.
+  #
+  # Least-privileged container in the stack, deliberately — it is the only new
+  # browser-facing surface here: no Docker socket, no git key, no write access
+  # to the app tree, no CAST_JWT_SECRET (CAST signs sessions HS256/symmetric,
+  # so a container that could verify a session could also forge an admin one),
+  # and a READ-ONLY deploy-agent credential that GET /status accepts but both
+  # POST routes refuse.
+  #
+  # NOT in deploy.sh's `api web` scope, so a routine deploy never restarts it
+  # mid-stream. It updates via its own `update-monitor.sh` action instead.
+  deploy-monitor:
+    build:
+      context: .
+      dockerfile: components/deploy-monitor/Dockerfile
+    image: cast-deploy-monitor:latest
+    container_name: cast-deploy-monitor
+    restart: unless-stopped
+    # Its OWN env file, holding ONLY DEPLOY_AGENT_READONLY_TOKEN — deliberately
+    # NOT `components/api/.env` like every other service here.
+    #
+    # An earlier version of this service did use that shared file, and the
+    # security gate (2026-08-21) correctly BLOCKED it: `env_file` loads the
+    # WHOLE file into the process environment, which would have put
+    # CAST_JWT_SECRET (HS256 — possession forges any admin session),
+    # CAST_SECRET_KEY (decrypts every stored CW/aisstream/TrackingMore
+    # credential), the LDAP bind password, AND `DEPLOY_AGENT_TOKEN` — the FULL,
+    # trigger-capable deploy token — inside the one browser-facing container in
+    # this stack. The read-only split below would have been decorative: this
+    # process would have held the trigger credential and simply chosen not to
+    # send it. Since this container's entire justification is holding less than
+    # everything else, that convenience line defeated the design outright.
+    # `required: false` is load-bearing, not tidiness: a plain `env_file:`
+    # pointing at a missing file makes EVERY `docker compose` command in this
+    # project fail, including `deploy.sh`'s own `docker compose build api` —
+    # so a host that hasn't provisioned this file yet would lose the ability to
+    # deploy at all. With this, a missing file simply leaves the token unset,
+    # and `server.js` refuses to start itself while the rest of the stack runs
+    # normally.
+    env_file:
+      - path: components/deploy-monitor/.env
+        required: false
+    environment:
+      MONITOR_PORT: 20443
+      DEPLOY_AGENT_URL: http://deploy-agent:4001
+      MONITOR_CERT_DIR: /etc/letsencrypt/live/cast.tritontechnical.com
+      MONITOR_APP_ORIGIN: https://cast.tritontechnical.com
+    ports:
+      # 20443, not 8443 — 8443 is a common default worth leaving free for
+      # something else later.
+      - "20443:20443"
+    volumes:
+      # Same read-only cert mount `web` uses. certbot's renewal deploy-hook
+      # reloads `web` by name only and knows nothing about this container, so
+      # server.js watches these files itself and swaps its secure context in
+      # place — otherwise it would silently serve a stale certificate ~60 days
+      # after the next renewal.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks: [deploy]
+
 networks:
   internal:
     driver: bridge
-  # Separate from `internal` deliberately — only `api` and `deploy-agent` sit
-  # on this one, so `web` (the only container reachable from the internet)
-  # and `docker-proxy` have no network path to the agent at all, even though
-  # its own auth token would still refuse them (security review, 2026-08-21).
+  # Separate from `internal` deliberately — only `api`, `deploy-agent`, and
+  # `deploy-monitor` sit on this one, so `web` (the only other container
+  # reachable from a browser) and `docker-proxy` have no network path to the
+  # agent at all, even though its own auth token would still refuse them
+  # (security review, 2026-08-21).
   # NOT `internal: true` — deploy-agent needs real outbound internet access
   # on this network for `git fetch`/`pull` against GitHub.
   deploy:

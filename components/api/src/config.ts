@@ -165,6 +165,17 @@ export const config = {
    */
   deployAgentUrl: env.CAST_DEPLOY_AGENT_URL ?? "http://deploy-agent:4001",
   deployAgentToken: env.DEPLOY_AGENT_TOKEN ?? "",
+  /**
+   * Read-only companion to the token above (INIT-0038). Used for exactly two
+   * things here: nothing is called with it directly, but it is the HMAC key
+   * for the short-lived `deploy-monitor` watch tokens this process mints, and
+   * its presence is what makes the monitor "configured". The monitor container
+   * holds the same value and `deploy-agent` accepts it on GET /status only —
+   * so a browser-facing container can watch a deploy but never start one.
+   */
+  deployAgentReadonlyToken: env.DEPLOY_AGENT_READONLY_TOKEN ?? "",
+  /** Public origin of the deploy-monitor container, e.g. https://cast.tritontechnical.com:20443 */
+  deployMonitorUrl: (env.CAST_DEPLOY_MONITOR_URL ?? "").replace(/\/+$/, ""),
 } as const;
 
 // Fail fast rather than silently signing sessions with a public default secret —
@@ -175,6 +186,18 @@ if (config.isProd) {
   }
   if (config.jwtSecret.length < 32) {
     throw new Error("CAST_JWT_SECRET must be at least 32 characters in production.");
+  }
+  // Same fail-fast treatment as the JWT secret, since this doubles as the HMAC
+  // key for deploy-monitor watch tokens — a weak value here weakens browser
+  // access to the deploy log, and `deploy-agent`/`deploy-monitor` enforcing
+  // this only at their own boot left no check on the minting side (security
+  // gate, 2026-08-21). Only validated when the monitor is actually configured;
+  // unset means the feature is off, which is a supported state.
+  if (config.deployAgentReadonlyToken && config.deployAgentReadonlyToken.length < 32) {
+    throw new Error("DEPLOY_AGENT_READONLY_TOKEN must be at least 32 characters when set.");
+  }
+  if (config.deployAgentReadonlyToken && config.deployAgentReadonlyToken === config.deployAgentToken) {
+    throw new Error("DEPLOY_AGENT_READONLY_TOKEN must differ from DEPLOY_AGENT_TOKEN — an identical value makes the read-only split meaningless.");
   }
 }
 

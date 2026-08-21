@@ -4,6 +4,26 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.20.0 — August 2026
+
+Redeploys are now something you can watch happen, instead of staring at a dead site for three minutes hoping it comes back.
+
+## Highlights
+
+- **A deploy monitor that stays up while the app restarts.** Starting a redeploy takes you to a dedicated page that shows live progress — which stage it's on, how long it's taken, and the actual build output as it scrolls — then returns you to System Health when it's done. This runs in its own separate container on its own port, specifically so that rebuilding the app can't take the progress page down with it. That was the flaw in the previous version: the status display was served by the very thing being restarted.
+- **It tells you the truth when something goes wrong.** A failed deploy says so plainly, marks the step that failed, and leads with the fact that actually matters: the previous version is still running, because a failed build doesn't replace what's already up.
+- **The progress bar is honest about being an estimate.** It measures against how long your deploys typically take (learned from real runs), and when one runs long it says "longer than usual" instead of parking at 99% pretending.
+- **"Update deploy monitor"** is available separately, since a normal deploy deliberately doesn't restart the monitor — that would kill the progress stream you're watching.
+
+## For the power users
+
+- The monitor is the most locked-down piece of the stack by design: it can watch a deploy but has no ability to start one, no access to Docker, no deploy key, and none of the app's stored credentials or signing keys.
+- Two pre-release security reviews each blocked this before it shipped. The first found that a single line of container configuration had quietly handed the monitor every secret the main app holds — including the credential that can trigger deploys — which would have defeated the entire reason for separating it out. The second found that the proposed fix for a second issue was based on faulty reasoning, and that a much simpler fix existed. Both are fixed and independently re-verified.
+- As part of that second fix, your login session is now scoped more narrowly, so it's only ever sent to the part of the app that actually needs it. **You won't be logged out** — but the change takes full effect for your browser the next time you sign in.
+- One item is deliberately still open and needs a human answer, not a code change: confirming with whoever manages the network that the monitor's new port isn't reachable from anywhere it shouldn't be.
+
+---
+
 # What's New in v0.19.0 — August 2026
 
 System Health now quietly starts saving resource-usage history for up to 90 days, ahead of a longer-range view being built to show it — and two Integrations/System Health placement tweaks make the app easier to actually use.

@@ -1,0 +1,478 @@
+/*
+ * Deploy monitor — visual system (INIT-0038).
+ *
+ * Direction: an instrument panel, not a CI dashboard. The page's whole job is
+ * to make a ~3.5 minute wait legible at a glance, from across a room, while
+ * the rest of the app is down. That argues for a dark, high-contrast, dense
+ * readout in the idiom of marine bridge instrumentation — which is also
+ * literally Triton's own field, so it reads as part of this product rather
+ * than a generic tool bolted on.
+ *
+ * The palette is drawn from that reference but anchored to CAST's own navy
+ * (#1e3a5f) so it stays recognizably the same product. Deliberately NOT the
+ * default "black terminal + acid green" CI look.
+ *
+ * Type is monospace throughout, at varying weight and tracking. That's the
+ * type concept, not a shortcut: an instrument face is uniform-width by nature,
+ * numbers must not shift as they tick, and it means the page depends on zero
+ * downloaded fonts — which matters for a page whose entire purpose is
+ * rendering correctly when everything else is broken.
+ *
+ * Deliberately does NOT import CAST's design-system tokens: this container is
+ * built independently of components/web, and a page that must survive that
+ * container being rebuilt should not take a build dependency on it.
+ */
+
+:root {
+  --hull: #0b1620; /* page ground — bridge at night */
+  --deck: #132433; /* raised surface */
+  --rule: #1e3a4c; /* etched divider */
+  --beacon: #4cc2e8; /* active / in progress */
+  --wake: #7c93a6; /* secondary text */
+  --signal: #f0a93b; /* attention — running longer than expected */
+  --fault: #e8615a; /* failure */
+  --clear: #5fd4a0; /* complete */
+  --ink: #e8f1f7; /* primary text */
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+  --step: 0.25rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--hull);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Top status bar ------------------------------------------------------ */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--step) * 4);
+  padding: calc(var(--step) * 3) calc(var(--step) * 5);
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--step) * 2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lamp {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--wake);
+  flex: none;
+}
+
+[data-state="running"] .lamp {
+  background: var(--beacon);
+  box-shadow: 0 0 0 3px rgb(76 194 232 / 0.16);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+[data-state="running"] .state {
+  color: var(--beacon);
+}
+[data-state="slow"] .lamp {
+  background: var(--signal);
+  box-shadow: 0 0 0 3px rgb(240 169 59 / 0.16);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+[data-state="slow"] .state {
+  color: var(--signal);
+}
+[data-state="done"] .lamp {
+  background: var(--clear);
+}
+[data-state="done"] .state {
+  color: var(--clear);
+}
+[data-state="failed"] .lamp {
+  background: var(--fault);
+}
+[data-state="failed"] .state {
+  color: var(--fault);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.bar-meta {
+  color: var(--wake);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+/* --- Hero: elapsed time -------------------------------------------------- */
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: calc(var(--step) * 8) calc(var(--step) * 5) calc(var(--step) * 10);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 8);
+}
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--step) * 4);
+  flex-wrap: wrap;
+}
+
+.elapsed {
+  font-size: clamp(3.5rem, 13vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.action {
+  color: var(--wake);
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Progress is an ESTIMATE against a known-typical duration, and says so.
+   Past 100% it stops pretending and switches to the "slow" treatment rather
+   than parking at 99% and lying. */
+.track {
+  position: relative;
+  height: 3px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--beacon);
+  transition: width 0.5s linear;
+  width: 0;
+}
+
+[data-state="slow"] .track-fill {
+  background: var(--signal);
+}
+[data-state="done"] .track-fill {
+  background: var(--clear);
+}
+[data-state="failed"] .track-fill {
+  background: var(--fault);
+}
+
+.track-note {
+  display: flex;
+  justify-content: space-between;
+  color: var(--wake);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  margin-top: calc(var(--step) * 2);
+  text-transform: uppercase;
+}
+
+/* --- Stage list ---------------------------------------------------------- */
+
+.panel-label {
+  color: var(--wake);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0 0 calc(var(--step) * 3);
+}
+
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: calc(var(--step) * 3);
+  padding: calc(var(--step) * 3) calc(var(--step) * 2);
+  border-bottom: 1px solid var(--rule);
+  color: var(--wake);
+  position: relative;
+  /* Clips the active row's sweep animation, which is translated by its own
+     width and would otherwise bleed across the full page width. */
+  overflow: hidden;
+}
+
+.stage-mark {
+  text-align: center;
+  font-weight: 700;
+}
+
+.stage-name {
+  letter-spacing: 0.02em;
+}
+
+.stage-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.stage[data-status="done"] {
+  color: var(--ink);
+}
+.stage[data-status="done"] .stage-mark {
+  color: var(--clear);
+}
+
+.stage[data-status="active"] {
+  color: var(--ink);
+  background: linear-gradient(90deg, rgb(76 194 232 / 0.09), transparent 70%);
+}
+.stage[data-status="active"] .stage-mark {
+  color: var(--beacon);
+}
+
+/* The single piece of motion on the page: a slow sweep across the row that is
+   actually working right now. One orchestrated signal beats scattered
+   spinners, and it reads at a glance from across a room. */
+.stage[data-status="active"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(76 194 232 / 0.12), transparent);
+  animation: sweep 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.stage[data-status="failed"] {
+  color: var(--fault);
+}
+.stage[data-status="failed"] .stage-mark {
+  color: var(--fault);
+}
+
+/* --- Log tape ------------------------------------------------------------ */
+
+.tape {
+  background: var(--deck);
+  border: 1px solid var(--rule);
+  padding: calc(var(--step) * 3);
+  height: 20rem;
+  overflow-y: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--wake);
+  margin: 0;
+  scrollbar-color: var(--rule) transparent;
+}
+
+.tape:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 2px;
+}
+
+.tape-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--step) * 3);
+}
+
+.follow {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--wake);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: calc(var(--step) * 1) calc(var(--step) * 2);
+  cursor: pointer;
+}
+
+.follow[aria-pressed="true"] {
+  color: var(--beacon);
+  border-color: var(--beacon);
+}
+
+.follow:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 2px;
+}
+
+/* --- Outcome ------------------------------------------------------------- */
+
+.outcome {
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  padding: calc(var(--step) * 4);
+  display: none;
+  flex-direction: column;
+  gap: calc(var(--step) * 2);
+}
+
+.outcome[data-show="true"] {
+  display: flex;
+}
+
+[data-state="done"] .outcome {
+  border-left-color: var(--clear);
+}
+[data-state="failed"] .outcome {
+  border-left-color: var(--fault);
+}
+
+.outcome-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.outcome-body {
+  color: var(--wake);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.outcome-actions {
+  display: flex;
+  gap: calc(var(--step) * 3);
+  align-items: center;
+  margin-top: calc(var(--step) * 2);
+  flex-wrap: wrap;
+}
+
+a,
+.linklike {
+  color: var(--beacon);
+  text-decoration: none;
+  border-bottom: 1px solid rgb(76 194 232 / 0.35);
+  padding-bottom: 1px;
+}
+
+a:hover,
+.linklike:hover {
+  border-bottom-color: var(--beacon);
+}
+
+a:focus-visible,
+.linklike:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 3px;
+}
+
+.linklike {
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--mono);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* --- Expired-link page --------------------------------------------------- */
+
+body.denied {
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--step) * 6);
+}
+
+body.denied main {
+  max-width: 34rem;
+  text-align: center;
+  gap: calc(var(--step) * 3);
+}
+
+.denied-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.denied-body {
+  color: var(--wake);
+  margin: 0;
+}
+
+/* --- Accessibility ------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::after,
+  *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 34rem) {
+  main {
+    padding: calc(var(--step) * 5) calc(var(--step) * 4) calc(var(--step) * 8);
+    gap: calc(var(--step) * 6);
+  }
+  .tape {
+    height: 14rem;
+  }
+}

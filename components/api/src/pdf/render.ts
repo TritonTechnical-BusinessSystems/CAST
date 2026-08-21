@@ -101,6 +101,12 @@ export async function renderShipmentDocument(
     // would — Playwright has no login session, so give it one via a
     // short-lived internal token, same mechanism as a real cookie login.
     const target = new URL(config.internalWebUrl);
+    // `path: "/"` here on purpose, unlike the browser session cookie, which is
+    // scoped to `/api` (middleware/auth.ts) to keep it away from the
+    // deploy-monitor origin. That concern doesn't exist for this one: it lives
+    // only inside an ephemeral, internal Playwright context that navigates to
+    // `web:8080` and nowhere else, and a broad path here is one less way for a
+    // render to fail silently if a print route ever moves.
     await context.addCookies([
       { name: SESSION_COOKIE_NAME, value: mintInternalRenderToken(), domain: target.hostname, path: "/", httpOnly: true },
     ]);

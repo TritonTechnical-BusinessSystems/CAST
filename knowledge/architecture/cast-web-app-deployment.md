@@ -12,6 +12,12 @@ mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
 `https://cast.tritontechnical.com`** with a real, auto-renewing Let's Encrypt cert
 (acme-dns DNS-01) and the GA auto-update timer enabled. App dir `/opt/cast/app`.
 
+**Published ports (the complete list — nothing else is reachable from the host):**
+`80` and `443` from `web`, and `20443` from `deploy-monitor` (`INIT-0038`). Every
+other container — `api`, `deploy-agent`, `docker-proxy` — has no `ports:` entry at
+all and is reachable only container-to-container. `20443` was chosen over the more
+common `8443` to leave that port free for something else later.
+
 ## Topology (`docker-compose.yml`)
 - **docker-proxy** (`tecnativa/docker-socket-proxy`) — read-only view of the Docker
   daemon for System Health's container inventory (`INIT-0016`) and per-container
@@ -87,6 +93,44 @@ mirrors Logistics Coordinator. **DEPLOYED 2026-07-23 — live at
   `.env` this deploy's layout doesn't have; the deploy UI just hides itself
   if unset (e.g.
   local dev, which has no `deploy-agent` container at all).
+- **deploy-monitor** (`INIT-0038`, `components/deploy-monitor/`) — the one
+  container that stays up and **browser-reachable during a redeploy**, so a
+  deploy is watchable instead of a blind ~3.5-minute wait on a dead site.
+  Necessary because `deploy.sh` rebuilds `api` and `web`: anything served by
+  `web` and fed by `api` goes dark for exactly the window it was meant to
+  report on. Publishes **20443** with its own TLS (same `/etc/letsencrypt:ro`
+  mount `web` uses), so it survives `web` restarting. Sits on the `deploy`
+  network to reach the agent.
+  **The least-privileged container in the stack, deliberately** — it is the
+  only new browser-facing surface: no Docker socket, no git key, no write
+  access to the app tree, and critically **no `CAST_JWT_SECRET`** (CAST signs
+  sessions HS256/symmetric, so a container able to verify a session could also
+  forge an admin one). It holds only `DEPLOY_AGENT_READONLY_TOKEN`, which
+  `deploy-agent` accepts on `GET /status` and **refuses (403) on every POST** —
+  it can watch a deploy, never start one. The agent refuses to boot if that
+  token equals `DEPLOY_AGENT_TOKEN`, since that would make the split
+  decorative.
+  **It has its OWN `components/deploy-monitor/.env`**, not the shared
+  `components/api/.env` every other service uses — `env_file` loads the whole
+  file, so the shared one would put `CAST_JWT_SECRET`, `CAST_SECRET_KEY`, the
+  LDAP bind password and the FULL `DEPLOY_AGENT_TOKEN` into this browser-facing
+  process, making the read-only split decorative (security gate BLOCK,
+  2026-08-21). That file is `required: false` in compose deliberately: a plain
+  `env_file:` pointing at a file a host hasn't provisioned yet makes *every*
+  `docker compose` command fail, `deploy.sh`'s own builds included. Browser access uses a short-lived **stateless HMAC watch token**
+  minted by `api` only after `requirePermission("system.deploy")` passes,
+  verified by recomputation and failing closed in both time directions. Zero
+  npm dependencies, same rule as the agent. Runs as **root** for exactly one
+  reason: certbot hardens `/etc/letsencrypt/archive` to `0700 root:root`, so
+  the TLS private key is unreadable otherwise.
+  **It reloads its own TLS**: certbot's renewal deploy-hook reloads the `web`
+  service by name only and knows nothing about this container, so `server.js`
+  watches its cert files and swaps the secure context in place — otherwise it
+  would silently serve a stale certificate ~60 days after the next renewal.
+  **Not in `deploy.sh`'s `api web` scope**, so a routine deploy never restarts
+  it mid-stream; it updates via its own `update-monitor.sh` agent action
+  (System Health → Deploy card → "Update deploy monitor"), which is the only
+  non-SSH way to pick up a change to it.
 All `restart: unless-stopped`. Secrets via `components/api/.env` (git-ignored).
 
 ## nginx (`components/web/nginx.conf`)

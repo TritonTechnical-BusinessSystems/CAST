@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Deploy monitor · CAST</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-state="idle" data-app-origin="__APP_ORIGIN__">
+    <header class="bar">
+      <p class="state" id="state">
+        <span class="lamp" aria-hidden="true"></span>
+        <span id="state-text">Connecting</span>
+      </p>
+      <p class="bar-meta" id="meta">cast · trt-cast-01</p>
+    </header>
+
+    <main>
+      <!-- The hero is the clock, because on a page whose only job is to make a
+           wait legible, elapsed time IS the content. -->
+      <section aria-labelledby="elapsed-label">
+        <h1 class="sr-only" id="elapsed-label">Deploy progress</h1>
+        <div class="clock">
+          <p class="elapsed" id="elapsed" aria-live="off">0:00</p>
+          <p class="action" id="action">waiting for status</p>
+        </div>
+        <div class="track" role="presentation">
+          <div class="track-fill" id="track-fill"></div>
+        </div>
+        <p class="track-note">
+          <span id="track-left">elapsed</span>
+          <span id="track-right">typical 3:35</span>
+        </p>
+      </section>
+
+      <section aria-labelledby="stages-label">
+        <p class="panel-label" id="stages-label">Stages</p>
+        <ul class="stages" id="stages">
+          <li class="stage" data-status="pending">
+            <span class="stage-mark" aria-hidden="true">·</span>
+            <span class="stage-name">waiting for the first stage marker</span>
+            <span class="stage-time"></span>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="tape-label">
+        <div class="tape-head">
+          <p class="panel-label" id="tape-label">Output</p>
+          <button class="follow" id="follow" type="button" aria-pressed="true">Following</button>
+        </div>
+        <pre class="tape" id="tape" tabindex="0" role="log" aria-label="Deploy output"></pre>
+      </section>
+
+      <section class="outcome" id="outcome" data-show="false" aria-live="polite">
+        <p class="outcome-title" id="outcome-title"></p>
+        <p class="outcome-body" id="outcome-body"></p>
+        <div class="outcome-actions">
+          <a id="outcome-link" href="#">Return to System Health</a>
+          <button class="linklike" id="stay" type="button" hidden>Stay here</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

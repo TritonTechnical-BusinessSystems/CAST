@@ -29,11 +29,36 @@ declare global {
 
 export const SESSION_COOKIE_NAME = "cast_token";
 const COOKIE = SESSION_COOKIE_NAME;
+
+/**
+ * Scoped to `/api` deliberately (security gate, 2026-08-21) — NOT the `/`
+ * Express would default to.
+ *
+ * Cookies are scoped by host and path but NOT by port, so with `path: "/"` the
+ * browser attached this admin session JWT to every request to
+ * `https://cast.tritontechnical.com:20443/*` — the `deploy-monitor` container
+ * (`INIT-0038`), which is the one browser-facing process in the stack that is
+ * deliberately denied every other credential. It could not verify the token,
+ * but it received it in plain request headers, giving anything able to read
+ * those headers a live, replayable admin session for up to `maxAge`.
+ *
+ * Every route that reads this cookie is mounted under `/api/*` (`server.ts`),
+ * and none of the monitor's paths (`/`, `/events`, `/app.js`, `/styles.css`,
+ * `/healthz`) are — so scoping it here stops the browser sending it there at
+ * all, with no new hostname or certificate. An earlier version of this change
+ * asserted a separate hostname was the only fix; that was wrong.
+ *
+ * `PATH` must be used on BOTH set and clear: `res.clearCookie` only matches a
+ * cookie with the same path, so clearing with a mismatched path would silently
+ * leave a live session in the browser on logout.
+ */
+const COOKIE_PATH = "/api";
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: "strict" as const,
   secure: config.isProd,
   maxAge: 8 * 3600 * 1000,
+  path: COOKIE_PATH,
 };
 
 /**
@@ -78,11 +103,22 @@ export function issueSession(res: Response, user: AuthedUser): void {
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
   );
+  // Evict any pre-existing `path=/` cookie from before the scoping change
+  // above. Path is part of a cookie's identity, so without this a returning
+  // user would carry BOTH — the browser would send two `cast_token` values on
+  // every `/api` request (ambiguous for cookie-parser), and the stale
+  // broad-path one would still reach the deploy monitor, defeating the fix.
+  // Harmless no-op once no such cookie exists.
+  res.clearCookie(COOKIE, { path: "/" });
   res.cookie(COOKIE, token, COOKIE_OPTS);
 }
 
 export function clearSession(res: Response): void {
-  res.clearCookie(COOKIE);
+  // Both paths, for the same reason: the current scoped cookie, plus any
+  // legacy `path=/` one still held by a browser that logs out before it ever
+  // logs back in.
+  res.clearCookie(COOKIE, { path: COOKIE_PATH });
+  res.clearCookie(COOKIE, { path: "/" });
 }
 
 /** Raw session read, no must-change-password gate — for `/me` and the change-password route itself, both of which have to work WHILE a change is pending. */

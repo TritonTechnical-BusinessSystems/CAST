@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import {
   PageHeader, Card, CardHeader, CardBody, StatusDot, Badge, Banner, Button, Spinner, Table, EmptyState,
-  Gauge, RadialGauge, TimeSeriesChart, Modal, useToast, type ChartSeries,
+  Gauge, RadialGauge, TimeSeriesChart, Modal, Menu, useToast, type ChartSeries,
 } from "../ui";
 import { useAuth } from "../auth";
 import { ago } from "../ago";
@@ -492,10 +492,15 @@ function ContainersCard({ containerMetrics }: { containerMetrics: ContainerMetri
   );
 }
 
+type DeployAction = "redeploy" | "update-and-redeploy" | "update-monitor";
+
 interface DeployStatus {
   configured: boolean;
+  /** Whether the deploy-monitor container is wired up (INIT-0038). When false,
+   *  triggers stay on this page and fall back to the in-card log tail. */
+  monitorConfigured?: boolean;
   status?: "idle" | "running" | "done";
-  action?: "redeploy" | "update-and-redeploy" | null;
+  action?: DeployAction | null;
   triggeredBy?: string | null;
   startedAt?: string | null;
   finishedAt?: string | null;
@@ -514,7 +519,7 @@ function DeployCard() {
   const { can } = useAuth();
   const toast = useToast();
   const [status, setStatus] = useState<DeployStatus | null>(null);
-  const [confirmAction, setConfirmAction] = useState<"redeploy" | "update-and-redeploy" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<DeployAction | null>(null);
   const [triggering, setTriggering] = useState(false);
 
   const load = () => {
@@ -533,10 +538,19 @@ function DeployCard() {
 
   if (!can("system.deploy") || !status?.configured) return null;
 
-  const trigger = async (action: "redeploy" | "update-and-redeploy") => {
+  const trigger = async (action: DeployAction) => {
     setTriggering(true);
     try {
-      const r = await api.post<{ ok: boolean; detail: string }>(`/system/deploy/${action}`);
+      const r = await api.post<{ ok: boolean; detail: string; watchUrl?: string }>(`/system/deploy/${action}`);
+      // Hand off to the deploy-monitor immediately (INIT-0038). This page is
+      // served by `web` and fed by `api` — both of which this deploy is about
+      // to restart — so staying here means watching the status feed and the
+      // page showing it go dark together. The monitor is a separate container
+      // that survives the rebuild; it redirects back here when it's done.
+      if (r.ok && r.watchUrl) {
+        window.location.href = r.watchUrl;
+        return; // deliberately leave `triggering` set — we're navigating away
+      }
       toast(r.ok ? "success" : "error", r.detail);
       setConfirmAction(null);
       load();
@@ -571,7 +585,21 @@ function DeployCard() {
             <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("update-and-redeploy")}>
               Update from git + Redeploy
             </Button>
+            <Menu
+              items={[
+                {
+                  label: "Update deploy monitor",
+                  disabled: running || triggering || !status.monitorConfigured,
+                  onSelect: () => setConfirmAction("update-monitor"),
+                },
+              ]}
+            />
           </div>
+          {status.monitorConfigured && (
+            <span className="muted text-sm">
+              Starting a deploy opens the deploy monitor, which stays up while this page restarts and returns you here when it finishes.
+            </span>
+          )}
           {status.log && (
             <details>
               <summary className="muted text-sm">Last run's output</summary>
@@ -582,24 +610,41 @@ function DeployCard() {
       </CardBody>
       {confirmAction && (
         <Modal
-          title={confirmAction === "update-and-redeploy" ? "Update from git and redeploy?" : "Redeploy?"}
+          title={
+            confirmAction === "update-monitor"
+              ? "Update the deploy monitor?"
+              : confirmAction === "update-and-redeploy"
+                ? "Update from git and redeploy?"
+                : "Redeploy?"
+          }
           onClose={() => !triggering && setConfirmAction(null)}
           footer={
             <>
               <Button variant="ghost" onClick={() => setConfirmAction(null)} disabled={triggering}>Cancel</Button>
               <Button variant="primary" onClick={() => trigger(confirmAction)} disabled={triggering}>
-                {triggering ? "Starting…" : confirmAction === "update-and-redeploy" ? "Update + redeploy" : "Redeploy"}
+                {triggering
+                  ? "Starting…"
+                  : confirmAction === "update-monitor"
+                    ? "Update monitor"
+                    : confirmAction === "update-and-redeploy"
+                      ? "Update + redeploy"
+                      : "Redeploy"}
               </Button>
             </>
           }
         >
           <div className="col gap-3">
             <p>
-              {confirmAction === "update-and-redeploy"
-                ? "Pulls the latest main branch, rebuilds both containers, and restarts them."
-                : "Rebuilds both containers from the current checked-out code and restarts them."}{" "}
-              Takes 1-3 minutes; the site briefly restarts partway through.
+              {confirmAction === "update-monitor"
+                ? "Rebuilds and restarts the deploy monitor container only. The app itself is untouched and stays up."
+                : confirmAction === "update-and-redeploy"
+                  ? "Pulls the latest main branch, rebuilds both containers, and restarts them."
+                  : "Rebuilds both containers from the current checked-out code and restarts them."}{" "}
+              {confirmAction === "update-monitor" ? "Takes about a minute." : "Takes 1-3 minutes; the site briefly restarts partway through."}
             </p>
+            {confirmAction !== "update-monitor" && status.monitorConfigured && (
+              <p className="muted text-sm">You'll be taken to the deploy monitor to watch it, and returned here when it finishes.</p>
+            )}
             <p className="muted text-sm">Only one deploy can run at a time — this is refused if one's already in progress.</p>
           </div>
         </Modal>
