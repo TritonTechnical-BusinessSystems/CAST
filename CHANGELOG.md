@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.18.0.1 — build 2608038 — 2026-08-21T04:59:53Z
+
+### Changed
+- [Design-System] **"Update credentials" also moved into the Integrations page's "3 dots" overflow menu** — completes the move `v0.16.0.1` made for "Clear credentials," which had left "Update credentials" behind as the last standalone footer button. Applied identically to both card types (ConnectWise per-instance, aisstream/TrackingMore single-account): the kebab now always renders when the signed-in user can write, listing "Update credentials" unconditionally and "Clear credentials" only once the integration is actually configured — a not-yet-configured instance (e.g. a fresh Sandbox) still gets a working path to enter credentials for the first time, it's just in the menu now instead of a full-width button. Verified live in a real browser: unconfigured card's menu shows only "Update credentials," a configured card's shows both, and the edit form still opens/saves/cancels correctly with no stray empty footer bar when collapsed.
+
 ## v0.18.0 — build 2608037 — 2026-08-21T03:22:22Z
 
 ### Added

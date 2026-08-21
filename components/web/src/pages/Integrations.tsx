@@ -152,7 +152,14 @@ function CwInstanceCard({ instance }: { instance: CwInstance }) {
               <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
                 {test.state === "testing" ? "Testing…" : "Test connection"}
               </Button>
-              {status.configured && <Menu items={[{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger", disabled: clearing, onSelect: clearCreds }]} />}
+              <Menu
+                items={[
+                  { label: "Update credentials", onSelect: () => setEditing(true) },
+                  ...(status.configured
+                    ? [{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger" as const, disabled: clearing, onSelect: clearCreds }]
+                    : []),
+                ]}
+              />
             </div>
           )
         }
@@ -189,8 +196,8 @@ function CwInstanceCard({ instance }: { instance: CwInstance }) {
           </div>
         </div>
       </CardBody>
-      <CardFooter>
-        {editing ? (
+      {editing && (
+        <CardFooter>
           <div className="col gap-3 grow">
             <span className="muted text-sm">Leave a field blank to keep its current value — only what you type here changes.</span>
             <div className="card-grid">
@@ -207,14 +214,8 @@ function CwInstanceCard({ instance }: { instance: CwInstance }) {
               <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
             </div>
           </div>
-        ) : (
-          can("integrations.write") && (
-            <div className="row gap-2">
-              <Button variant="secondary" onClick={() => setEditing(true)}>Update credentials</Button>
-            </div>
-          )
-        )}
-      </CardFooter>
+        </CardFooter>
+      )}
       {confirmEnable && (
         <Modal
           title={`Enable ConnectWise writes for ${instance.name}?`}
@@ -349,7 +350,14 @@ function SimpleIntegrationCard({
               <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
                 {test.state === "testing" ? "Testing…" : "Test connection"}
               </Button>
-              {status.configured && <Menu items={[{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger", disabled: clearing, onSelect: clearCreds }]} />}
+              <Menu
+                items={[
+                  { label: "Update credentials", onSelect: () => setEditing(true) },
+                  ...(status.configured
+                    ? [{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger" as const, disabled: clearing, onSelect: clearCreds }]
+                    : []),
+                ]}
+              />
             </div>
           )
         }
@@ -366,8 +374,8 @@ function SimpleIntegrationCard({
           </div>
         </div>
       </CardBody>
-      <CardFooter>
-        {editing ? (
+      {editing && (
+        <CardFooter>
           <div className="col gap-3 grow">
             <span className="muted text-sm">Leave a field blank to keep its current value — only what you type here changes.</span>
             <div className="card-grid">
@@ -381,14 +389,8 @@ function SimpleIntegrationCard({
               <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
             </div>
           </div>
-        ) : (
-          can("integrations.write") && (
-            <div className="row gap-2">
-              <Button variant="secondary" onClick={() => setEditing(true)}>Update credentials</Button>
-            </div>
-          )
-        )}
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 }
