@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Table, Field, Select, Button, Banner, Empty
 interface CwInstance {
   id: string;
   name: string;
-  isDefault: boolean;
 }
 interface Currency {
   code: string;
@@ -32,15 +31,8 @@ export function LogisticsConfigCurrencies() {
   useEffect(() => {
     api
       .get<CwInstance[]>("/logistics/instances")
-      .then((rows) => {
-        setInstances(rows);
-        if (!selected) {
-          const def = rows.find((r) => r.isDefault) ?? rows[0];
-          if (def) onSelect(def.id);
-        }
-      })
+      .then(setInstances)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load CW instances"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const load = () => {
@@ -69,6 +61,9 @@ export function LogisticsConfigCurrencies() {
             {instances && (
               <Field label="CW Instance">
                 <Select value={selected} onChange={(e) => onSelect(e.target.value)}>
+                  <option value="" disabled>
+                    Select an instance…
+                  </option>
                   {instances.map((i) => (
                     <option key={i.id} value={i.id}>
                       {i.name}
@@ -88,6 +83,8 @@ export function LogisticsConfigCurrencies() {
           <span className="muted text-sm">Live from ConnectWise's Finance &gt; Currencies setup — managed in ConnectWise, not here.</span>
           {error ? (
             <Banner tone="danger">{error}</Banner>
+          ) : !selected ? (
+            <EmptyState icon={<IconPackage />}>Select a CW instance above to view its currencies.</EmptyState>
           ) : loading && !currencies ? (
             <Spinner />
           ) : !currencies || currencies.length === 0 ? (

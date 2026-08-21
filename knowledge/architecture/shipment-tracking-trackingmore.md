@@ -42,12 +42,23 @@ interface fits either one — see §4.
 ## 1. Credentials
 
 Server-side secret, same pattern as every other CAST integration
-(`../decisions/0002-extension-never-touches-cw-credentials.md`):
-`components/api/.env` → `CAST_TRACKINGMORE_API_KEY` (git-ignored), read via
-`components/api/src/config.ts` (`config.trackingmoreApiKey`, `trackingmoreConfigured()`).
-Auth header: `Tracking-Api-Key`. Base URL: `https://api.trackingmore.com/v4`
-(`config.trackingmoreBaseUrl`). **Verified live 2026-08-13** — `GET /v4/couriers/all` → 200
-with the real 1,653-carrier catalog.
+(`../decisions/0002-extension-never-touches-cw-credentials.md`). As of
+2026-08-21 (`v0.16.0`, `INIT-0013`), NOT set via `.env` anymore — the key and
+base URL live in the encrypted `secrets` store, entered/rotated on the
+Integrations page: `components/api/src/integrations/simpleCreds.ts`
+(`resolveSimpleCreds`/`saveSimpleCreds`), slot name and default base URL in
+`integrations/trackingmore.ts` (`TRACKINGMORE_SLOT`,
+`TRACKINGMORE_DEFAULT_BASE_URL`). Auth header: `Tracking-Api-Key`. The base
+URL is host-allowlisted (`assertValidTrackingmoreUrl`, must be a
+`trackingmore.com` host over `https://`) — same SSRF/credential-exfiltration
+protection ConnectWise's `baseUrl` field has, since this URL receives the
+real key on every call. **Verified live 2026-08-13** — `GET /v4/couriers/all`
+→ 200 with the real 1,653-carrier catalog; the Integrations page's "Test
+connection" runs this same call. **Note (2026-08-21): the key migrated into
+the store from that day's `.env` value returned a 401 on this same
+endpoint** — either rotated or expired since the 2026-08-13 verification;
+needs a fresh key from <https://admin.trackingmore.com/developer/apikey>
+before `INIT-0018`'s sync code can be built against it.
 
 ## 2. Inbound (vendor → Triton, PO-tied)
 

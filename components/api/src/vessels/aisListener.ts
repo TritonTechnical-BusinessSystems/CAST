@@ -35,10 +35,38 @@
  * model). Trust the generated models over either doc artifact if they ever
  * conflict again.
  */
-import { config, aisstreamConfigured } from "../config";
 import { upsertPosition, upsertVoyage } from "./positionStore";
 import { getSetting } from "../store/secretStore";
 import { cleanAisString, parseAisEta } from "./aisEta";
+import { resolveSimpleCreds, isSimpleCredsConfigured } from "../integrations/simpleCreds";
+
+export const AISSTREAM_SLOT = "aisstream";
+export const AISSTREAM_DEFAULT_WS_URL = "wss://stream.aisstream.io/v0/stream";
+
+export function aisstreamConfigured(): boolean {
+  return isSimpleCredsConfigured(AISSTREAM_SLOT);
+}
+
+/**
+ * Same SSRF/credential-exfiltration concern `connectwise/creds.ts`'s
+ * `assertValidCwBaseUrl` closes, applied here: this URL gets the real
+ * aisstream API key sent to it (inside the subscribe message) on every
+ * connect and every "Test connection", so an `integrations.write` holder
+ * pointing it at an attacker-controlled host would hand that host the key.
+ */
+export function assertValidAisstreamUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("aisstream URL must be a valid URL");
+  }
+  if (parsed.protocol !== "wss:") throw new Error("aisstream URL must use wss://");
+  const host = parsed.hostname.toLowerCase();
+  if (host !== "aisstream.io" && !host.endsWith(".aisstream.io")) {
+    throw new Error(`aisstream URL must be an aisstream.io host — got "${host}"`);
+  }
+}
 
 const GLOBAL_BOUNDING_BOX: [[number, number], [number, number]] = [
   [-90, -180],
@@ -157,7 +185,9 @@ class AisConnection {
 
   private connect(): void {
     if (this.stopped || this.mmsis.length === 0) return;
-    const ws = new WebSocket(config.aisstreamWsUrl);
+    const { creds } = resolveSimpleCreds(AISSTREAM_SLOT, AISSTREAM_DEFAULT_WS_URL);
+    if (!creds) return;
+    const ws = new WebSocket(creds.url);
     // aisstream sends its JSON as BINARY frames. Node's native WebSocket hands
     // those back as a Blob by default, which only decodes asynchronously;
     // "arraybuffer" keeps onMessage synchronous (see the decode there).
@@ -192,9 +222,11 @@ class AisConnection {
 
   private subscribe(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    const { creds } = resolveSimpleCreds(AISSTREAM_SLOT, AISSTREAM_DEFAULT_WS_URL);
+    if (!creds) return;
     this.ws.send(
       JSON.stringify({
-        APIKey: config.aisstreamApiKey,
+        APIKey: creds.apiKey,
         BoundingBoxes: [GLOBAL_BOUNDING_BOX],
         FiltersShipMMSI: this.mmsis,
       }),
@@ -348,10 +380,19 @@ class Tier2Rotator {
 
 const tier2 = new Tier2Rotator();
 let started = false;
+let statusLogTimer: NodeJS.Timeout | null = null;
 
+/**
+ * Idempotent — safe to call again after the process boots without a key
+ * configured yet (Integrations page save now calls this directly, since the
+ * key is editable in-app and no longer requires a redeploy to take effect;
+ * `started` guards against opening a second pair of connections on top of
+ * an already-running listener).
+ */
 export function startAisListener(): void {
+  if (started) return;
   if (!aisstreamConfigured()) {
-    console.warn("[ais-listener] CAST_AISSTREAM_API_KEY not set — listener not started");
+    console.warn("[ais-listener] no aisstream API key configured — listener not started");
     return;
   }
   started = true;
@@ -369,7 +410,11 @@ export function startAisListener(): void {
 
   console.log("[ais-listener] started (tier1 dedicated, tier2 rotating)");
 
-  setInterval(() => {
+  // Captured + cleared in stopAisListener() — otherwise a DELETE-then-POST
+  // credential cycle (Integrations page "Clear credentials" then re-save)
+  // leaked one of these every time, each still holding a reference to
+  // tier1/tier2 and duplicating the log line (security review, 2026-08-21).
+  statusLogTimer = setInterval(() => {
     console.log(
       `[ais-listener] tier1: ${tier1.state.messagesReceivedLastMinute} msg/min, ${tier1.state.subscribedMmsiCount} MMSIs, connected=${tier1.state.connected}, badFrames=${tier1.state.parseFailuresTotal} | ` +
         `tier2: ${tier2.state.messagesReceivedLastMinute} msg/min, batch ${tier2.state.batchIndex}/${tier2.state.batchCount}, connected=${tier2.state.connected}, badFrames=${tier2.state.parseFailuresTotal}`,
@@ -381,7 +426,56 @@ export function stopAisListener(): void {
   if (!started) return;
   tier1.stop();
   tier2.stop();
+  if (statusLogTimer) clearInterval(statusLogTimer);
+  statusLogTimer = null;
   started = false;
+}
+
+/**
+ * Called after a credential save (Integrations page). If the listener
+ * wasn't running yet, this just starts it normally. If it WAS already
+ * running, a plain `startAisListener()` would no-op (guarded by `started`)
+ * and leave both tiers authenticating with whatever key they connected
+ * with — so a rotated key would silently keep using the OLD one until the
+ * next natural reconnect, which for a stable MMSI set could be a long time
+ * (security review, 2026-08-21: "rotation looks complete when it isn't").
+ * Forcing a stop+start makes both tiers reconnect and resubscribe with
+ * whatever is in the store right now.
+ */
+export function restartAisListenerForNewCreds(): void {
+  if (started) stopAisListener();
+  startAisListener();
+}
+
+/**
+ * "Test connection" for the Integrations page. aisstream has no synchronous
+ * auth endpoint — the subscribe protocol IS the auth check: an invalid key
+ * gets the connection closed immediately after subscribing, a valid key
+ * stays open (confirmed live during the 2026-08 outage investigation, see
+ * knowledge/architecture/vessel-location-updating-aisstream.md §4 — "an
+ * intentionally invalid key is closed immediately, a valid key stays
+ * connected"). So: open a short-lived connection with a single-MMSI filter
+ * (avoids pulling any real traffic), subscribe, and see which one happens
+ * within a few seconds.
+ */
+export function testAisstreamCreds(creds: { apiKey: string; url: string }): Promise<{ ok: boolean; detail: string }> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean, detail: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      ws.close();
+      resolve({ ok, detail });
+    };
+    const ws = new WebSocket(creds.url);
+    const timer = setTimeout(() => finish(true, "Connection stayed open — key accepted"), 4_000);
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify({ APIKey: creds.apiKey, BoundingBoxes: [GLOBAL_BOUNDING_BOX], FiltersShipMMSI: ["000000000"] }));
+    });
+    ws.addEventListener("close", () => finish(false, "Connection closed immediately — key likely rejected"));
+    ws.addEventListener("error", () => finish(false, "Could not reach aisstream"));
+  });
 }
 
 /** Called by jobs/tierRefresh.ts the moment it recomputes the split — this is what keeps the MMSI filters current. */

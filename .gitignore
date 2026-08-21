@@ -14,3 +14,7 @@ coverage/
 # permissions + agents); the .local variant is this machine's own overrides.
 .claude/settings.local.json
 *.bak
+# Playwright MCP session captures (console logs, DOM snapshots, screenshots)
+# from live-verifying UI changes against a local dev server — scratch output,
+# never meant to be committed (gap flagged in the 2026-08-20 security gate).
+.playwright-mcp/

@@ -3,10 +3,13 @@
  * Auth/base-URL/custom-field pattern mirrors LogisticsCoordinator's proven
  * integration (knowledge/architecture/connectwise-api-integration.md).
  *
- * SAFETY: every write checks isCwWritesEnabled() and refuses otherwise — the
- * user gate, toggleable in-app (Integrations page). Reads are always allowed.
+ * SAFETY: every write checks isCwWritesEnabledForInstance() for ITS OWN
+ * instance and refuses otherwise — the user gate, toggleable per instance
+ * in-app (Integrations page, 2026-08-20: no longer a single global switch,
+ * since that meant enabling writes to test against Sandbox also silently
+ * enabled real writes to Production). Reads are always allowed.
  */
-import { config, isCwWritesEnabled } from "../config";
+import { config, isCwWritesEnabledForInstance } from "../config";
 import { resolveCwCredsForInstance, type CwCreds } from "./creds";
 import type { CwClient, CwSite, VesselCompany, ShippingRequestTicket, ShipmentTicketDetail, CwBoardStatus, CwCurrencyOption } from "./client";
 
@@ -408,9 +411,6 @@ async function listBoardStatuses(boardId: number, creds: CwCreds): Promise<CwBoa
  * a multipart upload (the browser/runtime must set its own boundary).
  */
 async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string, creds: CwCreds): Promise<number> {
-  if (!isCwWritesEnabled()) {
-    throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
-  }
   const c = creds;
   const token = Buffer.from(`${c.company}+${c.publicKey}:${c.privateKey}`).toString("base64");
   const form = new FormData();
@@ -434,9 +434,6 @@ async function uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename
 
 /** Writes the CW ticket's own status (distinct from and unrelated to the local shipment record's `status` column). */
 async function updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number, creds: CwCreds): Promise<void> {
-  if (!isCwWritesEnabled()) {
-    throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
-  }
   const path = ticketType === "service" ? "/service/tickets" : "/project/tickets";
   await cwFetch(`${path}/${ticketId}`, {
     method: "PATCH",
@@ -477,7 +474,7 @@ export class ManageCwClient implements CwClient {
   }
 
   async setVesselIdentifiers(id: string, patch: { imo?: string; mmsi?: string }): Promise<VesselCompany> {
-    if (!isCwWritesEnabled()) {
+    if (!isCwWritesEnabledForInstance(this.instanceId)) {
       throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
     const creds = this.creds();
@@ -523,7 +520,7 @@ export class ManageCwClient implements CwClient {
    * destructive — it just retries next cycle) and can be added then.
    */
   async createVesselSite(companyId: string): Promise<CwSite> {
-    if (!isCwWritesEnabled()) {
+    if (!isCwWritesEnabledForInstance(this.instanceId)) {
       throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
     const created = await cwFetch<{ id: number; name: string; inactiveFlag?: boolean }>(
@@ -542,7 +539,7 @@ export class ManageCwClient implements CwClient {
     siteId: string,
     patch: { name?: string; addressLine1?: string; timeZoneSetupId?: number; lastAisUpdateText?: string },
   ): Promise<void> {
-    if (!isCwWritesEnabled()) {
+    if (!isCwWritesEnabledForInstance(this.instanceId)) {
       throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
     }
     const creds = this.creds();
@@ -618,10 +615,16 @@ export class ManageCwClient implements CwClient {
   }
 
   async updateTicketStatus(ticketId: number, ticketType: "service" | "project", statusId: number): Promise<void> {
+    if (!isCwWritesEnabledForInstance(this.instanceId)) {
+      throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+    }
     return updateTicketStatus(ticketId, ticketType, statusId, this.creds());
   }
 
   async uploadTicketDocument(ticketId: number, pdfBytes: Buffer, filename: string, title: string): Promise<number> {
+    if (!isCwWritesEnabledForInstance(this.instanceId)) {
+      throw new Error("ConnectWise writes are disabled (safety gate). Enable them on the Integrations page.");
+    }
     return uploadTicketDocument(ticketId, pdfBytes, filename, title, this.creds());
   }
 }

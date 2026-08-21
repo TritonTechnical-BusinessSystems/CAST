@@ -11,7 +11,7 @@ export const PERMISSIONS = [
   "extension.read",     // view CAST Extension config
   "extension.write",    // edit role/department rules, expected pods
   "vessel.read",        // view vessel pages
-  "vessel.reconcile",   // resolve/write IMO/MMSI (still gated by CW_WRITES_ENABLED)
+  "vessel.reconcile",   // resolve/write IMO/MMSI (still gated by isCwWritesEnabledForInstance("tritontech"))
   "tracking.read",      // view Vessel Tracking Config
   "tracking.write",     // edit the tracking rule
   "integrations.read",  // view integration status

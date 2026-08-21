@@ -44,7 +44,8 @@ export function TrackingConfig() {
     api.get<Options>("/tracking/options").then(setOpts).catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
     api.get<Rule>("/tracking/config").then(setRule).catch(() => {});
     api.get<{ minutes: number }>("/tracking/refresh-interval").then((r) => setRefreshMinutes(r.minutes)).catch(() => {});
-    api.get<{ writesEnabled: boolean }>("/integrations/connectwise").then((r) => setCwWritesEnabled(r.writesEnabled)).catch(() => {});
+    // Vessel tracking is Production-only, so this page's write status always means Production's.
+    api.get<{ writesEnabled: boolean }>("/integrations/tritontech/connectwise").then((r) => setCwWritesEnabled(r.writesEnabled)).catch(() => {});
   }, []);
 
   const runPreview = () => api.post<Preview>("/tracking/preview", rule).then(setPreview).catch(() => setPreview(null));

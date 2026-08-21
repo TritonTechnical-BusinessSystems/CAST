@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Field, Select, Badge, Banner, Spinner, Butt
 interface CwInstance {
   id: string;
   name: string;
-  isDefault: boolean;
 }
 
 interface EmbeddablePage {
@@ -49,15 +48,8 @@ export function LogisticsConfigEmbedLinks() {
   useEffect(() => {
     api
       .get<CwInstance[]>("/logistics/instances")
-      .then((rows) => {
-        setInstances(rows);
-        if (!selected) {
-          const def = rows.find((r) => r.isDefault) ?? rows[0];
-          if (def) onSelect(def.id);
-        }
-      })
+      .then(setInstances)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load CW instances"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) return <Banner tone="danger">{error}</Banner>;
@@ -78,6 +70,9 @@ export function LogisticsConfigEmbedLinks() {
         action={
           <Field label="Generate links for">
             <Select value={selected} onChange={(e) => onSelect(e.target.value)}>
+              <option value="" disabled>
+                Select an instance…
+              </option>
               {instances.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.name}
@@ -88,6 +83,7 @@ export function LogisticsConfigEmbedLinks() {
         }
       />
       <CardBody>
+        {!selected && <Banner tone="info">Select a CW instance above before generating embed links.</Banner>}
         <Table>
           <thead>
             <tr>
@@ -113,7 +109,7 @@ export function LogisticsConfigEmbedLinks() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    disabled={!p.built}
+                    disabled={!p.built || !selected}
                     onClick={() => {
                       navigator.clipboard.writeText(`${location.origin}${p.route}?instance=${encodeURIComponent(selected)}&embed=1`);
                       toast("success", `Copied embed link for ${p.label}`);

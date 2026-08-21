@@ -8,7 +8,6 @@ import { PageHeader, Card, CardBody, Table, SortableHeaderCell, Field, Select, B
 interface CwInstance {
   id: string;
   name: string;
-  isDefault: boolean;
 }
 
 interface ShippingRequestTicket {
@@ -49,14 +48,7 @@ export function LogisticsShipments() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api.get<CwInstance[]>("/logistics/instances").then((rows) => {
-      setInstances(rows);
-      if (!instance) {
-        const def = rows.find((r) => r.isDefault) ?? rows[0];
-        if (def) setInstance(def.id);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    api.get<CwInstance[]>("/logistics/instances").then(setInstances);
   }, []);
 
   useEffect(() => {
@@ -105,6 +97,9 @@ export function LogisticsShipments() {
         actions={
           <Field label="CW Instance">
             <Select value={instance} onChange={(e) => setInstance(e.target.value)}>
+              <option value="" disabled>
+                Select an instance…
+              </option>
               {instances.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.name}
@@ -114,6 +109,14 @@ export function LogisticsShipments() {
           </Field>
         }
       />
+
+      {!instance && (
+        <Card>
+          <CardBody>
+            <EmptyState icon={<IconPackage />}>Select a CW instance above to view its Shipping Requests.</EmptyState>
+          </CardBody>
+        </Card>
+      )}
 
       {error && <Banner tone="danger">Could not load tickets from ConnectWise: {error}</Banner>}
 

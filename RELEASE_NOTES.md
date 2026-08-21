@@ -4,6 +4,25 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.16.0 — August 2026
+
+The ConnectWise-writes safety switch got the same rigor as the credential work in v0.15.0 — it's now scoped per environment, not one shared switch — and every remaining place that quietly assumed "Production" instead of asking is gone.
+
+## Highlights
+
+- **ConnectWise writes are now turned on and off per environment, not globally.** Previously, one switch controlled writes to both Production and Sandbox — meaning testing writes against Sandbox meant real writes to Production were live too. Each environment on the Integrations page now has its own switch, its own status, and its own confirmation before enabling.
+- **No page anywhere silently assumes "Production" or "the default environment" anymore.** Five Configuration pages that used to auto-pick an environment now ask explicitly before showing anything. The shipment detail page — the one place that actually posts documents and changes ticket status in ConnectWise — had the same gap in a more serious form (a bookmarked or old link could silently land on Production with no on-screen indication); it now asks first, and always shows which environment it's pointed at.
+- **"Writes enabled" no longer looks like a warning.** A correctly-scoped environment with writes on is the normal, intended state — the indicator is green now, not red, matching how the rest of the app treats a healthy, working setup.
+- **aisstream.io and TrackingMore credentials can now be entered and rotated right on the Integrations page**, the same way ConnectWise's already work — no more editing a server file and redeploying to change a key.
+
+## For the power users
+
+- A pre-release security check caught the shipment-detail-page gap described above before it shipped — traced to the one page in the credential-safety work that hadn't gotten the same treatment as everywhere else. Fixed and independently re-verified, not self-certified.
+- Both new integrations validate their URL field against the real provider's domain before saving, same protection ConnectWise's connection address already has — closes off a class of mistake (or malicious entry) that would otherwise hand a real API key to the wrong host.
+- While testing the new TrackingMore card, its currently-stored key turned out to be invalid/expired against the live API — worth rotating whenever that integration actually gets built.
+
+---
+
 # What's New in v0.15.0 — August 2026
 
 ConnectWise credentials got a real safety pass — no more shared fallback paths, and a real place to manage both Production and Sandbox.

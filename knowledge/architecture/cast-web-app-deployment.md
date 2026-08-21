@@ -122,7 +122,7 @@ failure at `pnpm install`.
 ## First-time bring-up (checklist)
 1. `sudo mkdir -p /opt/cast && sudo chown $USER /opt/cast`
 2. clone the repo (deploy key) into `/opt/cast/app`
-3. create `components/api/.env` (CW + aisstream keys, `CAST_SECRET_KEY`, `CW_WRITES_ENABLED=false`)
+3. create `components/api/.env` (`CAST_SECRET_KEY` — CW/aisstream/TrackingMore credentials live in the encrypted store, entered via the Integrations page after first bring-up, not env vars)
 4. `bash scripts/setup-tls.sh` (self-signed now)
 5. `docker compose up -d --build`
 6. install the systemd auto-update timer + `unattended-upgrades`

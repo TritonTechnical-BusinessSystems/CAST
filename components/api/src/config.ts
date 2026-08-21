@@ -45,7 +45,8 @@ export const config = {
    * (INIT-0012 §3.6) — cheap (a handful of bulk CW queries, not per-vessel),
    * so this can run often. Overridden at runtime by
    * setTierRefreshIntervalMinutes() below (same env-seed-then-settings-win
-   * precedent as isCwWritesEnabled) so ops can retune it without a redeploy.
+   * precedent `vesselStatusFallbackDaysDefault` uses) so ops can retune it
+   * without a redeploy.
    * Vessel Site reconciliation runs on this same cadence now — see
    * reconcileVesselSites() in routes/tracking.ts.
    */
@@ -71,14 +72,6 @@ export const config = {
     const n = Number(env.CAST_VESSEL_STATUS_FALLBACK_DAYS);
     return Number.isFinite(n) && n > 0 ? n : 90;
   })(),
-
-  /**
-   * aisstream.io — AIS data source for Vessel Location Updating (INIT-0012).
-   * WebSocket API; the key is a server-side secret. Docs + architecture:
-   * knowledge/architecture/vessel-location-updating-aisstream.md.
-   */
-  aisstreamWsUrl: env.CAST_AISSTREAM_WS_URL ?? "wss://stream.aisstream.io/v0/stream",
-  aisstreamApiKey: env.CAST_AISSTREAM_API_KEY ?? "",
 
   /**
    * ConnectWise PSA (Manage) REST API — INIT-0002 / 0012 / 0014. CAST's
@@ -119,23 +112,6 @@ export const config = {
    * Matched with `contains` so the "🛳️ Yacht" emoji prefix is handled.
    */
   cwVesselMarket: env.CW_VESSEL_MARKET ?? "Yacht",
-  /**
-   * HARD SAFETY GATE boot default: all ConnectWise *writes* are refused unless
-   * this resolves true. Default off. This env value is only the SEED for a
-   * fresh install — once toggled in-app (isCwWritesEnabled/setCwWritesEnabled
-   * below), the stored value in the settings DB takes over as the source of
-   * truth, so ops can flip it from the UI without a redeploy. Reads are
-   * unaffected either way.
-   */
-  cwWritesEnabled: (env.CW_WRITES_ENABLED ?? "false").toLowerCase() === "true",
-
-  /**
-   * TrackingMore — shipment tracking data source (INIT-0018). REST API, the
-   * key is a server-side secret sent as the `Tracking-Api-Key` header.
-   * Docs: https://www.trackingmore.com/docs/trackingmore/.
-   */
-  trackingmoreBaseUrl: env.CAST_TRACKINGMORE_BASE_URL ?? "https://api.trackingmore.com/v4",
-  trackingmoreApiKey: env.CAST_TRACKINGMORE_API_KEY ?? "",
 
   /**
    * Where Playwright (PDF generation, INIT-0026 Phase 3) reaches the live
@@ -192,24 +168,26 @@ export function adConfigured(): boolean {
   return Boolean(config.ldapUrl && config.ldapBaseDN && config.ldapAllowedGroupDN);
 }
 
-export function aisstreamConfigured(): boolean {
-  return Boolean(config.aisstreamApiKey);
+/**
+ * HARD SAFETY GATE, PER INSTANCE (2026-08-20, user: "The toggle for CW
+ * writes should be per instance, not global" — a single global switch meant
+ * enabling writes to test against Sandbox also silently enabled real writes
+ * to Production, exactly the cross-instance risk the rest of this
+ * credential work exists to close). No env boot-seed anymore either — every
+ * instance starts OFF until someone explicitly turns it on in the UI, full
+ * stop; matches the "zero implicit default" rule the credential resolution
+ * itself already follows (`connectwise/creds.ts`).
+ */
+function cwWritesSettingKey(instanceId: string): string {
+  return `cwWritesEnabled:${instanceId}`;
 }
 
-export function trackingmoreConfigured(): boolean {
-  return Boolean(config.trackingmoreApiKey);
+export function isCwWritesEnabledForInstance(instanceId: string): boolean {
+  return getSetting<boolean>(cwWritesSettingKey(instanceId)) ?? false;
 }
 
-const CW_WRITES_SETTING_KEY = "cwWritesEnabled";
-
-/** Live safety-gate check — the in-app toggle if set, else the env boot default. */
-export function isCwWritesEnabled(): boolean {
-  const stored = getSetting<boolean>(CW_WRITES_SETTING_KEY);
-  return stored !== undefined ? stored : config.cwWritesEnabled;
-}
-
-export function setCwWritesEnabled(enabled: boolean): void {
-  setSetting(CW_WRITES_SETTING_KEY, enabled);
+export function setCwWritesEnabledForInstance(instanceId: string, enabled: boolean): void {
+  setSetting(cwWritesSettingKey(instanceId), enabled);
 }
 
 const TIER_REFRESH_MINUTES_KEY = "tracking.refreshIntervalMinutes";
@@ -244,8 +222,10 @@ export type VesselSiteWriteAllowlist = "all" | string[];
 
 /**
  * A second, narrower gate in front of Vessel Site writes specifically — on
- * top of, not instead of, `isCwWritesEnabled()`. `cwWritesEnabled` is shared
- * across every CW write CAST makes (vessel identity reconciliation,
+ * top of, not instead of, `isCwWritesEnabledForInstance("tritontech")`
+ * (vessel tracking is a Production-only concept, see `routes/tracking.ts`'s
+ * `CW_INSTANCE`). Production's writes gate is shared across every CW write
+ * CAST makes against that instance (vessel identity reconciliation,
  * Logistics document posting, ticket status) — flipping it on to start
  * Vessel Site writes would also silently remove the safety interlock on
  * those other, separately-gated features. This allowlist exists so the

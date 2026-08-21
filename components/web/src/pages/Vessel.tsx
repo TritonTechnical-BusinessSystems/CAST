@@ -110,7 +110,10 @@ export function Vessel() {
   function loadWriteStatus() {
     setWriteStatusError(false);
     Promise.all([
-      api.get<{ writesEnabled: boolean }>("/integrations/connectwise"),
+      // Vessel tracking is Production-only (see config.ts's
+      // VESSEL_SITE_WRITE_ALLOWLIST_KEY comment / routes/tracking.ts's
+      // CW_INSTANCE), so this page's write status always means Production's.
+      api.get<{ writesEnabled: boolean }>("/integrations/tritontech/connectwise"),
       api.get<{ allowlist: WriteAllowlist }>("/tracking/vessel-site-write-allowlist"),
     ])
       .then(([cw, gate]) => {

@@ -71,7 +71,7 @@ export interface CwClient {
   /**
    * Create the "Vessel" site for a company that doesn't have one yet —
    * self-heals a missing write target instead of leaving the vessel
-   * permanently excluded from AIS tracking. Gated by isCwWritesEnabled()
+   * permanently excluded from AIS tracking. Gated by isCwWritesEnabledForInstance()
    * like every other CW write.
    */
   createVesselSite(companyId: string): Promise<CwSite>;
@@ -84,7 +84,7 @@ export interface CwClient {
    * `/system/timeZoneSetups` reference id, `lastAisUpdateText` = the "Last
    * AIS Data Update" custom field. `addressLine1`/`timeZoneSetupId` omitted
    * (not overwritten) once confidence has fully expired. Gated by
-   * isCwWritesEnabled() like every other CW write.
+   * isCwWritesEnabledForInstance() like every other CW write.
    */
   updateVesselSite(
     companyId: string,

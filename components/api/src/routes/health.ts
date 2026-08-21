@@ -6,9 +6,10 @@ import { Router } from "express";
 import { readFileSync, statSync } from "fs";
 import { join, resolve } from "path";
 import { requirePermission } from "../middleware/auth";
-import { config, adConfigured, aisstreamConfigured, isCwWritesEnabled } from "../config";
+import { config, adConfigured, isCwWritesEnabledForInstance } from "../config";
 import { resolveCwCredsForInstance } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
+import { listCwInstances } from "../connectwise/instances";
 
 // The main "ConnectWise API" probe checks Production only — see
 // routes/tracking.ts's CW_INSTANCE comment for why this is a literal.
@@ -160,7 +161,10 @@ router.get("/full", requirePermission("system.read"), async (_req, res) => {
     integrations: { connectwise, aisstream, activeDirectory, aisTier1, aisTier2 },
     infra: { tls, backups },
     backpressure,
-    cwWrites: isCwWritesEnabled(),
+    // Per instance, not one collapsed boolean (2026-08-20 security review: a
+    // single flag sourced from Production alone would hide Sandbox writes
+    // being live) — every registered instance's actual gate state.
+    cwWrites: listCwInstances().map((i) => ({ id: i.id, name: i.name, enabled: isCwWritesEnabledForInstance(i.id) })),
   });
 });
 

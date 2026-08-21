@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Field, Select, Input, Checkbox, Button, Ban
 interface CwInstance {
   id: string;
   name: string;
-  isDefault: boolean;
 }
 
 interface ReceivingSettings {
@@ -35,14 +34,7 @@ export function LogisticsConfigReceiving() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get<CwInstance[]>("/logistics/instances").then((rows) => {
-      setInstances(rows);
-      if (!instance) {
-        const def = rows.find((r) => r.isDefault) ?? rows[0];
-        if (def) setInstance(def.id);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    api.get<CwInstance[]>("/logistics/instances").then(setInstances);
   }, []);
 
   useEffect(() => {
@@ -85,6 +77,9 @@ export function LogisticsConfigReceiving() {
         action={
           <Field label="CW Instance">
             <Select value={instance} onChange={(e) => setInstance(e.target.value)}>
+              <option value="" disabled>
+                Select an instance…
+              </option>
               {instances.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.name}
@@ -95,7 +90,9 @@ export function LogisticsConfigReceiving() {
         }
       />
       <CardBody>
-        {!settings ? (
+        {!instance ? (
+          <Banner tone="info">Select a CW instance above to view its Receiving settings.</Banner>
+        ) : !settings ? (
           <Spinner />
         ) : (
           <div className="col gap-4">

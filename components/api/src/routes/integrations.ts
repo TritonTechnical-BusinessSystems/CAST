@@ -16,12 +16,29 @@
  */
 import { Router } from "express";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { config, isCwWritesEnabled, setCwWritesEnabled } from "../config";
+import { isCwWritesEnabledForInstance, setCwWritesEnabledForInstance } from "../config";
 import { resolveCwCredsForInstance, saveCwCredsForInstance, clearCwCredsForInstance, getCredsDisplay } from "../connectwise/creds";
 import { getSystemInfo } from "../connectwise/manageClient";
 import { listCwInstances, assertValidCwInstance } from "../connectwise/instances";
+import { resolveSimpleCreds, saveSimpleCreds, clearSimpleCreds, getSimpleCredsDisplay } from "../integrations/simpleCreds";
+import { AISSTREAM_SLOT, AISSTREAM_DEFAULT_WS_URL, restartAisListenerForNewCreds, stopAisListener, testAisstreamCreds, assertValidAisstreamUrl } from "../vessels/aisListener";
+import { TRACKINGMORE_SLOT, TRACKINGMORE_DEFAULT_BASE_URL, assertValidTrackingmoreUrl } from "../integrations/trackingmore";
 
 const router = Router();
+
+/** `apiKey`/`url` are both optional (partial save) but must be plain strings — same rule as `parseCredsBody` below. */
+function parseSimpleCredsBody(body: unknown): { apiKey?: string; url?: string } | null {
+  if (typeof body !== "object" || body === null) return {};
+  const b = body as Record<string, unknown>;
+  const out: Record<string, string> = {};
+  for (const key of ["apiKey", "url"] as const) {
+    const v = b[key];
+    if (v === undefined || v === null || v === "") continue;
+    if (typeof v !== "string") return null;
+    out[key] = v;
+  }
+  return out;
+}
 
 function requireInstance(instanceId: string, res: import("express").Response): boolean {
   try {
@@ -51,21 +68,17 @@ router.get("/instances", requireAuth, (_req, res) => {
   res.json(listCwInstances());
 });
 
-// Global config (not a credential, not instance-scoped) — the vessel-identity
-// custom-field captions (INIT-0014), shown alongside Production's card since
-// that's the only instance IMO/MMSI reconciliation runs against today.
-router.get("/vessel-fields", requireAuth, (_req, res) => {
-  res.json({ imo: config.cwImoFieldCaption, mmsi: config.cwMmsiFieldCaption });
-});
-
-// The writes safety-gate stays a SINGLE global switch, not per-instance —
-// it answers "can CAST write to ConnectWise at all right now", orthogonal to
-// which instance's credentials are configured.
-router.put("/connectwise/writes", requirePermission("integrations.write"), (req, res) => {
+// The writes safety-gate is PER INSTANCE (2026-08-20, user: "The toggle for
+// CW writes should be per instance, not global" — a single global switch
+// meant enabling writes to test against Sandbox also silently enabled real
+// writes to Production, exactly the cross-instance risk this integration's
+// whole no-fallback design otherwise closes).
+router.put("/:instance/connectwise/writes", requirePermission("integrations.write"), (req, res) => {
+  if (!requireInstance(req.params.instance, res)) return;
   const { enabled } = (req.body ?? {}) as { enabled?: unknown };
   if (typeof enabled !== "boolean") return res.status(400).json({ error: "enabled must be a boolean" });
-  setCwWritesEnabled(enabled);
-  res.json({ writesEnabled: isCwWritesEnabled() });
+  setCwWritesEnabledForInstance(req.params.instance, enabled);
+  res.json({ writesEnabled: isCwWritesEnabledForInstance(req.params.instance) });
 });
 
 router.get("/:instance/connectwise", requireAuth, (req, res) => {
@@ -75,7 +88,7 @@ router.get("/:instance/connectwise", requireAuth, (req, res) => {
   // unmasked, same trust tier as company/baseUrl, so it can be visibly
   // copied between instances (Sandbox intentionally reuses Production's) and
   // pre-fills its edit form even before the rest of that instance is saved.
-  res.json({ ...getCredsDisplay(req.params.instance), writesEnabled: isCwWritesEnabled() });
+  res.json({ ...getCredsDisplay(req.params.instance), writesEnabled: isCwWritesEnabledForInstance(req.params.instance) });
 });
 
 router.post("/:instance/connectwise", requirePermission("integrations.write"), (req, res) => {
@@ -114,6 +127,98 @@ router.post("/:instance/connectwise/test", requirePermission("integrations.write
   try {
     const info = await getSystemInfo(creds);
     res.json({ ok: true, detail: `ConnectWise ${info.version}` });
+  } catch (e) {
+    res.json({ ok: false, detail: e instanceof Error ? e.message : "Connection failed" });
+  }
+});
+
+// --- aisstream.io (single account, no multi-instance concept — INIT-0012) ---
+
+router.get("/aisstream", requireAuth, (_req, res) => {
+  res.json(getSimpleCredsDisplay(AISSTREAM_SLOT, AISSTREAM_DEFAULT_WS_URL));
+});
+
+router.post("/aisstream", requirePermission("integrations.write"), (req, res) => {
+  const parsed = parseSimpleCredsBody(req.body);
+  if (parsed === null) return void res.status(400).json({ error: "Fields must be plain strings" });
+  if (!parsed.apiKey && !parsed.url) return void res.status(400).json({ error: "Provide at least one field to save" });
+  try {
+    saveSimpleCreds(AISSTREAM_SLOT, parsed, assertValidAisstreamUrl);
+  } catch (e) {
+    return void res.status(400).json({ error: e instanceof Error ? e.message : "Invalid credentials" });
+  }
+  // Editable in-app now (2026-08-20) — a key saved after boot must actually
+  // start the listener, not just sit in the store until the next redeploy.
+  // Also picks up a ROTATED key on an already-running listener (2026-08-21
+  // security review: a key rotation used to silently keep talking to
+  // aisstream with the OLD key until the next natural reconnect) by forcing
+  // both tiers to reconnect when the listener was already started.
+  restartAisListenerForNewCreds();
+  res.json({ ok: true });
+});
+
+router.delete("/aisstream", requirePermission("integrations.write"), (_req, res) => {
+  clearSimpleCreds(AISSTREAM_SLOT);
+  stopAisListener();
+  res.json({ ok: true });
+});
+
+router.post("/aisstream/test", requirePermission("integrations.write"), async (_req, res) => {
+  const creds = resolveSimpleCreds(AISSTREAM_SLOT, AISSTREAM_DEFAULT_WS_URL).creds;
+  if (!creds) return void res.json({ ok: false, detail: "Not configured" });
+  try {
+    res.json(await testAisstreamCreds(creds));
+  } catch (e) {
+    // `new WebSocket(url)` throws SYNCHRONOUSLY inside testAisstreamCreds's
+    // executor for an unparseable URL, rejecting the returned promise —
+    // Express 4 doesn't forward async rejections and this app registers no
+    // unhandledRejection handler, so an uncaught one here crashes the whole
+    // API process (security review, 2026-08-21 — the sibling trackingmore
+    // route already had this guard, this one didn't).
+    res.json({ ok: false, detail: e instanceof Error ? e.message : "Connection failed" });
+  }
+});
+
+// --- TrackingMore (single account, no multi-instance concept — INIT-0018, not yet built) ---
+
+router.get("/trackingmore", requireAuth, (_req, res) => {
+  res.json(getSimpleCredsDisplay(TRACKINGMORE_SLOT, TRACKINGMORE_DEFAULT_BASE_URL));
+});
+
+router.post("/trackingmore", requirePermission("integrations.write"), (req, res) => {
+  const parsed = parseSimpleCredsBody(req.body);
+  if (parsed === null) return void res.status(400).json({ error: "Fields must be plain strings" });
+  if (!parsed.apiKey && !parsed.url) return void res.status(400).json({ error: "Provide at least one field to save" });
+  try {
+    saveSimpleCreds(TRACKINGMORE_SLOT, parsed, assertValidTrackingmoreUrl);
+  } catch (e) {
+    return void res.status(400).json({ error: e instanceof Error ? e.message : "Invalid credentials" });
+  }
+  res.json({ ok: true });
+});
+
+router.delete("/trackingmore", requirePermission("integrations.write"), (_req, res) => {
+  clearSimpleCreds(TRACKINGMORE_SLOT);
+  res.json({ ok: true });
+});
+
+// integrations.write, not requireAuth — same reasoning as the CW test route above.
+router.post("/trackingmore/test", requirePermission("integrations.write"), async (_req, res) => {
+  const creds = resolveSimpleCreds(TRACKINGMORE_SLOT, TRACKINGMORE_DEFAULT_BASE_URL).creds;
+  if (!creds) return void res.json({ ok: false, detail: "Not configured" });
+  try {
+    // Cheapest read-only call that proves the key works (verified live
+    // 2026-08-13, knowledge/architecture/shipment-tracking-trackingmore.md §1).
+    // `redirect: "manual"` — fetch's default (`"follow"`) forwards custom
+    // headers (only `Authorization` gets stripped on a cross-origin hop per
+    // spec), so a redirect anywhere off `api.trackingmore.com` — even to
+    // another *.trackingmore.com host the allowlist trusts — would otherwise
+    // hand this real key to wherever it points (security review, 2026-08-21).
+    const r = await fetch(`${creds.url}/couriers/all`, { headers: { "Tracking-Api-Key": creds.apiKey }, redirect: "manual" });
+    if (r.status >= 300 && r.status < 400) return void res.json({ ok: false, detail: `TrackingMore returned an unexpected redirect (${r.status}) — refusing to follow it` });
+    if (!r.ok) return void res.json({ ok: false, detail: `TrackingMore ${r.status}: ${(await r.text()).slice(0, 200)}` });
+    const body = (await r.json()) as { data?: unknown[] };
+    res.json({ ok: true, detail: `Connected — ${body.data?.length ?? "?"} carriers available` });
   } catch (e) {
     res.json({ ok: false, detail: e instanceof Error ? e.message : "Connection failed" });
   }

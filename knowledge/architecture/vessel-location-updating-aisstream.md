@@ -20,17 +20,25 @@ the design consequences that follow — read before building the pipeline.
 ## 1. Credentials — where the key lives
 
 - API key is a **server-side secret** (`knowledge/decisions/0002`). It lives in
-  `components/api/.env` as `CAST_AISSTREAM_API_KEY` (git-ignored), read via
-  `components/api/src/config.ts` (`config.aisstreamApiKey`, `aisstreamConfigured()`).
-  **Never** in the SPA, in `knowledge/`, or in `.env.example`.
-- Get/rotate a key at <https://aisstream.io> (free, GitHub sign-in). If a key is
-  ever exposed, rotate it there and update `.env` only.
+  the encrypted `secrets` store (2026-08-20 — moved off `.env`, editable in-app
+  on the Integrations page, same pattern as ConnectWise's per-instance
+  credentials): `components/api/src/integrations/simpleCreds.ts`
+  (`resolveSimpleCreds`/`saveSimpleCreds`), slot name and default WS URL in
+  `vessels/aisListener.ts` (`AISSTREAM_SLOT`, `AISSTREAM_DEFAULT_WS_URL`,
+  `aisstreamConfigured()`). Saving a key calls `startAisListener()` directly,
+  so it takes effect immediately — no redeploy needed. **Never** in the SPA,
+  in `knowledge/`, or in `.env.example`.
+- Get/rotate a key at <https://aisstream.io> (free, GitHub sign-in); enter the
+  new key on the Integrations page. The WS URL is host-allowlisted
+  (`assertValidAisstreamUrl`, must be an `aisstream.io` host over `wss://`) —
+  the same SSRF/credential-exfiltration protection ConnectWise's `baseUrl`
+  field has.
 - Docs: <https://aisstream.io/documentation>.
 
 ## 2. API model (verified from the docs, 2026-07-22)
 
 - **WebSocket stream, NOT REST.** Connect to `wss://stream.aisstream.io/v0/stream`
-  (`config.aisstreamWsUrl`). A **subscription message must be sent within 3 s** of
+  by default (overridable per the credentials section above). A **subscription message must be sent within 3 s** of
   connecting or the socket closes. Auth is the API key inside that subscription
   message, over WSS only.
 - **Subscribe by:** one or more **bounding boxes** (required — geographic
@@ -605,12 +613,21 @@ is what the CW site name actually is or would be, not a description of why).
 **A controlled-rollout allowlist gates Vessel Site writes, on top of (not
 instead of) `isCwWritesEnabled()`.** User, asked directly before enabling
 real writes for the first time: *"Can we gate the initial push so we control
-it and can test with a few at a time?"* `isCwWritesEnabled()` is a single
-flag shared across every CW write CAST makes — vessel identity
-reconciliation (`INIT-0014`, deliberately left "gated pending user approval"
-as a *separate* decision), Logistics document posting, ticket status
-updates — all human-triggered by clicking something in their own UI, not
-scheduled jobs, so turning the shared flag on doesn't flood those.
+it and can test with a few at a time?"* At the time this was written,
+`isCwWritesEnabled()` was a single flag shared across every CW write CAST
+makes — vessel identity reconciliation (`INIT-0014`, deliberately left
+"gated pending user approval" as a *separate* decision), Logistics document
+posting, ticket status updates — all human-triggered by clicking something
+in their own UI, not scheduled jobs, so turning the shared flag on didn't
+flood those. **Superseded 2026-08-20: the gate is now
+`isCwWritesEnabledForInstance(instanceId)`, per CW instance, not one shared
+flag** (user: "The toggle for CW writes should be per instance, not
+global" — a single global switch meant enabling writes to test against
+Sandbox also silently enabled real writes to Production). Vessel tracking
+is Production-only, so every `isCwWritesEnabled()` reference below means
+`isCwWritesEnabledForInstance("tritontech")` today — kept as written for
+historical accuracy of the decision record, not as a description of the
+current call.
 
 - `config.ts`: `vesselSiteWriteAllowlist()` / `setVesselSiteWriteAllowlist()`
   / `isVesselSiteWriteAllowed(mmsi)` — a setting holding `"all"` or an array

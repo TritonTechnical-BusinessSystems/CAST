@@ -15,7 +15,7 @@ interface FullHealth {
   integrations: { connectwise: Probe; aisstream: Probe; activeDirectory: Probe; aisTier1: Probe; aisTier2: Probe };
   infra: { tls: Probe; backups: Probe };
   backpressure: Probe;
-  cwWrites: boolean;
+  cwWrites: { id: string; name: string; enabled: boolean }[];
 }
 
 function ProbeCard({ title, probe }: { title: string; probe: Probe }) {
@@ -567,7 +567,13 @@ export function SystemHealth() {
               <div className="kv">
                 <span className="kv-key">ConnectWise writes</span>
                 <span className="kv-val row gap-2">
-                  {h.cwWrites ? <Badge tone="danger">ENABLED</Badge> : <Badge tone="success">disabled (safe)</Badge>}
+                  {Array.isArray(h.cwWrites) &&
+                    h.cwWrites.map((i) => (
+                      <span key={i.id} className="row gap-1">
+                        <span className="muted text-sm">{i.name}</span>
+                        {i.enabled ? <Badge tone="success">ENABLED</Badge> : <Badge tone="neutral">disabled</Badge>}
+                      </span>
+                    ))}
                   <Link to="/integrations" className="text-sm">Manage →</Link>
                 </span>
               </div>

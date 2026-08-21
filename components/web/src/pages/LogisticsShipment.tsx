@@ -32,6 +32,11 @@ interface Company {
   is_default: number;
 }
 
+interface CwInstance {
+  id: string;
+  name: string;
+}
+
 interface CwBoardStatus {
   id: number;
   name: string;
@@ -56,6 +61,17 @@ function formatDate(iso: string | null): string {
  * Phase 3, Pack by Barcode is an unbuilt placeholder in LC itself (ported
  * as-is, not a gap CAST introduced). Mirrors `ShipmentPage.jsx`'s get-or-
  * create on load and its default-company auto-assignment.
+ *
+ * This page is the app's primary CW-write surface (ticket status changes,
+ * document uploads), so it does NOT fall back to Production when no
+ * instance is known — a bookmarked/shared link, a CW embed built before
+ * `?instance=` existed, or a fresh browser profile would otherwise land
+ * silently on Production (security review, 2026-08-20, flagged this as a
+ * High finding after the "no default instance" and per-instance-writes work
+ * landed everywhere else but here). If `instance` resolves empty, this page
+ * asks explicitly rather than guessing — the list page
+ * (`LogisticsShipments.tsx`) always sets `?instance=` when linking here, so
+ * this prompt should only appear on those edge-case entry paths.
  */
 export function LogisticsShipment() {
   const { id } = useParams<{ id: string }>();
@@ -68,7 +84,9 @@ export function LogisticsShipment() {
 
   // `?instance=` takes priority (an embed link needs to be self-contained —
   // see useLogisticsInstance) over whatever this browser last had stored.
-  const [instance] = useLogisticsInstance("tritontech");
+  // No fallback — see the doc comment above.
+  const [instance, setInstance] = useLogisticsInstance();
+  const [instances, setInstances] = useState<CwInstance[] | null>(null);
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [ticket, setTicket] = useState<ShipmentTicketDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -77,9 +95,19 @@ export function LogisticsShipment() {
 
   const validId = !!id && /^\d+$/.test(id);
 
+  // Fetched regardless of whether `instance` is already known — also drives
+  // the always-visible instance badge below, so which CW database a stale
+  // `localStorage` value (or a fresh `?instance=` link) actually bound this
+  // page to is never silently invisible (security review, 2026-08-20: the
+  // explicit chooser closed the *no*-instance case, but a stale carried-over
+  // instance with nothing on screen naming it was still a real gap).
   useEffect(() => {
-    if (!validId || !id) {
-      setNotFound(true);
+    api.get<CwInstance[]>("/logistics/instances").then(setInstances).catch(() => setInstances([]));
+  }, []);
+
+  useEffect(() => {
+    if (!validId || !id || !instance) {
+      if (!validId || !id) setNotFound(true);
       return;
     }
     setNotFound(false);
@@ -115,7 +143,7 @@ export function LogisticsShipment() {
   }, [id, instance, validId]);
 
   useEffect(() => {
-    if (!validId || !id) return;
+    if (!validId || !id || !instance) return;
     api
       .get<ShipmentTicketDetail>(`/logistics/${instance}/cw/ticket/${id}`)
       .then(setTicket)
@@ -123,7 +151,7 @@ export function LogisticsShipment() {
   }, [id, instance, validId]);
 
   useEffect(() => {
-    if (!ticket?.boardId) return;
+    if (!ticket?.boardId || !instance) return;
     api
       .get<CwBoardStatus[]>(`/logistics/${instance}/cw/board/${ticket.boardId}/statuses`)
       .then(setBoardStatuses)
@@ -144,6 +172,30 @@ export function LogisticsShipment() {
       setSavingStatus(false);
     }
   };
+
+  if (!instance) {
+    return (
+      <EmptyState icon={<IconPackage />}>
+        <div className="col gap-3">
+          <span>Which ConnectWise instance is this shipment ticket in? This link didn't say, and CAST won't guess.</span>
+          {!instances ? (
+            <Spinner />
+          ) : (
+            <Select value="" onChange={(e) => setInstance(e.target.value)}>
+              <option value="" disabled>
+                Select an instance…
+              </option>
+              {instances.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
+      </EmptyState>
+    );
+  }
 
   if (notFound) {
     return (
@@ -176,6 +228,7 @@ export function LogisticsShipment() {
               ← Back
             </Button>
             <h1 className="page-title">Shipment {shipment.id}</h1>
+            <Badge tone="neutral">{instances?.find((i) => i.id === instance)?.name ?? instance}</Badge>
             {dateBadge && <Badge tone="info">{dateBadge}</Badge>}
           </div>
           {ticket && (

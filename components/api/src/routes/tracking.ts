@@ -51,7 +51,7 @@ interface Rule {
   projectStatuses: string[];
   requireImo: boolean;
   requireMmsi: boolean;
-  /** If a matched client has no active "Vessel..." site, create one (isCwWritesEnabled()-gated) instead of leaving it excluded. Opt-in — off by default. */
+  /** If a matched client has no active "Vessel..." site, create one (isCwWritesEnabledForInstance()-gated) instead of leaving it excluded. Opt-in — off by default. */
   autoCreateVesselSite: boolean;
 }
 const DEFAULT_RULE: Rule = {
@@ -174,7 +174,7 @@ async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) =>
  *
  * When no active "Vessel..." site exists for a company AND
  * `rule.autoCreateVesselSite` is on, this CREATES one
- * (`CwClient.createVesselSite`, also isCwWritesEnabled()-gated) instead of
+ * (`CwClient.createVesselSite`, also isCwWritesEnabledForInstance()-gated) instead of
  * leaving the vessel excluded indefinitely — a company only ever fails to
  * resolve for one cycle, not permanently. With the option off, a company
  * with no site just stays unresolved (detect-only), same as before.
@@ -246,7 +246,7 @@ type LastSiteWrite = Record<string, { name: string; addressLine1?: string; timeZ
  * are left untouched (see that file's header for why).
  *
  * Gated a second time by `isVesselSiteWriteAllowed()` (`config.ts`), on top
- * of the existing `isCwWritesEnabled()` check inside `updateVesselSite`
+ * of the existing `isCwWritesEnabledForInstance()` check inside `updateVesselSite`
  * itself — a controlled-rollout allowlist so real writes can start with a
  * handful of MMSIs rather than every Tier 1/2 vessel at once.
  *

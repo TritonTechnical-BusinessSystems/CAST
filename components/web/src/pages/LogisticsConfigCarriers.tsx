@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Table, Field, Select, Button, Banner, Empty
 interface CwInstance {
   id: string;
   name: string;
-  isDefault: boolean;
 }
 
 /**
@@ -26,15 +25,8 @@ export function LogisticsConfigCarriers() {
   useEffect(() => {
     api
       .get<CwInstance[]>("/logistics/instances")
-      .then((rows) => {
-        setInstances(rows);
-        if (!selected) {
-          const def = rows.find((r) => r.isDefault) ?? rows[0];
-          if (def) onSelect(def.id);
-        }
-      })
+      .then(setInstances)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load CW instances"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const load = () => {
@@ -61,6 +53,9 @@ export function LogisticsConfigCarriers() {
             {instances && (
               <Field label="CW Instance">
                 <Select value={selected} onChange={(e) => onSelect(e.target.value)}>
+                  <option value="" disabled>
+                    Select an instance…
+                  </option>
                   {instances.map((i) => (
                     <option key={i.id} value={i.id}>
                       {i.name}
@@ -80,6 +75,8 @@ export function LogisticsConfigCarriers() {
           <span className="muted text-sm">Live from ConnectWise's "Shipment Carrier" ticket field — managed in ConnectWise, not here.</span>
           {error ? (
             <Banner tone="danger">{error}</Banner>
+          ) : !selected ? (
+            <EmptyState icon={<IconPackage />}>Select a CW instance above to view its carriers.</EmptyState>
           ) : loading && !carriers ? (
             <Spinner />
           ) : !carriers || carriers.length === 0 ? (
