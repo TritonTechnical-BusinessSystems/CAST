@@ -27,6 +27,23 @@ Sizing rationale: 2 vCPU / 4 GB balances a light internal web app plus
 occasional scheduled sync jobs; RAM is the likelier ceiling to grow first,
 not CPU. Resize on the hypervisor if sustained pressure appears.
 
+**Disk: Docker's build cache is the actual pressure point, not app data.**
+Found live 2026-08-21 investigating ~25GB used: `docker system df -v` showed
+`/opt/cast/data` (6.1MB) and `/opt/cast/backups` (728KB) trivial, actual images
+~4.4GB (`cast-api`'s 3.23GB of that is legitimate — Playwright + Chromium for
+PDF rendering) — but **Build Cache was 17.38GB**, dating back a full 4 weeks,
+none of it backing any running container. `docker image prune -f` (already run
+in every deploy script) only removes dangling *images*; BuildKit's build cache
+is a completely separate store nothing had ever swept. Every deploy script
+(`scripts/deploy.sh`, `components/deploy-agent/deploy.sh`,
+`update-monitor.sh`) now also runs `docker builder prune -f --filter
+until=168h` (7-day bound, not `-a`, so the cache backing the images just built
+stays warm for the next build) — but on a host this disk-constrained, a
+recurring manual check is still worth it:
+```bash
+docker system df -v
+```
+
 ## 2. Networking — static (applied 2026-07-22)
 
 **Current (working): static, `10.20.30.231/24`.** Applied 2026-07-22 once the

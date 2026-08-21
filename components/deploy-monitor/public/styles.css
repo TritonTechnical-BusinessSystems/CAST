@@ -148,6 +148,19 @@ main {
   gap: calc(var(--step) * 8);
 }
 
+/* Names the page outright. Sits above the clock as an eyebrow rather than
+   competing with it — the elapsed time is still the thing you read from across
+   the room, but the page should say what it is without you having to infer it
+   from context. */
+.title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--beacon);
+  margin: 0 0 calc(var(--step) * 3);
+}
+
 .clock {
   display: flex;
   align-items: baseline;
@@ -202,9 +215,13 @@ main {
 .track-note {
   display: flex;
   justify-content: space-between;
+  gap: calc(var(--step) * 3);
   color: var(--wake);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  /* Bumped from 0.6875rem — at 11px these read as decoration rather than
+     labels, and they carry real information (which state, and what "normal"
+     looks like). Tracking eased slightly to stay legible at the larger size. */
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
   margin-top: calc(var(--step) * 2);
   text-transform: uppercase;
 }
@@ -213,8 +230,10 @@ main {
 
 .panel-label {
   color: var(--wake);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
+  /* Same reasoning as .track-note: these name the two panels that make up most
+     of the page and were too small to scan. */
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   margin: 0 0 calc(var(--step) * 3);
 }
@@ -331,7 +350,7 @@ main {
   border: 1px solid var(--rule);
   color: var(--wake);
   font-family: var(--mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: calc(var(--step) * 1) calc(var(--step) * 2);

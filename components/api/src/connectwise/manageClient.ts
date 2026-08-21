@@ -63,9 +63,20 @@ export async function getSystemInfo(creds: CwCreds): Promise<{ version: string }
   return cwFetch<{ version: string }>("/system/info", { creds });
 }
 
-/** Alphabetical, for the Tracking Config option lists — not CW's native (id) order. */
-function sortNames(names: string[]): string[] {
-  return [...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+/**
+ * Alphabetical, for the Tracking Config option lists — not CW's native (id) order.
+ *
+ * Takes `(string | null | undefined)[]` on purpose, even though every caller's
+ * row type declares `name: string`. Those types describe what CW USUALLY sends,
+ * not what it guarantees: a `fields=` projection omits any field that's unset
+ * on the record, so a nameless row yields `undefined` here and
+ * `undefined.localeCompare(...)` throws — taking out the whole request rather
+ * than one row. Exactly that shipped as a live crash on the Currencies tab
+ * (2026-08-21), which is why the guard is here in the shared helper rather than
+ * patched at one call site.
+ */
+function sortNames(names: (string | null | undefined)[]): string[] {
+  return names.filter((n): n is string => typeof n === "string" && n.length > 0).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
 /** Active only — CW marks retired statuses/boards inactiveFlag=true rather than deleting them. */
@@ -164,7 +175,12 @@ export async function listCarrierOptions(creds: CwCreds): Promise<string[]> {
   return options
     .filter((o) => !o.inactiveFlag)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((o) => o.optionValue);
+    .map((o) => o.optionValue)
+    // Same defensive filter as sortNames/listCurrencyOptions: an option row
+    // with no value would otherwise render as a blank (or literally
+    // "undefined") entry in a carrier picker. Sorting here is numeric so it
+    // wouldn't throw, but a selectable empty carrier is its own problem.
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
 }
 
 /**
@@ -177,8 +193,18 @@ export async function listCarrierOptions(creds: CwCreds): Promise<string[]> {
  * path), matching every other list* function in this file.
  */
 export async function listCurrencyOptions(creds: CwCreds): Promise<CwCurrencyOption[]> {
-  const rows = await cwFetch<{ isoCode: string; name: string }[]>("/finance/currencies?pageSize=200&fields=isoCode,name", { creds });
-  return rows.map((r) => ({ code: r.isoCode, name: r.name })).sort((a, b) => a.code.localeCompare(b.code));
+  const rows = await cwFetch<{ isoCode?: string; name?: string }[]>("/finance/currencies?pageSize=200&fields=isoCode,name", { creds });
+  // Real CW data has currency records with no ISO code set — the `fields=`
+  // projection then omits `isoCode` entirely, and sorting on it threw
+  // "Cannot read properties of undefined (reading 'localeCompare')", failing
+  // the whole tab rather than one row (reported live 2026-08-21). A currency
+  // without a code can't be selected or written anywhere, so it's dropped —
+  // but counted and logged, because silently shortening a list the user is
+  // choosing from is its own bug.
+  const usable = rows.filter((r): r is { isoCode: string; name?: string } => typeof r.isoCode === "string" && r.isoCode.length > 0);
+  const dropped = rows.length - usable.length;
+  if (dropped > 0) console.warn(`[cw] /finance/currencies returned ${dropped} row(s) with no isoCode — omitted from the currency list`);
+  return usable.map((r) => ({ code: r.isoCode, name: r.name ?? r.isoCode })).sort((a, b) => a.code.localeCompare(b.code));
 }
 
 /** CW members — the source of truth for who the extension check-ins belong to. */

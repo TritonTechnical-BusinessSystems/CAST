@@ -2,8 +2,6 @@ import { PageHeader, Tabs } from "../ui";
 import type { TabDef } from "../ui";
 import { useTabParam } from "../useTabParam";
 import { LogisticsConfigBranding } from "./LogisticsConfigBranding";
-import { LogisticsConfigCarriers } from "./LogisticsConfigCarriers";
-import { LogisticsConfigCurrencies } from "./LogisticsConfigCurrencies";
 import { LogisticsConfigExportPresets } from "./LogisticsConfigExportPresets";
 import { LogisticsConfigCiFlags } from "./LogisticsConfigCiFlags";
 import { LogisticsConfigReceiving } from "./LogisticsConfigReceiving";
@@ -13,10 +11,20 @@ import { LogisticsConfigEmbedLinks } from "./LogisticsConfigEmbedLinks";
 // static 11-value reference list with nothing to configure, consumed
 // directly by shipment/document forms in later phases (`GET
 // /api/logistics/config/incoterms`), not a page a human visits.
+//
+// Carriers and Currencies (2026-08-21, user: "we don't actually need to show
+// [these] tabs... They just need to be usable within the app") are the same
+// shape — both are read-only, live CW lookups with nothing to configure here,
+// no add/remove/edit of any kind. Their real consumer is the carrier/currency
+// pickers in LogisticsShipmentDocuments.tsx, which calls the identical
+// `GET /api/logistics/:instance/config/{carriers,currencies}` routes directly
+// and is untouched by this — a standalone read-only display tab for data with
+// no configuration action was the part that added nothing. The backend routes
+// and manageClient.ts's listCarrierOptions/listCurrencyOptions (including the
+// defensive fix below for a currency with no ISO code) stay exactly as they
+// are; only these two tabs and their now-unused page components are gone.
 const tabs: TabDef[] = [
   { id: "branding", label: "Branding / Ship As" },
-  { id: "carriers", label: "Carriers" },
-  { id: "currencies", label: "Currencies" },
   { id: "export-presets", label: "Export Presets" },
   { id: "ci-flags", label: "CI Flags" },
   { id: "receiving", label: "Receiving" },
@@ -47,10 +55,6 @@ export function Logistics() {
       <Tabs tabs={tabs} active={active} onChange={setActive} />
       {active === "branding" ? (
         <LogisticsConfigBranding />
-      ) : active === "carriers" ? (
-        <LogisticsConfigCarriers />
-      ) : active === "currencies" ? (
-        <LogisticsConfigCurrencies />
       ) : active === "export-presets" ? (
         <LogisticsConfigExportPresets />
       ) : active === "ci-flags" ? (

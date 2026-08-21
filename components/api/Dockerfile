@@ -73,6 +73,13 @@ COPY packages/config-schema packages/config-schema
 COPY components/api components/api
 # Extension installer files the web app serves for download (deploy tab).
 COPY components/browser-extension/deploy components/browser-extension/deploy
+# Monitor SOURCE only (~30KB, no secrets) — not to run it, but so this
+# container can fingerprint the current monitor source and compare it against
+# what the running deploy-monitor image reports, surfacing "a newer monitor is
+# staged" on System Health. See src/deploy/monitorVersion.ts for why a source
+# hash rather than a build number.
+COPY components/deploy-monitor/server.js components/deploy-monitor/server.js
+COPY components/deploy-monitor/public components/deploy-monitor/public
 # Read directly by routes/health.ts (System Health "Application" card) — kept
 # out of the `deps` stage so bumping the build number doesn't bust its cache.
 COPY version.json ./

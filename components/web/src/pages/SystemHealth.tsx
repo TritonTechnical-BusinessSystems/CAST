@@ -494,8 +494,18 @@ function ContainersCard({ containerMetrics }: { containerMetrics: ContainerMetri
 
 type DeployAction = "redeploy" | "update-and-redeploy" | "update-monitor";
 
+interface MonitorVersion {
+  reachable: boolean;
+  runningFingerprint: string | null;
+  stagedFingerprint: string | null;
+  /** A newer monitor shipped with a deploy and is waiting to be built. */
+  updateStaged: boolean;
+  startedAt: string | null;
+}
+
 interface DeployStatus {
   configured: boolean;
+  monitor?: MonitorVersion | null;
   /** Whether the deploy-monitor container is wired up (INIT-0038). When false,
    *  triggers stay on this page and fall back to the in-card log tail. */
   monitorConfigured?: boolean;
@@ -562,24 +572,22 @@ function DeployCard() {
   };
 
   const running = status.status === "running";
+  const monitor = status.monitor ?? null;
+  const monitorRebuilding = running && status.action === "update-monitor";
+  const monitorLastRun = status.status === "done" && status.action === "update-monitor" ? status : null;
 
   return (
+    <div className="card-grid card-grid-pair">
     <Card>
       <CardHeader title="Deploy" />
       <CardBody>
         <div className="col gap-3">
-          {running && status.action === "update-monitor" && (
-            <Banner tone="info">
-              Rebuilding the deploy monitor… Started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. The app itself isn't
-              being restarted, so this page stays live — it'll update here when the monitor is back. Takes about a minute.
-            </Banner>
-          )}
           {running && status.action !== "update-monitor" && (
             <Banner tone="info">
               {status.action === "update-and-redeploy" ? "Updating from git and redeploying…" : "Redeploying…"} Started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. This page keeps checking — the "Application" card above will show the new build once it lands.
             </Banner>
           )}
-          {status.status === "done" && status.finishedAt && (
+          {status.status === "done" && status.finishedAt && status.action !== "update-monitor" && (
             <Banner tone={status.exitCode === 0 ? "success" : "danger"}>
               Last {status.action} (triggered by {status.triggeredBy ?? "unknown"}): {status.exitCode === 0 ? "succeeded" : `failed (exit code ${status.exitCode})`}, finished {ago(status.finishedAt)}.
             </Banner>
@@ -591,15 +599,6 @@ function DeployCard() {
             <Button variant="secondary" disabled={running || triggering} onClick={() => setConfirmAction("update-and-redeploy")}>
               Update from git + Redeploy
             </Button>
-            <Menu
-              items={[
-                {
-                  label: "Update deploy monitor",
-                  disabled: running || triggering || !status.monitorConfigured,
-                  onSelect: () => setConfirmAction("update-monitor"),
-                },
-              ]}
-            />
           </div>
           {status.monitorConfigured && (
             <span className="muted text-sm">
@@ -614,6 +613,86 @@ function DeployCard() {
           )}
         </div>
       </CardBody>
+    </Card>
+
+    {/* Deploy monitor tile. Sits beside Deploy rather than inside it because it
+        answers a different question: not "deploy the app" but "is the thing
+        that WATCHES deploys itself current?". A routine deploy ships new
+        monitor source but deliberately never rebuilds that container, so a new
+        version arrives staged and would otherwise sit unbuilt and unmentioned. */}
+    {status.monitorConfigured && (
+      <Card>
+        <CardHeader
+          title={
+            <span className="row gap-2">
+              <StatusDot state={monitor?.reachable === false ? "down" : monitor?.updateStaged ? "warn" : "ok"} />
+              Deploy monitor
+            </span>
+          }
+          action={monitor?.updateStaged ? <Badge tone="warning">Update ready</Badge> : undefined}
+        />
+        <CardBody>
+          <div className="col gap-3">
+            {monitorRebuilding ? (
+              <>
+                <Banner tone="info">
+                  Rebuilding… started {status.startedAt ? ago(status.startedAt) : ""} by {status.triggeredBy ?? "unknown"}. The app isn't restarting, so this
+                  page stays live and will update here when it's done.
+                </Banner>
+                <pre className="mono text-xs log-output">{status.log?.split("\n").slice(-8).join("\n") || "Starting…"}</pre>
+              </>
+            ) : (
+              <>
+                {monitor?.reachable === false && (
+                  <Banner tone="warning">
+                    Not responding. It may be rebuilding, or it failed to start — deploys still work, but you won't get the live progress page.
+                  </Banner>
+                )}
+                {monitor?.updateStaged && (
+                  <Banner tone="warning">
+                    A newer monitor shipped with a deploy and is staged, waiting to be built. A normal deploy deliberately doesn't rebuild it — that would kill
+                    the progress stream it's showing you.
+                  </Banner>
+                )}
+                {monitorLastRun && (
+                  <Banner tone={monitorLastRun.exitCode === 0 ? "success" : "danger"}>
+                    Last update {monitorLastRun.exitCode === 0 ? "succeeded" : `failed (exit code ${monitorLastRun.exitCode})`}, finished{" "}
+                    {monitorLastRun.finishedAt ? ago(monitorLastRun.finishedAt) : ""}.
+                  </Banner>
+                )}
+                <div>
+                  <div className="kv">
+                    <span className="kv-key">Running build</span>
+                    <span className="kv-val mono">{monitor?.runningFingerprint ?? "—"}</span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv-key">Staged build</span>
+                    <span className="kv-val mono">{monitor?.stagedFingerprint ?? "—"}</span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv-key">Up since</span>
+                    <span className="kv-val">{monitor?.startedAt ? ago(monitor.startedAt) : "—"}</span>
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="row gap-2">
+              <Button
+                variant={monitor?.updateStaged ? "primary" : "secondary"}
+                disabled={running || triggering}
+                onClick={() => setConfirmAction("update-monitor")}
+              >
+                {monitorRebuilding ? "Updating…" : monitor?.updateStaged ? "Update monitor" : "Rebuild monitor"}
+              </Button>
+            </div>
+            {!monitor?.updateStaged && !monitorRebuilding && monitor?.reachable && (
+              <span className="muted text-sm">Up to date — running the same source this deploy shipped.</span>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+    )}
+
       {confirmAction && (
         <Modal
           title={
@@ -655,7 +734,7 @@ function DeployCard() {
           </div>
         </Modal>
       )}
-    </Card>
+    </div>
   );
 }
 

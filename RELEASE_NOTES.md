@@ -4,6 +4,25 @@ User-facing story of every CAST release, curated from `CHANGELOG.md`. Newest fir
 
 ---
 
+# What's New in v0.21.0 — August 2026
+
+The deploy monitor from v0.20.0 can now update itself in place, right from System Health — and a real crash on the Currencies tab is fixed.
+
+## Highlights
+
+- **A "Deploy monitor" tile on System Health.** It shows whether the monitor is up, how long it's been running, and — when a deploy has shipped a newer version of it — an "Update ready" badge with a one-click Update button. Progress for that update shows right in the tile, since updating the monitor doesn't touch the rest of the app.
+- **Fixed: the Currencies tab could crash outright** with a raw JavaScript error instead of showing data. One ConnectWise currency record had no ISO code set, and the page choked trying to sort by it. The same defensive fix was applied to four other ConnectWise lookups that had the identical latent gap.
+- **Carriers and Currencies are no longer separate tabs in Logistics Configuration.** Both were always read-only displays with nothing to configure — the actual carrier and currency pickers used when generating shipment documents are untouched and keep working exactly as before.
+- **Freed up disk space on the deploy server.** Investigating why storage looked high turned up 17+ GB of Docker's own build cache that had never been cleaned up, going back a month. Every deploy now clears out old cache automatically.
+- **"Update deploy monitor" no longer sends you to the page it's about to rebuild** — a bug from v0.20.1, found by asking how the monitor itself gets updated, before it caused real confusion.
+
+## For the power users
+
+- The monitor's "staged vs. running" detection compares the actual source code, not a version number — a version-number comparison would have falsely flagged it as outdated after nearly every deploy, since most deploys don't touch the monitor at all.
+- One pre-release security review passed clean, confirming the new internal check the monitor tile relies on can't be reached from outside the deploy network and reveals nothing beyond a build fingerprint.
+
+---
+
 # What's New in v0.20.0 — August 2026
 
 Redeploys are now something you can watch happen, instead of staring at a dead site for three minutes hoping it comes back.

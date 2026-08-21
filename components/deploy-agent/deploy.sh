@@ -74,7 +74,13 @@ stage up "starting containers"
 # routine app deploy; it gets its own updates via a manual
 # `docker compose up -d --build deploy-agent`, same as any other rare change.
 docker compose up -d api web || { echo "retrying after old container settles..."; sleep 10; docker compose up -d api web; }
-stage prune "pruning old images"
+stage prune "pruning old images and stale build cache"
 docker image prune -f >/dev/null 2>&1 || true
+# `docker image prune` only removes dangling IMAGES -- BuildKit's build cache
+# is a separate store it never touches. Found live 2026-08-21: 17.38GB of an
+# ~25GB disk was build cache going back a full 4 weeks, since nothing on this
+# host ever swept it. Bounded to 7 days, not `-a`, so the cache backing the
+# api/web images just built stays warm for the next build.
+docker builder prune -f --filter until=168h >/dev/null 2>&1 || true
 docker compose ps
 echo "::stage::done"

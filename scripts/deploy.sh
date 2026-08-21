@@ -29,4 +29,14 @@ echo "== starting containers =="
 # without retrying. One retry after a short wait covers that window.
 docker compose up -d || { echo "retrying after old container settles..."; sleep 10; docker compose up -d; }
 docker image prune -f >/dev/null 2>&1 || true
+# `docker image prune` above only removes dangling IMAGES -- BuildKit's build
+# cache is a completely separate store it never touches, and nothing else on
+# this host ever swept it either. Found live 2026-08-21: 17.38GB of an ~25GB
+# disk was build cache going back a full 4 weeks, none of it backing any
+# running container. Bounded to 7 days (not a full wipe) so the most recent
+# builds' cache stays warm -- deliberately not `-a` (all), which would erase
+# the cache for the current api/web tags too and make the NEXT build on this
+# 2 vCPU box slow for no reclaim benefit, since that cache is still in active
+# use.
+docker builder prune -f --filter until=168h >/dev/null 2>&1 || true
 docker compose ps

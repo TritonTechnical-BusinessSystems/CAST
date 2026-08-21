@@ -18,6 +18,7 @@ import {
   deployAgentConfigured,
   deployMonitorConfigured,
   getDeployStatus,
+  getMonitorVersion,
   triggerDeploy,
   type DeployAction,
 } from "../deploy/deployAgentClient";
@@ -26,14 +27,22 @@ const router = Router();
 
 router.get("/deploy/status", requirePermission("system.deploy"), async (_req, res) => {
   if (!deployAgentConfigured()) return void res.json({ configured: false });
+  // Fetched alongside the deploy status so the Monitor tile and the Deploy card
+  // stay consistent on one poll rather than drifting between two.
+  const monitor = await getMonitorVersion().catch(() => null);
   try {
     const { ok, status, data } = await getDeployStatus();
-    if (!ok) return void res.status(502).json({ configured: true, monitorConfigured: deployMonitorConfigured(), error: `Deploy agent returned ${status}` });
-    res.json({ configured: true, monitorConfigured: deployMonitorConfigured(), ...data });
+    if (!ok) {
+      return void res
+        .status(502)
+        .json({ configured: true, monitorConfigured: deployMonitorConfigured(), monitor, error: `Deploy agent returned ${status}` });
+    }
+    res.json({ configured: true, monitorConfigured: deployMonitorConfigured(), monitor, ...data });
   } catch (e) {
     res.status(502).json({
       configured: true,
       monitorConfigured: deployMonitorConfigured(),
+      monitor,
       error: e instanceof Error ? e.message : "Deploy agent unreachable",
     });
   }

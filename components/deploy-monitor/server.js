@@ -30,11 +30,27 @@
  * process on a box like this should have no supply chain to attack.
  */
 const https = require("https");
+const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
+/** When this container started — lets System Health show how long the running
+ *  monitor build has been up, which is the other half of "is it current?". */
+const STARTED_AT = new Date().toISOString();
+
 const PORT = Number(process.env.MONITOR_PORT || 20443);
+/**
+ * Plain-HTTP port for `cast-api` to ask "which source was this image built
+ * from?" — deliberately NOT published in docker-compose.yml, so it's reachable
+ * only from the `deploy` network. Plain HTTP rather than reusing the TLS
+ * listener because that certificate is issued for `cast.tritontechnical.com`
+ * and an internal call to `deploy-monitor:20443` would fail hostname
+ * verification; the alternative (having `cast-api` skip certificate checks)
+ * introduces a far worse habit than an unauthenticated build-stamp endpoint on
+ * an internal network. It serves exactly one value and no deploy data.
+ */
+const INTERNAL_PORT = Number(process.env.MONITOR_INTERNAL_PORT || 4002);
 const AGENT_URL = process.env.DEPLOY_AGENT_URL || "http://deploy-agent:4001";
 const READONLY_TOKEN = process.env.DEPLOY_AGENT_READONLY_TOKEN || "";
 const CERT_DIR = process.env.MONITOR_CERT_DIR || "/etc/letsencrypt/live/cast.tritontechnical.com";
@@ -76,6 +92,39 @@ if (READONLY_TOKEN.length < 32) {
   );
   process.exit(1);
 }
+
+// ---------------------------------------------------------------------------
+// Source fingerprint — "which version of the monitor is actually running?"
+// ---------------------------------------------------------------------------
+// A routine deploy git-pulls new monitor source but deliberately does NOT
+// rebuild this container (deploy.sh is scoped to `api web`), so the new version
+// sits STAGED on disk while this image keeps running the old one. `cast-api`
+// compares this fingerprint against the source it can see and surfaces
+// "update ready" on System Health.
+//
+// MUST stay in sync with `fingerprintMonitorSource()` in
+// components/api/src/deploy/monitorVersion.ts — same files, same order, same
+// digest, or every monitor reads as stale forever. Not shared as a module
+// because this container ships zero dependencies and has no build step.
+const SOURCE_FILES = ["server.js", "public/index.html", "public/app.js", "public/styles.css"];
+
+function sourceFingerprint() {
+  try {
+    const h = crypto.createHash("sha256");
+    for (const rel of SOURCE_FILES) {
+      h.update(rel);
+      h.update("\0");
+      h.update(fs.readFileSync(path.join(__dirname, rel)));
+      h.update("\0");
+    }
+    return h.digest("hex").slice(0, 16);
+  } catch (e) {
+    console.warn(`[deploy-monitor] could not fingerprint own source: ${e.message}`);
+    return null;
+  }
+}
+
+const FINGERPRINT = sourceFingerprint();
 
 // ---------------------------------------------------------------------------
 // TLS, with automatic renewal pickup
@@ -338,3 +387,16 @@ function renderDenied() {
 }
 
 server.listen(PORT, () => console.log(`[deploy-monitor] listening on :${PORT} (TLS from ${CERT_DIR})`));
+
+// Internal-only, plain HTTP, one route, no deploy data — just the build stamp
+// `cast-api` needs to tell System Health whether a newer monitor is staged.
+http
+  .createServer((req, res) => {
+    if (req.method === "GET" && req.url === "/healthz") {
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      return res.end(JSON.stringify({ ok: true, fingerprint: FINGERPRINT, startedAt: STARTED_AT }));
+    }
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
+  })
+  .listen(INTERNAL_PORT, () => console.log(`[deploy-monitor] internal build-stamp endpoint on :${INTERNAL_PORT} (source ${FINGERPRINT})`));

@@ -31,5 +31,6 @@ echo "== restarting deploy-monitor =="
 docker compose up -d deploy-monitor
 
 docker image prune -f >/dev/null 2>&1 || true
+docker builder prune -f --filter until=168h >/dev/null 2>&1 || true
 docker compose ps deploy-monitor
 echo "::stage::done"

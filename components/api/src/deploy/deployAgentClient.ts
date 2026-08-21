@@ -6,6 +6,7 @@
  */
 import { createHmac } from "crypto";
 import { config } from "../config";
+import { fingerprintMonitorSource } from "./monitorVersion";
 
 export type DeployAction = "redeploy" | "update-and-redeploy" | "update-monitor";
 
@@ -56,6 +57,52 @@ export function mintWatchToken(): string {
 export function buildWatchUrl(): string | null {
   if (!deployMonitorConfigured()) return null;
   return `${config.deployMonitorUrl}/?w=${encodeURIComponent(mintWatchToken())}`;
+}
+
+export interface MonitorVersionInfo {
+  /** Whether the monitor container answered at all. */
+  reachable: boolean;
+  /** Source fingerprint the RUNNING image was built from. */
+  runningFingerprint: string | null;
+  /** Source fingerprint currently on disk in this deploy. */
+  stagedFingerprint: string | null;
+  /**
+   * True only when both are known AND differ — a newer monitor has shipped
+   * with a deploy and is waiting to be built. Never true on "can't tell":
+   * a false "update ready" nag is worse than staying quiet.
+   */
+  updateStaged: boolean;
+  startedAt: string | null;
+}
+
+/**
+ * Compares the running monitor against the monitor source this deploy shipped.
+ *
+ * A routine deploy git-pulls new monitor source but deliberately never rebuilds
+ * that container (`deploy.sh` is scoped to `api web`, so it can't restart the
+ * thing reporting on it) — so a new version arrives STAGED and sits unbuilt
+ * with nothing surfacing it. This is what makes it visible.
+ */
+export async function getMonitorVersion(): Promise<MonitorVersionInfo> {
+  const staged = fingerprintMonitorSource();
+  if (!deployMonitorConfigured()) {
+    return { reachable: false, runningFingerprint: null, stagedFingerprint: staged, updateStaged: false, startedAt: null };
+  }
+  try {
+    const res = await fetch(`${config.deployMonitorInternalUrl}/healthz`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error(`monitor returned ${res.status}`);
+    const body = (await res.json()) as { fingerprint?: string | null; startedAt?: string | null };
+    const running = body.fingerprint ?? null;
+    return {
+      reachable: true,
+      runningFingerprint: running,
+      stagedFingerprint: staged,
+      updateStaged: Boolean(running && staged && running !== staged),
+      startedAt: body.startedAt ?? null,
+    };
+  } catch {
+    return { reachable: false, runningFingerprint: null, stagedFingerprint: staged, updateStaged: false, startedAt: null };
+  }
 }
 
 async function call(path: string, method: "GET" | "POST", triggeredBy?: string): Promise<{ ok: boolean; status: number; body: unknown }> {

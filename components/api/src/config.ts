@@ -176,6 +176,14 @@ export const config = {
   deployAgentReadonlyToken: env.DEPLOY_AGENT_READONLY_TOKEN ?? "",
   /** Public origin of the deploy-monitor container, e.g. https://cast.tritontechnical.com:20443 */
   deployMonitorUrl: (env.CAST_DEPLOY_MONITOR_URL ?? "").replace(/\/+$/, ""),
+  /**
+   * Internal, plain-HTTP address for the monitor's build-stamp endpoint —
+   * a Compose service name on the `deploy` network, never published. Plain HTTP
+   * because the monitor's certificate is for the public hostname and an
+   * internal call by service name would fail verification; the endpoint serves
+   * only a build fingerprint, no deploy data.
+   */
+  deployMonitorInternalUrl: (env.CAST_DEPLOY_MONITOR_INTERNAL_URL ?? "http://deploy-monitor:4002").replace(/\/+$/, ""),
 } as const;
 
 // Fail fast rather than silently signing sessions with a public default secret —
