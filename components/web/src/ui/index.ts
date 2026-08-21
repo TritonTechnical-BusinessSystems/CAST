@@ -17,5 +17,7 @@ export { TimeSeriesChart } from "./TimeSeriesChart";
 export type { ChartSeries } from "./TimeSeriesChart";
 export { Modal } from "./Modal";
 export { Disclosure } from "./Disclosure";
+export { Menu } from "./Menu";
+export type { MenuItemDef } from "./Menu";
 export { ToastProvider, useToast } from "./Toast";
 export * from "./Icons";

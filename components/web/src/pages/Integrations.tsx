@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { PageHeader, Card, CardHeader, CardBody, CardFooter, StatusDot, Button, Field, Input, Banner, Badge, Spinner, Modal, useToast } from "../ui";
+import { PageHeader, Card, CardHeader, CardBody, CardFooter, StatusDot, Button, Field, Input, Banner, Badge, Spinner, Modal, Menu, useToast } from "../ui";
 import { useAuth } from "../auth";
 
 type DotState = "ok" | "warn" | "down" | "idle";
@@ -148,9 +148,12 @@ function CwInstanceCard({ instance }: { instance: CwInstance }) {
         }
         action={
           can("integrations.write") && (
-            <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
-              {test.state === "testing" ? "Testing…" : "Test connection"}
-            </Button>
+            <div className="row gap-2">
+              <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
+                {test.state === "testing" ? "Testing…" : "Test connection"}
+              </Button>
+              {status.configured && <Menu items={[{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger", disabled: clearing, onSelect: clearCreds }]} />}
+            </div>
           )
         }
       />
@@ -208,9 +211,6 @@ function CwInstanceCard({ instance }: { instance: CwInstance }) {
           can("integrations.write") && (
             <div className="row gap-2">
               <Button variant="secondary" onClick={() => setEditing(true)}>Update credentials</Button>
-              {status.configured && (
-                <Button variant="danger" onClick={clearCreds} disabled={clearing}>{clearing ? "Clearing…" : "Clear credentials"}</Button>
-              )}
             </div>
           )
         )}
@@ -345,9 +345,12 @@ function SimpleIntegrationCard({
         }
         action={
           can("integrations.write") && (
-            <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
-              {test.state === "testing" ? "Testing…" : "Test connection"}
-            </Button>
+            <div className="row gap-2">
+              <Button variant="secondary" size="sm" onClick={runTest} disabled={test.state === "testing"}>
+                {test.state === "testing" ? "Testing…" : "Test connection"}
+              </Button>
+              {status.configured && <Menu items={[{ label: clearing ? "Clearing…" : "Clear credentials", tone: "danger", disabled: clearing, onSelect: clearCreds }]} />}
+            </div>
           )
         }
       />
@@ -382,9 +385,6 @@ function SimpleIntegrationCard({
           can("integrations.write") && (
             <div className="row gap-2">
               <Button variant="secondary" onClick={() => setEditing(true)}>Update credentials</Button>
-              {status.configured && (
-                <Button variant="danger" onClick={clearCreds} disabled={clearing}>{clearing ? "Clearing…" : "Clear credentials"}</Button>
-              )}
             </div>
           )
         )}

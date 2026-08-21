@@ -10,6 +10,11 @@ Category tags: `UX · Frontend · Backend · Database · API · Integrations · 
 
 ---
 
+## v0.16.0.1 — build 2608035 — 2026-08-21T02:19:41Z
+
+### Changed
+- [Design-System] **"Clear credentials" is no longer a standalone red button on the Integrations page** — user: *"'Clear credentials' shouldn't be a big red button available on these. Let's just go with a simple '3 dots' edit button in the corner of each integration card."* Moved into a new reusable overflow-menu primitive (`ui/Menu.tsx`, a "3 dots" trigger + popover, closes on outside click/Escape) in each card's header corner, applied to all four integration cards (ConnectWise Production/Sandbox, aisstream.io, TrackingMore). The native `confirm()` safety prompt before actually clearing is unchanged — only the button's visual prominence changed, not the confirmation step.
+
 ## v0.16.0 — build 2608034 — 2026-08-21T01:08:54Z
 
 ### Changed

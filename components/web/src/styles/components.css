@@ -17,6 +17,27 @@
 .rail-tagline { padding: var(--space-2) var(--space-4) var(--space-3); font-size: var(--text-xs); color: var(--color-text-faint); line-height: 1.4; }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: none; background: none; color: var(--color-text-muted); border-radius: var(--radius-sm); cursor: pointer; }
 .icon-btn:hover { background: var(--color-surface-sunken); color: var(--color-danger); }
+
+/* Overflow ("3 dots") menu — a trigger that only opens a list, never itself
+   destructive, so its hover stays neutral (unlike .icon-btn's red, which is
+   for a single-click destructive icon action). */
+.menu-root { position: relative; display: inline-flex; }
+.menu-trigger { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border: none; background: none; color: var(--color-text-muted); border-radius: var(--radius-sm); cursor: pointer; }
+.menu-trigger:hover, .menu-trigger[aria-expanded="true"] { background: var(--color-surface-sunken); color: var(--color-text); }
+.menu-panel {
+  position: absolute; top: calc(100% + var(--space-1)); right: 0; min-width: 180px;
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md); padding: var(--space-1); z-index: var(--z-dropdown);
+  display: flex; flex-direction: column;
+}
+.menu-item {
+  display: flex; align-items: center; padding: var(--space-2) var(--space-3); border: none; background: none;
+  border-radius: var(--radius-sm); color: var(--color-text); font-size: var(--text-sm); text-align: left; cursor: pointer;
+}
+.menu-item:hover:not(:disabled) { background: var(--color-surface-sunken); }
+.menu-item:disabled { color: var(--color-text-faint); cursor: not-allowed; }
+.menu-item-danger { color: var(--color-danger); }
+.menu-item-danger:hover:not(:disabled) { background: var(--color-danger-wash); }
 .rail-brand img { width: var(--brand-icon); height: var(--brand-icon); }
 /* Title = 85% of icon height. text-box-trim crops the line box to the actual caps
    (Chromium 133+) so align-items:center centers the GLYPHS on the icon, not the

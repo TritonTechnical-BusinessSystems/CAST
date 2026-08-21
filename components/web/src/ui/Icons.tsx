@@ -40,6 +40,9 @@ export const IconAlert = (p: P) => (
   <svg {...svg(p)}><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
 );
 export const IconSearch = (p: P) => (<svg {...svg(p)}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>);
+export const IconMoreVertical = (p: P) => (
+  <svg {...svg(p)}><circle cx="12" cy="5" r="1.25" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1.25" fill="currentColor" stroke="none" /></svg>
+);
 export const IconExternal = (p: P) => (
   <svg {...svg(p)}><path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>
 );
