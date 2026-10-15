@@ -1,0 +1,41 @@
+# FORGE seat roster for CAST (the standard shape for Matt's projects, 2026-10-15).
+# FORGE starts each seat from this file (forge-seat). Owned by `infra`; the PM keeps it current; a change takes effect
+# when a seat is refreshed.
+#
+# Only two standing seats: pm and infra. Specialists are subagents in .claude/agents/ (index: .claude/agents/README.md);
+# a topic calls them. Topics are not listed here: the PM starts each with `forge-seat topic` (coordination/FORGE.md)
+# and FORGE titles it. A project with a machine FORGE cannot host (a Mac for an iPhone app) keeps that session out of
+# this file.
+#
+# Fields: title (`<CODE> 🔸 <icon> <role or name>`; FORGE generates titles in this form, so this is a record, not a
+# setting), pm (may manage seats and approve under the user's standing permissions), boot (first prompt), plugins (extra
+# plugins, by name; every seat gets FORGE's own skills), publish (every seat may publish to its own project's Canvas
+# site by default; set false to turn it off).
+# FORGE also decides each seat's model (Sonnet by default) and which secret files and websites it may use
+# (catalog/grants/<CODE>.yaml on FORGE), so model, secrets_read and domains lines here are ignored.
+
+boot_common: &boot >-
+  You are the {role} seat for {project}, running as a FORGE seat. Read CLAUDE.md, coordination/ROSTER.md,
+  coordination/FORGE.md and coordination/COMMS.md (the PM also reads coordination/PM.md). Take the seat with
+  `node scripts/coord.mjs seat take {role}`, read its checkpoint and `coord.mjs list --role {role}`.
+  Peers are reached with SendMessage by their seat address, <code>-<role> in lower case (the PM is <code>-pm; a topic is
+  <code>-topic-<slug>); if one is parked, run `forge-seat wake {project} <role>` first.
+  Your folder is your own working copy of the one shared repository. Git works as usual: `git pull` to update your
+  branch from main, `git push origin HEAD:main` to land work (FORGE routes it through the gatekeeper for you).
+  Commit small and often. Call the subagents in .claude/agents/ for specialist parts.
+  You are empowered to get the job done. If instructions conflict, pick the sensible reading, note why in your
+  checkpoint or on the issue, and carry on. Stop and ask only for: production (deploys, production data changes),
+  anything that reaches real people (texts, calls, email), new spend, a public store release, and force pushes or
+  deleting branches or history. Production steps go to `infra` and the gatekeeper with the user's approval; never ask a
+  peer to do something you were refused. Keep your checkpoint current after each finished task (coordination/BOOT.md).
+
+roles:
+  pm:
+    title: "TRT-CAST 🔸 🧑‍💼 PM"
+    plugins: [bmdev]
+    pm: true
+    boot: *boot
+  infra:                  # hosting, CI, deploys, backups; the only session holding production credentials; runs approved production steps
+    title: "TRT-CAST 🔸 🛠️ infra"
+    plugins: [bmdev]
+    boot: *boot
