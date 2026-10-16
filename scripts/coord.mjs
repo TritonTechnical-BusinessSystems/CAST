@@ -32,7 +32,14 @@ import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 export const STALE_HOURS = 48
-const MARK = { claim: 'CLAIM', release: 'RELEASE', holder: 'HOLDER', handoff: 'HANDOFF', decision: 'DECISION', checkpoint: 'CHECKPOINT' }
+const MARK = {
+  claim: 'CLAIM',
+  release: 'RELEASE',
+  holder: 'HOLDER',
+  handoff: 'HANDOFF',
+  decision: 'DECISION',
+  checkpoint: 'CHECKPOINT',
+}
 const DECISIONS = ['approve', 'defer', 'deny']
 
 /**
@@ -298,7 +305,11 @@ const findSeat = (role) => openCoord({ role, all: true }).find((i) => labelsOf(i
 function createSeat(role) {
   const body = `The seat for **${role}**. Whoever holds the role comments HOLDER here; each handoff is a HANDOFF comment. See knowledge/conventions/session-coordination.md and coordination/ROLES.md.`
   const args = ['issue', 'create', '-R', repo(), '--title', `Seat: ${role}`, '--label', `coord,role-seat,role:${role}`]
-  return Number(gh([...args, '--body-file', '-'], body).split('/').pop())
+  return Number(
+    gh([...args, '--body-file', '-'], body)
+      .split('/')
+      .pop(),
+  )
 }
 
 function takeSeat(role, number, v, session) {
@@ -347,7 +358,16 @@ function seat(action, role, v, session) {
 function proposalPost(v, session) {
   if (!v.role || !v.title || !v.body) throw new Error('proposal post needs --role, --title and --body.')
   const body = `Proposed role: **${v.role}** — ${v.title}\n\n${v.body}\n\nThe user decides: approve, defer or deny. ${stamp(session)}`
-  const args = ['issue', 'create', '-R', repo(), '--title', `Role proposal: ${v.role}`, '--label', 'coord,role-proposal']
+  const args = [
+    'issue',
+    'create',
+    '-R',
+    repo(),
+    '--title',
+    `Role proposal: ${v.role}`,
+    '--label',
+    'coord,role-proposal',
+  ]
   console.log(gh([...args, '--body-file', '-'], body))
 }
 
@@ -356,7 +376,9 @@ function proposalDecide(n, v, session) {
   if (!DECISIONS.includes(v.as)) throw new Error(`proposal decide needs --as ${DECISIONS.join('|')}.`)
   comment(n, `${MARK.decision} ${v.as}\n${stamp(session)}${v.note ? `\n\n${v.note}` : ''}`)
   if (v.as === 'approve') gh(['issue', 'close', String(n), '-R', repo()])
-  console.log(`#${n}: ${v.as}${v.as === 'approve' ? ' (closed). Now add the role to ROLES.md and run: seat init <role>' : ''}.`)
+  console.log(
+    `#${n}: ${v.as}${v.as === 'approve' ? ' (closed). Now add the role to ROLES.md and run: seat init <role>' : ''}.`,
+  )
 }
 
 function proposals() {
@@ -386,7 +408,18 @@ function topicOpen(name, session) {
   try {
     gh(['label', 'create', 'topic', '-R', repo(), '--color', '5319e7', '--description', 'A topic session'])
   } catch {} // already there
-  const args = ['issue', 'create', '-R', repo(), '--title', `Topic: ${name}`, '--label', 'topic,coord', '--body-file', '-']
+  const args = [
+    'issue',
+    'create',
+    '-R',
+    repo(),
+    '--title',
+    `Topic: ${name}`,
+    '--label',
+    'topic,coord',
+    '--body-file',
+    '-',
+  ]
   const body = TOPIC_BODY.replace('SESSION', sessionIdFromPath(process.cwd()) ?? session)
   console.log(Number(gh(args, body).split('/').pop()))
 }
@@ -426,7 +459,10 @@ function whoami(v) {
   const roster = readDoc('ROSTER.md')
   const found = sessionRow(roster, id)
   if (!found) {
-    const pm = roster.split('\n').find((l) => l.startsWith('| `pm` |'))?.match(/session_[A-Za-z0-9]+/)?.[0]
+    const pm = roster
+      .split('\n')
+      .find((l) => l.startsWith('| `pm` |'))
+      ?.match(/session_[A-Za-z0-9]+/)?.[0]
     return console.log(
       `${id} is not listed in coordination/ROSTER.md.\nMessage the PM${pm ? ` (${pm})` : ''} with this id and ask what role you hold.`,
     )
