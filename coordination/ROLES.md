@@ -72,7 +72,7 @@ The user approves, defers or denies each new role; nothing is created silently. 
 
 | Role | Status | Date | Trigger / reason |
 |---|---|---|---|
-| `data` | Deferred | 2026-10-15 | Migrations get heavy, or two topics collide on migrations. |
-| `security` | Deferred | 2026-10-15 | Before real user data at scale, or a compliance need. (A project-local `.claude/agents/security-reviewer.md` already exists.) |
-| `release` | Deferred | 2026-10-15 | Before the first tagged release others will use. |
-| `qa` | Deferred | 2026-10-15 | Bugs are found by users instead of tests. |
+| data | Deferred | 2026-10-15 | Migrations get heavy, or two topics collide on migrations. |
+| security | Deferred | 2026-10-15 | Before real user data at scale, or a compliance need. (A project-local `.claude/agents/security-reviewer.md` already exists.) |
+| release | Deferred | 2026-10-15 | Before the first tagged release others will use. |
+| qa | Deferred | 2026-10-15 | Bugs are found by users instead of tests. |
