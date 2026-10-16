@@ -12,6 +12,7 @@
 //   node scripts/coord.mjs seat take <role> [--note <t>]    become the holder; prints the handoff notes
 //   node scripts/coord.mjs seat handoff <role> --note <t>   leave notes for whoever holds the role next
 //   node scripts/coord.mjs seat init <role>              create the role's seat issue (once)
+//   node scripts/coord.mjs seat checkpoint <role> --note <t>   replace the seat's CHECKPOINT comment (coordination/BOOT.md)
 //   node scripts/coord.mjs proposal post --role <id> --title <t> --body <b>   propose a new role (the user decides)
 //   node scripts/coord.mjs proposal decide <n> --as approve|defer|deny --note <t>
 //   node scripts/coord.mjs whoami [--id session_<id>]    which role this session holds (from its worktree name or --id)
@@ -317,9 +318,24 @@ function leaveSeat(role, number, v, session) {
   console.log(`Seat ${role} is vacant, notes left on #${number}.`)
 }
 
+// The seat's one CHECKPOINT comment (BOOT.md): edited in place, so the seat issue keeps a single current one.
+function checkpointSeat(role, number, v, session) {
+  if (!v.note) throw new Error('checkpoint needs --note: at most five lines (coordination/BOOT.md).')
+  const body = `${MARK.checkpoint} ${stamp(session)}\n\n${v.note}`
+  const old = latestCheckpoint(comments(number))
+  if (!old) return commentAndConfirm(number, body)
+  gh(['api', '-X', 'PATCH', `repos/${repo()}/issues/comments/${old.id}`, '-F', 'body=@-'], body)
+  console.log(`Checkpoint replaced on ${role} (#${number}).`)
+}
+
 function seat(action, role, v, session) {
   if (!role) throw new Error('seat needs a role id.')
   if (action === 'init') return console.log(`Seat ${role} is #${findSeat(role)?.number ?? createSeat(role)}.`)
+  if (action === 'checkpoint') {
+    const n = findSeat(role)?.number
+    if (!n) throw new Error(`No seat for ${role}: take it first (seat take ${role}).`)
+    return checkpointSeat(role, n, v, session)
+  }
   if (action !== 'take' && action !== 'handoff') throw new Error(`Unknown seat action: ${action}`)
   // Taking a role creates its seat the first time; handing off needs one that exists.
   const number = findSeat(role)?.number ?? (action === 'take' ? createSeat(role) : null)
