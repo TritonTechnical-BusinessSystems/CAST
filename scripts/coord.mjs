@@ -154,6 +154,9 @@ export function parseRolesTable(markdown) {
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
 const mainCheckout = () => dirname(resolve(git('rev-parse', '--git-common-dir')))
+// The project's docs as this folder has them: a seat's own folder is kept current by `git pull`; the main checkout
+// is not (seats land work through FORGE's gatekeeper, which never updates it). The token still comes from the main checkout.
+const worktree = () => git('rev-parse', '--show-toplevel')
 
 let repoOverride
 function repo() {
@@ -229,7 +232,7 @@ function list(values) {
 }
 
 function tableRoles() {
-  const file = resolve(mainCheckout(), 'coordination/ROLES.md')
+  const file = resolve(worktree(), 'coordination/ROLES.md')
   return existsSync(file) ? parseRolesTable(readFileSync(file, 'utf8')) : []
 }
 
@@ -451,7 +454,7 @@ function topics() {
   }
 }
 
-const readDoc = (name) => readFileSync(resolve(mainCheckout(), 'coordination', name), 'utf8')
+const readDoc = (name) => readFileSync(resolve(worktree(), 'coordination', name), 'utf8')
 
 function whoami(v) {
   const id = v.id ?? sessionIdFromPath(process.cwd())
